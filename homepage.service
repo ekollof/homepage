@@ -1,0 +1,15 @@
+[Unit]
+Description=Homepage Web Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Code/homepage
+ExecStart=%h/Code/homepage/venv/bin/python app.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

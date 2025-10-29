@@ -1,0 +1,133 @@
+# Homepage Links Configuration
+# Categories can contain links and subcategories
+
+[[category]]
+name = "Development"
+icon = "💻"
+
+  [[category.links]]
+  name = "GitHub"
+  url = "https://github.com"
+  icon = "🔗"
+
+  [[category.links]]
+  name = "GitLab"
+  url = "https://gitlab.com"
+  icon = "🔗"
+
+  [[category.subcategory]]
+  name = "Documentation"
+  icon = "📚"
+
+    [[category.subcategory.links]]
+    name = "MDN Web Docs"
+    url = "https://developer.mozilla.org"
+    icon = "🌐"
+
+    [[category.subcategory.links]]
+    name = "Python Docs"
+    url = "https://docs.python.org"
+    icon = "🐍"
+
+  [[category.subcategory]]
+  name = "Tools"
+  icon = "🔧"
+
+    [[category.subcategory.links]]
+    name = "Stack Overflow"
+    url = "https://stackoverflow.com"
+    icon = "💬"
+
+    [[category.subcategory.links]]
+    name = "Regex101"
+    url = "https://regex101.com"
+    icon = "🔍"
+
+[[category]]
+name = "Social"
+icon = "👥"
+
+  [[category.links]]
+  name = "Reddit"
+  url = "https://reddit.com"
+  icon = "🔗"
+
+  [[category.links]]
+  name = "Twitter"
+  url = "https://twitter.com"
+  icon = "🐦"
+
+  [[category.links]]
+  name = "Mastodon"
+  url = "https://mastodon.social"
+  icon = "🐘"
+
+[[category]]
+name = "Media"
+icon = "🎬"
+
+  [[category.subcategory]]
+  name = "Video"
+  icon = "📺"
+
+    [[category.subcategory.links]]
+    name = "YouTube"
+    url = "https://youtube.com"
+    icon = "▶️"
+
+    [[category.subcategory.links]]
+    name = "Twitch"
+    url = "https://twitch.tv"
+    icon = "🎮"
+
+  [[category.subcategory]]
+  name = "Music"
+  icon = "🎵"
+
+    [[category.subcategory.links]]
+    name = "Spotify"
+    url = "https://spotify.com"
+    icon = "🎧"
+
+    [[category.subcategory.links]]
+    name = "SoundCloud"
+    url = "https://soundcloud.com"
+    icon = "☁️"
+
+[[category]]
+name = "News"
+icon = "📰"
+
+  [[category.links]]
+  name = "Hacker News"
+  url = "https://news.ycombinator.com"
+  icon = "🔗"
+
+  [[category.links]]
+  name = "Lobsters"
+  url = "https://lobste.rs"
+  icon = "🦞"
+
+  [[category.links]]
+  name = "Slashdot"
+  url = "https://slashdot.org"
+  icon = "⚡"
+
+[[category]]
+name = "Utilities"
+icon = "🛠️"
+
+  [[category.links]]
+  name = "Gmail"
+  url = "https://gmail.com"
+  icon = "📧"
+
+  [[category.links]]
+  name = "Google Drive"
+  url = "https://drive.google.com"
+  icon = "💾"
+
+  [[category.links]]
+  name = "Dropbox"
+  url = "https://dropbox.com"
+  icon = "📦"
