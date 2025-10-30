@@ -24,6 +24,16 @@ This document provides a comprehensive overview of all features included in the 
 - **Date display**: Full date with weekday, month, day, and year
 - **Automatic date refresh**: Updates at midnight
 
+### Web Search
+- **Integrated search bar**: Quick access below clock and date
+- **Multiple providers**: Brave Search, Google, DuckDuckGo, Bing
+- **Default provider**: Brave Search (configurable)
+- **Dropdown selector**: Easy switching between search engines
+- **New tab results**: Searches open in new tab
+- **Keyboard friendly**: Press Enter to search
+- **Auto-clear**: Input clears after search
+- **URL encoding**: Properly handles special characters in queries
+
 ## Theming & Appearance
 
 ### Dynamic Color Scheme
@@ -163,10 +173,11 @@ icon = "🔗"
 ### Optimization
 - **Inline assets**: CSS and JavaScript embedded (minimal external requests)
 - **Efficient wallpaper serving**: Single HTTP endpoint for background image
-- **Minimal JavaScript**: Only clock and reload checking
+- **Minimal JavaScript**: Only clock, reload checking, and search handling
 - **Efficient file watching**: Event-based, not polling file system
 - **No database**: Configuration in memory
 - **Fast templating**: Jinja2 template engine
+- **Client-side search**: No server processing for search queries
 
 ### Resource Usage
 - **Low memory**: Minimal Flask overhead
@@ -178,6 +189,7 @@ icon = "🔗"
 
 ### Semantic HTML
 - **Proper structure**: Header, container, sections
+- **Form elements**: Semantic search form with proper labels
 - **List elements**: Links organized in semantic lists
 - **Language attribute**: Proper HTML lang tag
 - **Viewport meta**: Mobile accessibility
@@ -195,6 +207,8 @@ icon = "🔗"
 - **Template variables**: Dynamic theming support
 - **Configurable icons**: Any Unicode character
 - **Flexible structure**: Unlimited categories and links
+- **Search providers**: Easy to add or modify search engines
+- **Default provider**: Configurable via HTML option order
 
 ### Future Enhancement Ready
 - **Modular code**: Easy to extend functionality

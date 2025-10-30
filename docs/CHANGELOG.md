@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Icon support using emojis or Unicode characters
 - Digital clock with 24-hour format, updating every second
 - Current date display below clock in full format
+- Integrated web search bar with multiple providers (Brave, Google, DuckDuckGo, Bing)
+- Search provider selector with Brave Search as default
+- Search results open in new tabs with proper security attributes
 - Dynamic theming from pywal colors (~/.cache/wal/colors.json)
 - Gruvbox dark theme as fallback when pywal is unavailable
 - Custom wallpaper background from ~/.wallpaper file
@@ -55,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Event-based file watching (not polling)
 - Efficient template rendering with Jinja2
 - Low memory and CPU usage
+- Client-side search processing (no server overhead)
 
 ### Documentation
 - Complete README with installation and usage instructions

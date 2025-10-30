@@ -9,9 +9,20 @@ A customizable homepage web server that displays links from a TOML configuration
 - 🔄 **Auto-Reload**: Page automatically reloads when colors or wallpaper changes
 - 📱 **Responsive Design**: Works on desktop and mobile devices
 - ⏰ **Digital Clock**: 24-hour format clock with current date
+- 🔍 **Web Search**: Integrated search bar with multiple providers (Brave, Google, DuckDuckGo, Bing)
 - 🔗 **Hierarchical Links**: Organize links in categories and subcategories
 - 🎯 **Icon Support**: Use emojis or other icons for visual organization
 - ⚡ **Lightweight**: Inline CSS and JavaScript for simplicity
+
+## Documentation
+
+📚 **[Full Documentation Index](docs/README.md)** - Complete documentation navigation
+
+- **[Quick Start Guide](docs/QUICKSTART.md)** - Get up and running in 5 minutes
+- **[Features](docs/FEATURES.md)** - Comprehensive feature documentation
+- **[Usage Guide](docs/USAGE.md)** - Complete usage instructions
+- **[Technical Notes](docs/TECHNICAL.md)** - Implementation details for developers
+- **[Changelog](docs/CHANGELOG.md)** - Version history and updates
 
 ## Requirements
 
@@ -262,7 +273,12 @@ homepage/
 ├── requirements-dev.txt    # Development dependencies
 ├── pyproject.toml          # Project configuration
 ├── README.md               # Full documentation
-└── QUICKSTART.md           # Quick start guide
+└── docs/                   # Documentation
+    ├── QUICKSTART.md       # Quick start guide
+    ├── FEATURES.md         # Feature documentation
+    ├── TECHNICAL.md        # Technical implementation details
+    ├── USAGE.md            # Usage guide
+    └── CHANGELOG.md        # Version history
 ```
 
 ## Customization
@@ -289,6 +305,21 @@ The clock uses 24-hour format by default. To change to 12-hour format, modify th
 const hours = String(now.getHours() % 12 || 12).padStart(2, '0');
 // Add AM/PM indicator as needed
 ```
+
+### Search Providers
+
+The search bar supports multiple search engines. To change the default or add new providers, modify the JavaScript in the template:
+
+```javascript
+const searchUrls = {
+    'brave': 'https://search.brave.com/search?q=',
+    'google': 'https://www.google.com/search?q=',
+    'duckduckgo': 'https://duckduckgo.com/?q=',
+    'bing': 'https://www.bing.com/search?q='
+};
+```
+
+To change the default provider, modify the `<option>` order in the HTML, placing your preferred provider first.
 
 ## Troubleshooting
 

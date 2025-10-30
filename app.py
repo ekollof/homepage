@@ -170,6 +170,66 @@ def index():
             font-size: 1.2rem;
             color: {{ colors.color14 }};
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .search-provider {
+            background-color: rgba(40, 40, 40, 0.9);
+            color: {{ colors.foreground }};
+            border: 2px solid {{ colors.color8 }};
+            border-radius: 5px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+            min-width: 140px;
+        }
+
+        .search-provider:hover {
+            border-color: {{ colors.color12 }};
+            background-color: rgba(60, 60, 60, 0.9);
+        }
+
+        .search-provider:focus {
+            outline: none;
+            border-color: {{ colors.color11 }};
+        }
+
+        .search-input {
+            flex: 1;
+            background-color: rgba(40, 40, 40, 0.9);
+            color: {{ colors.foreground }};
+            border: 2px solid {{ colors.color8 }};
+            border-radius: 5px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .search-input:hover {
+            border-color: {{ colors.color12 }};
+            background-color: rgba(60, 60, 60, 0.9);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: {{ colors.color11 }};
+            background-color: rgba(50, 50, 50, 0.9);
+        }
+
+        .search-input::placeholder {
+            color: {{ colors.color8 }};
         }
 
         .links-container {
@@ -267,6 +327,18 @@ def index():
                 font-size: 1rem;
             }
 
+            .search-container {
+                max-width: 90%;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-provider {
+                min-width: unset;
+            }
+
             .links-container {
                 grid-template-columns: 1fr;
                 width: 95%;
@@ -302,6 +374,24 @@ def index():
             <div class="header">
                 <div class="clock" id="clock">00:00:00</div>
                 <div class="date" id="date">Loading...</div>
+
+                <div class="search-container">
+                    <form class="search-form" onsubmit="handleSearch(event)">
+                        <select class="search-provider" id="searchProvider">
+                            <option value="brave">Brave Search</option>
+                            <option value="google">Google</option>
+                            <option value="duckduckgo">DuckDuckGo</option>
+                            <option value="bing">Bing</option>
+                        </select>
+                        <input
+                            type="text"
+                            class="search-input"
+                            id="searchInput"
+                            placeholder="Search the web..."
+                            autocomplete="off"
+                        />
+                    </form>
+                </div>
             </div>
 
             <div class="links-container">
@@ -378,6 +468,31 @@ def index():
                     }
                 })
                 .catch(error => console.error('Error checking for reload:', error));
+        }
+
+        function handleSearch(event) {
+            event.preventDefault();
+
+            const searchInput = document.getElementById('searchInput');
+            const searchProvider = document.getElementById('searchProvider');
+            const query = searchInput.value.trim();
+
+            if (!query) {
+                return;
+            }
+
+            const searchUrls = {
+                'brave': 'https://search.brave.com/search?q=',
+                'google': 'https://www.google.com/search?q=',
+                'duckduckgo': 'https://duckduckgo.com/?q=',
+                'bing': 'https://www.bing.com/search?q='
+            };
+
+            const baseUrl = searchUrls[searchProvider.value] || searchUrls['brave'];
+            const searchUrl = baseUrl + encodeURIComponent(query);
+
+            window.open(searchUrl, '_blank', 'noopener,noreferrer');
+            searchInput.value = '';
         }
 
         // Update clock every second

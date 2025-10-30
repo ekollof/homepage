@@ -2,6 +2,14 @@
 
 Get your customizable homepage running in 5 minutes!
 
+## Features at a Glance
+
+- 🔍 **Web Search**: Integrated search bar with Brave, Google, DuckDuckGo, and Bing
+- 🔗 **Custom Links**: Organize your favorite sites in hierarchical categories
+- 🎨 **Dynamic Theming**: Auto-adapts to your pywal color scheme
+- ⏰ **Digital Clock**: 24-hour format with current date
+- 📱 **Responsive**: Works on desktop and mobile
+
 ## Prerequisites
 
 - Python 3.10 or higher
@@ -23,6 +31,11 @@ systemctl --user start homepage.service
 ## Open Your Homepage
 
 Open your browser to: **http://localhost:5000**
+
+You'll see:
+- A digital clock at the top
+- A search bar with multiple search providers (Brave Search is default)
+- Your customized links organized in categories
 
 ## Customize Your Links
 

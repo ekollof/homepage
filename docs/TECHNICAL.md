@@ -17,9 +17,13 @@ This document provides technical implementation details for developers who want 
 ```
 Flask App
 ├── Routes
-│   ├── / (index) - Main homepage
+│   ├── / (index) - Main homepage with search bar
 │   ├── /check_reload - Reload status endpoint
 │   └── /wallpaper - Background image server
+├── Client-Side Features
+│   ├── Digital clock (JavaScript)
+│   ├── Web search form (JavaScript)
+│   └── Auto-reload checker (JavaScript)
 ├── File Watchers
 │   ├── ~/.cache/wal/colors.json
 │   └── ~/.wallpaper
@@ -93,7 +97,34 @@ def serve_wallpaper():
 file_watcher_state = {"reload_needed": False}
 ```
 
-### 5. TOML Configuration Format
+### 5. Client-Side Search
+
+**Decision**: Search is handled entirely in JavaScript on the client side.
+
+**Rationale**:
+- No server processing needed (lower load)
+- Direct navigation to search provider
+- Privacy-preserving (no queries logged server-side)
+- Works even if server is temporarily unavailable
+- Instant response (no round trip)
+
+**Implementation**:
+```javascript
+function handleSearch(event) {
+    const query = searchInput.value.trim();
+    const searchUrls = {
+        'brave': 'https://search.brave.com/search?q=',
+        'google': 'https://www.google.com/search?q=',
+        'duckduckgo': 'https://duckduckgo.com/?q=',
+        'bing': 'https://www.bing.com/search?q='
+    };
+    window.open(searchUrls[provider] + encodeURIComponent(query));
+}
+```
+
+**Trade-off**: No server-side search history or autocomplete, but better privacy.
+
+### 6. TOML Configuration Format
 
 **Decision**: Use TOML instead of JSON, YAML, or INI.
 
@@ -193,6 +224,34 @@ setInterval(updateClock, 1000);
 - 24-hour format (0-23)
 - Zero-padded for consistent width
 - Updates date at midnight (60-second check interval)
+
+### Search Implementation
+
+Search form submits to client-side JavaScript handler:
+
+```javascript
+function handleSearch(event) {
+    event.preventDefault();
+    const query = searchInput.value.trim();
+    const provider = searchProvider.value;
+    // Open search results in new tab
+    window.open(searchUrl, '_blank', 'noopener,noreferrer');
+    searchInput.value = ''; // Clear input
+}
+```
+
+**Search Providers**:
+- **Brave Search** (default): `https://search.brave.com/search?q=`
+- **Google**: `https://www.google.com/search?q=`
+- **DuckDuckGo**: `https://duckduckgo.com/?q=`
+- **Bing**: `https://www.bing.com/search?q=`
+
+**Key Points**:
+- URL encoding handles special characters
+- New tab opens with security attributes
+- Input clears after submission
+- Provider persists across searches (dropdown state)
+- Works without server interaction
 
 ## Performance Considerations
 
@@ -306,8 +365,9 @@ The template string can be:
 1. **Single Wallpaper**: Only one wallpaper at a time (no rotation)
 2. **No Caching**: Config loaded on every request
 3. **Dev Server**: Flask development server (not production-ready)
-4. **No Search**: No search functionality for links
+4. **No Link Search**: No search/filter functionality for configured links
 5. **Static Icons**: Icons from TOML only (no dynamic icon loading)
+6. **Client-Side Search**: Web search is client-side only (no server logging/autocomplete)
 
 ## Future Improvements
 
@@ -315,8 +375,10 @@ The template string can be:
 
 - [ ] Add wallpaper caching to reduce I/O
 - [ ] Support wallpaper rotation (multiple files)
-- [ ] Add search/filter functionality
+- [ ] Add search/filter functionality for links
 - [ ] Support multiple color schemes (switchable)
+- [ ] Add search suggestions/autocomplete
+- [ ] Remember last used search provider
 
 ### Medium Term
 
@@ -324,6 +386,8 @@ The template string can be:
 - [ ] Browser extension for adding current tab
 - [ ] Export/import link collections
 - [ ] Dark/light mode toggle (independent of pywal)
+- [ ] Search history tracking (optional, privacy-focused)
+- [ ] Quick search keyboard shortcuts (e.g., / to focus search)
 
 ### Long Term
 
