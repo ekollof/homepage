@@ -254,6 +254,8 @@ def _get_location() -> tuple[float, float, str]:
         client_ip = None
 
     match config.GEOIP_PROVIDER:
+        case "maxmind":
+            return _geoip_maxmind(client_ip)
         case "ipapi":
             # Use ipapi.co (30k requests/month free)
             url = f"https://ipapi.co/{client_ip + '/' if client_ip else ''}json/"
@@ -271,6 +273,43 @@ def _get_location() -> tuple[float, float, str]:
                 return data["lat"], data["lon"], data.get("city", "Unknown")
 
     raise ValueError("Could not determine location")
+
+
+def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
+    """Get location using MaxMind GeoLite2 database."""
+    import geoip2.database  # pylint: disable=import-outside-toplevel
+    import geoip2.errors  # pylint: disable=import-outside-toplevel
+
+    db_path = Path(config.GEOIP_DB_PATH)
+    if not db_path.exists():
+        raise FileNotFoundError(
+            f"MaxMind database not found at {db_path}. "
+            "Download from https://dev.maxmind.com/geoip/geolite2-free-geolocation-data"
+        )
+
+    # Use a default IP if localhost
+    if not ip_address:
+        # Fallback: try to get public IP or use a default location
+        try:
+            response = requests.get("https://api.ipify.org?format=json", timeout=3)
+            ip_address = response.json()["ip"]
+        except (requests.RequestException, KeyError):
+            # Ultimate fallback to a central location
+            return 52.0, 5.0, "Netherlands"
+
+    with geoip2.database.Reader(str(db_path)) as reader:
+        try:
+            # ip_address is guaranteed to be str here due to fallback above
+            assert ip_address is not None
+            response = reader.city(ip_address)
+            city = response.city.name or "Unknown"
+            lat = response.location.latitude or 0.0
+            lon = response.location.longitude or 0.0
+            return lat, lon, city
+        except geoip2.errors.AddressNotFoundError as err:
+            raise ValueError(
+                f"IP address {ip_address} not found in GeoIP database"
+            ) from err
 
 
 def _fetch_openmeteo_weather(lat: float, lon: float) -> dict[str, Any]:

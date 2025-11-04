@@ -40,7 +40,10 @@ class Config:
     WEATHER_API_KEY = os.getenv("HOMEPAGE_WEATHER_API_KEY", "")  # Only needed for openweathermap
     WEATHER_LOCATION = os.getenv("HOMEPAGE_WEATHER_LOCATION", "")  # Optional: lat,lon or city name
     WEATHER_UNITS = os.getenv("HOMEPAGE_WEATHER_UNITS", "metric")  # metric or imperial
-    GEOIP_PROVIDER = os.getenv("HOMEPAGE_GEOIP_PROVIDER", "ipapi")  # ipapi or ip-api
+    GEOIP_PROVIDER = os.getenv("HOMEPAGE_GEOIP_PROVIDER", "maxmind")  # maxmind, ipapi, or ip-api
+    GEOIP_DB_PATH = os.getenv(
+        "HOMEPAGE_GEOIP_DB_PATH", str(Path(__file__).parent / "GeoLite2-City.mmdb")
+    )
 
     # Clock settings
     CLOCK_FORMAT = os.getenv("HOMEPAGE_CLOCK_FORMAT", "24")  # 24 or 12
