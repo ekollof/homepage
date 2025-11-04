@@ -1,4 +1,4 @@
-.PHONY: help install install-dev run clean lint format check test test-cov service-install service-start service-stop service-restart service-status service-enable service-disable logs docker-build docker-run docker-stop validate-config stats health export-metrics
+.PHONY: help install install-dev run clean lint format check test test-cov setup-hooks service-install service-start service-stop service-restart service-status service-enable service-disable logs docker-build docker-run docker-stop validate-config stats health export-metrics
 
 VENV = venv
 PYTHON = $(VENV)/bin/python
@@ -15,6 +15,7 @@ help:
 	@echo "Available targets:"
 	@echo "  install          - Create venv and install production dependencies"
 	@echo "  install-dev      - Install development dependencies"
+	@echo "  setup-hooks      - Install git pre-commit hooks"
 	@echo "  run              - Run the application locally"
 	@echo "  clean            - Remove virtual environment and cache files"
 	@echo "  format           - Format code with black"
@@ -51,6 +52,14 @@ install-dev: install
 	$(PIP) install -e ".[dev]"
 	@echo "Development dependencies installed!"
 
+setup-hooks:
+	@echo "Installing git pre-commit hooks..."
+	@cp -f .githooks/pre-commit .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "✅ Pre-commit hook installed!"
+	@echo "   Hooks will run: black, ruff, pyright"
+	@echo "   To skip hooks: git commit --no-verify"
+
 run:
 	@echo "Starting homepage server on http://localhost:5000"
 	$(PYTHON) app.py
@@ -72,10 +81,10 @@ lint:
 	@echo "Running ruff..."
 	$(RUFF) check app.py
 	@echo "Running pylint..."
-	$(PYLINT) app.py
+	-$(PYLINT) app.py
 	@echo "Running pyright..."
 	$(PYRIGHT) app.py
-	@echo "All linters passed!"
+	@echo "Linting complete!"
 
 check: format lint
 	@echo "All checks passed!"

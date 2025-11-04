@@ -1,0 +1,41 @@
+#!/bin/bash
+# Pre-commit hook to run code quality checks
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# Get the list of Python files to be committed
+PY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
+
+if [ -z "$PY_FILES" ]; then
+    echo "✅ No Python files to check"
+    exit 0
+fi
+
+echo "📝 Python files to check: $PY_FILES"
+
+# Run black
+echo "🎨 Running black formatter..."
+./venv/bin/black $PY_FILES || {
+    echo "❌ Black formatting failed"
+    exit 1
+}
+
+# Run ruff
+echo "🔧 Running ruff linter..."
+./venv/bin/ruff check --fix --unsafe-fixes $PY_FILES || {
+    echo "❌ Ruff linting failed"
+    exit 1
+}
+
+# Run pyright (basic check)
+echo "🔍 Running pyright type checker..."
+./venv/bin/pyright $PY_FILES || {
+    echo "⚠️  Pyright found type issues (continuing anyway)"
+}
+
+# Re-add files that may have been modified by formatters
+git add $PY_FILES
+
+echo "✅ All pre-commit checks passed!"

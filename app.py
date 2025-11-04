@@ -6,8 +6,10 @@ import os
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
+import tomli_w
 from dotenv import load_dotenv
 from flask import Flask, jsonify, make_response, render_template, request, send_file
 from flask_compress import Compress
@@ -434,19 +436,6 @@ def get_config_data():
         base_data = load_toml_file(config.CONFIG_FILE, {})
         if base_data:
             try:
-                import sys
-
-                if sys.version_info >= (3, 11):
-                    try:
-                        import tomli_w
-                    except ImportError:
-                        return jsonify({"error": "tomli_w package required for editing"}), 500
-                else:
-                    try:
-                        import tomli_w
-                    except ImportError:
-                        return jsonify({"error": "tomli_w package required for editing"}), 500
-
                 with open(config.CONFIG_OVERRIDE_FILE, "wb") as f:
                     tomli_w.dump(base_data, f)
 
@@ -475,26 +464,13 @@ def save_config_data():
             return jsonify({"error": "Invalid configuration data"}), 400
 
         # Validate the configuration
-        from utils import validate_links_config
+        from utils import validate_links_config  # pylint: disable=import-outside-toplevel
 
         valid, errors = validate_links_config(data)
         if not valid:
             return jsonify({"error": "Invalid configuration", "details": errors}), 400
 
-        # Write to override file using tomli_w
-        import sys
-
-        if sys.version_info >= (3, 11):
-            # Python 3.11+ doesn't have tomli_w in stdlib, need to install it
-            try:
-                import tomli_w
-            except ImportError:
-                return jsonify({"error": "tomli_w package required for editing"}), 500
-        else:
-            try:
-                import tomli_w
-            except ImportError:
-                return jsonify({"error": "tomli_w package required for editing"}), 500
+        # Write to override file using tomli_w (already imported at top)
 
         with open(config.CONFIG_OVERRIDE_FILE, "wb") as f:
             tomli_w.dump(data, f)
@@ -550,8 +526,6 @@ def get_favicon_proxy():
 
     try:
         # Extract domain from URL
-        from urllib.parse import urlparse
-
         parsed = urlparse(url)
         domain = parsed.hostname or parsed.path
 
