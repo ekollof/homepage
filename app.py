@@ -435,6 +435,7 @@ def get_config_data():
         if base_data:
             try:
                 import sys
+
                 if sys.version_info >= (3, 11):
                     try:
                         import tomli_w
@@ -475,12 +476,14 @@ def save_config_data():
 
         # Validate the configuration
         from utils import validate_links_config
+
         valid, errors = validate_links_config(data)
         if not valid:
             return jsonify({"error": "Invalid configuration", "details": errors}), 400
 
         # Write to override file using tomli_w
         import sys
+
         if sys.version_info >= (3, 11):
             # Python 3.11+ doesn't have tomli_w in stdlib, need to install it
             try:
@@ -548,6 +551,7 @@ def get_favicon_proxy():
     try:
         # Extract domain from URL
         from urllib.parse import urlparse
+
         parsed = urlparse(url)
         domain = parsed.hostname or parsed.path
 
@@ -559,8 +563,8 @@ def get_favicon_proxy():
             return jsonify({"error": "Failed to fetch favicon"}), 404
 
         # Convert to base64 data URI
-        content_type = response.headers.get('Content-Type', 'image/png')
-        favicon_base64 = base64.b64encode(response.content).decode('utf-8')
+        content_type = response.headers.get("Content-Type", "image/png")
+        favicon_base64 = base64.b64encode(response.content).decode("utf-8")
         data_uri = f"data:{content_type};base64,{favicon_base64}"
 
         return jsonify({"favicon": data_uri})
