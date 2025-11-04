@@ -92,6 +92,7 @@ pythonVersion = "3.10"
 typeCheckingMode = "basic"
 venvPath = "."
 venv = "venv"
+reportMissingImports = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
