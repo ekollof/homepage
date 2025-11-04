@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, send_file
 from flask_compress import Compress
 from watchdog.events import FileSystemEventHandler
@@ -20,6 +21,9 @@ from utils import (
     load_text_file,
     load_toml_file,
 )
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize configuration
 config = get_config()
