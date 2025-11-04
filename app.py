@@ -195,7 +195,7 @@ def track():
 
 
 @app.route("/api/weather")
-def get_weather():
+def get_weather():  # pylint: disable=too-many-return-statements
     """Get weather data using configured provider."""
     if not config.ENABLE_WEATHER:
         return jsonify({"error": "Weather feature not enabled"}), 404
@@ -217,9 +217,15 @@ def get_weather():
         weather_data["location"] = location_name
         return jsonify(weather_data)
 
+    except requests.ConnectionError:
+        logger.warning("Weather: No network connection available")
+        return jsonify({"error": "No network connection"}), 503
+    except requests.Timeout:
+        logger.warning("Weather: Request timed out")
+        return jsonify({"error": "Request timed out"}), 504
     except (requests.RequestException, KeyError, ValueError) as e:
         logger.error("Error fetching weather: %s", e)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Weather service unavailable"}), 503
 
 
 def _get_location():
