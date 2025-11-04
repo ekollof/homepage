@@ -85,9 +85,11 @@ class ProductionConfig(Config):
     SECRET_KEY = os.getenv("HOMEPAGE_SECRET_KEY", os.urandom(24).hex())
 
 
-def get_config():
+def get_config() -> Config:
     """Get configuration based on environment."""
     env = os.getenv("HOMEPAGE_ENV", "development").lower()
-    if env == "production":
-        return ProductionConfig()
-    return DevelopmentConfig()
+    match env:
+        case "production":
+            return ProductionConfig()
+        case _:
+            return DevelopmentConfig()

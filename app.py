@@ -4,6 +4,7 @@ import base64
 import logging
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 import requests
 from flask import Flask, jsonify, render_template, request, send_file
@@ -183,10 +184,15 @@ def track():
         event_type = data.get("event")
         event_data = data.get("data", {})
 
-        if event_type == "search":
-            metrics.track_search(event_data.get("provider", "unknown"), event_data.get("query", ""))
-        elif event_type == "link_click":
-            metrics.track_link_click(event_data.get("name", "unknown"), event_data.get("url", ""))
+        match event_type:
+            case "search":
+                metrics.track_search(
+                    event_data.get("provider", "unknown"), event_data.get("query", "")
+                )
+            case "link_click":
+                metrics.track_link_click(
+                    event_data.get("name", "unknown"), event_data.get("url", "")
+                )
 
         return jsonify({"status": "ok"})
     except (KeyError, ValueError, TypeError) as e:
@@ -205,14 +211,15 @@ def get_weather():  # pylint: disable=too-many-return-statements
         lat, lon, location_name = _get_location()
 
         # Get weather data based on provider
-        if config.WEATHER_PROVIDER == "openmeteo":
-            weather_data = _fetch_openmeteo_weather(lat, lon)
-        elif config.WEATHER_PROVIDER == "openweathermap":
-            if not config.WEATHER_API_KEY:
-                return jsonify({"error": "OpenWeatherMap API key required"}), 400
-            weather_data = _fetch_openweathermap_weather(lat, lon)
-        else:
-            return jsonify({"error": "Invalid weather provider"}), 400
+        match config.WEATHER_PROVIDER:
+            case "openmeteo":
+                weather_data = _fetch_openmeteo_weather(lat, lon)
+            case "openweathermap":
+                if not config.WEATHER_API_KEY:
+                    return jsonify({"error": "OpenWeatherMap API key required"}), 400
+                weather_data = _fetch_openweathermap_weather(lat, lon)
+            case _:
+                return jsonify({"error": "Invalid weather provider"}), 400
 
         weather_data["location"] = location_name
         return jsonify(weather_data)
@@ -228,7 +235,7 @@ def get_weather():  # pylint: disable=too-many-return-statements
         return jsonify({"error": "Weather service unavailable"}), 503
 
 
-def _get_location():
+def _get_location() -> tuple[float, float, str]:
     """Get location from config or GeoIP."""
     # Check if location is provided in config
     if config.WEATHER_LOCATION:
@@ -247,27 +254,27 @@ def _get_location():
     else:
         client_ip = None
 
-    if config.GEOIP_PROVIDER == "ipapi":
-        # Use ipapi.co (30k requests/month free)
-        url = f"https://ipapi.co/{client_ip + '/' if client_ip else ''}json/"
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-        data = response.json()
-        return data["latitude"], data["longitude"], data.get("city", "Unknown")
-
-    # ip-api provider
-    # Use ip-api.com (45 requests/minute free)
-    url = f"http://ip-api.com/json/{client_ip if client_ip else ''}"
-    response = requests.get(url, timeout=5)
-    response.raise_for_status()
-    data = response.json()
-    if data["status"] == "success":
-        return data["lat"], data["lon"], data.get("city", "Unknown")
+    match config.GEOIP_PROVIDER:
+        case "ipapi":
+            # Use ipapi.co (30k requests/month free)
+            url = f"https://ipapi.co/{client_ip + '/' if client_ip else ''}json/"
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            return data["latitude"], data["longitude"], data.get("city", "Unknown")
+        case _:
+            # ip-api provider (45 requests/minute free)
+            url = f"http://ip-api.com/json/{client_ip if client_ip else ''}"
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            if data["status"] == "success":
+                return data["lat"], data["lon"], data.get("city", "Unknown")
 
     raise ValueError("Could not determine location")
 
 
-def _fetch_openmeteo_weather(lat, lon):
+def _fetch_openmeteo_weather(lat: float, lon: float) -> dict[str, Any]:
     """Fetch weather from Open-Meteo (no API key needed)."""
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
@@ -321,7 +328,7 @@ def _fetch_openmeteo_weather(lat, lon):
     }
 
 
-def _fetch_openweathermap_weather(lat, lon):
+def _fetch_openweathermap_weather(lat: float, lon: float) -> dict[str, Any]:
     """Fetch weather from OpenWeatherMap (requires API key)."""
     url = "https://api.openweathermap.org/data/2.5/weather"
     params = {
