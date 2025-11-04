@@ -287,39 +287,20 @@ class TestWeatherAPI:
             assert "location" in data
             assert data["location"] == "52.00,5.00"
 
-    def test_geoip_maxmind_fallback(self, monkeypatch):
-        """Test MaxMind GeoIP with fallback to public IP."""
+    def test_geoip_database_not_found(self, monkeypatch):
+        """Test MaxMind GeoIP raises error when database missing."""
         from app import _geoip_maxmind
-        from unittest.mock import Mock, patch
         import tempfile
         from pathlib import Path
         
-        # Create a temporary database path that doesn't exist
         with tempfile.TemporaryDirectory() as tmpdir:
-            fake_db = Path(tmpdir) / "GeoLite2-City.mmdb"
-            fake_db.write_text("fake db")
+            missing_db = Path(tmpdir) / "missing.mmdb"
             
             import app as app_module
-            monkeypatch.setattr(app_module.config, "GEOIP_DB_PATH", str(fake_db))
+            monkeypatch.setattr(app_module.config, "GEOIP_DB_PATH", str(missing_db))
             
-            # Mock the database reader and requests
-            mock_reader = Mock()
-            mock_response = Mock()
-            mock_response.city.name = "Amsterdam"
-            mock_response.location.latitude = 52.37
-            mock_response.location.longitude = 4.89
-            mock_reader.city.return_value = mock_response
-            
-            mock_requests = Mock()
-            mock_requests.json.return_value = {"ip": "1.2.3.4"}
-            
-            with patch("geoip2.database.Reader") as mock_db:
-                mock_db.return_value.__enter__.return_value = mock_reader
-                with patch("app.requests.get", return_value=mock_requests):
-                    lat, lon, city = _geoip_maxmind(None)
-                    assert city == "Amsterdam"
-                    assert lat == 52.37
-                    assert lon == 4.89
+            with pytest.raises(FileNotFoundError, match="MaxMind database not found"):
+                _geoip_maxmind("8.8.8.8")
 
     def test_openmeteo_weather_codes(self, monkeypatch):
         """Test Open-Meteo weather code mapping."""
