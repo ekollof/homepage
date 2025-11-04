@@ -1,4 +1,4 @@
-.PHONY: help install install-dev run clean lint format check test service-install service-start service-stop service-restart service-status service-enable service-disable logs
+.PHONY: help install install-dev run clean lint format check test test-cov service-install service-start service-stop service-restart service-status service-enable service-disable logs docker-build docker-run docker-stop validate-config stats health export-metrics
 
 VENV = venv
 PYTHON = $(VENV)/bin/python
@@ -7,6 +7,7 @@ BLACK = $(VENV)/bin/black
 RUFF = $(VENV)/bin/ruff
 PYLINT = $(VENV)/bin/pylint
 PYRIGHT = $(VENV)/bin/pyright
+PYTEST = $(VENV)/bin/pytest
 
 help:
 	@echo "Homepage Development Makefile"
@@ -19,6 +20,15 @@ help:
 	@echo "  format           - Format code with black"
 	@echo "  lint             - Run all linters (ruff, pylint, pyright)"
 	@echo "  check            - Run format and lint checks"
+	@echo "  test             - Run tests with pytest"
+	@echo "  test-cov         - Run tests with coverage report"
+	@echo "  validate-config  - Validate links.toml configuration"
+	@echo "  stats            - Show application statistics"
+	@echo "  health           - Check application health"
+	@echo "  export-metrics   - Export metrics to JSON file"
+	@echo "  docker-build     - Build Docker image"
+	@echo "  docker-run       - Run Docker container"
+	@echo "  docker-stop      - Stop Docker container"
 	@echo "  service-install  - Install systemd service"
 	@echo "  service-start    - Start systemd service"
 	@echo "  service-stop     - Stop systemd service"
@@ -31,14 +41,14 @@ help:
 install:
 	@echo "Creating virtual environment..."
 	python3 -m venv $(VENV)
-	@echo "Installing dependencies..."
+	@echo "Installing package..."
 	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
+	$(PIP) install -e .
 	@echo "Installation complete!"
 
 install-dev: install
 	@echo "Installing development dependencies..."
-	$(PIP) install -r requirements-dev.txt
+	$(PIP) install -e ".[dev]"
 	@echo "Development dependencies installed!"
 
 run:
@@ -70,12 +80,50 @@ lint:
 check: format lint
 	@echo "All checks passed!"
 
+test:
+	@echo "Running tests..."
+	$(PYTEST) tests/ -v
+
+test-cov:
+	@echo "Running tests with coverage..."
+	$(PYTEST) tests/ -v --cov=. --cov-report=html --cov-report=term
+	@echo "Coverage report generated in htmlcov/"
+
+validate-config:
+	@echo "Validating configuration..."
+	$(PYTHON) cli.py validate
+
+stats:
+	@echo "Fetching application statistics..."
+	$(PYTHON) cli.py stats
+
+health:
+	@echo "Checking application health..."
+	$(PYTHON) cli.py health
+
+export-metrics:
+	@echo "Exporting metrics..."
+	$(PYTHON) cli.py stats --export metrics_export.json
+
+docker-build:
+	@echo "Building Docker image..."
+	docker build -t homepage:latest .
+
+docker-run:
+	@echo "Running Docker container..."
+	docker-compose up -d
+
+docker-stop:
+	@echo "Stopping Docker container..."
+	docker-compose down
+
 service-install:
 	@echo "Installing systemd service..."
-	mkdir -p ~/.config/systemd/user
-	cp homepage.service ~/.config/systemd/user/
-	systemctl --user daemon-reload
-	@echo "Service installed!"
+	@mkdir -p ~/.config/systemd/user
+	@sed "s|INSTALL_DIR_PLACEHOLDER|$(shell pwd)|g" homepage.service > ~/.config/systemd/user/homepage.service
+	@systemctl --user daemon-reload
+	@echo "Service installed to ~/.config/systemd/user/homepage.service"
+	@echo "Working directory: $(shell pwd)"
 
 service-start:
 	systemctl --user start homepage.service

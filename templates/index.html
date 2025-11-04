@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage</title>
+    <link rel="icon" href="{{ url_for('favicon') }}" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: {{ colors.foreground }};
+            background-color: {{ colors.background }};
+            {% if wallpaper %}
+            background-image: url('/wallpaper');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            {% else %}
+            background-color: #000000;
+            {% endif %}
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .clock {
+            font-size: 3rem;
+            font-weight: bold;
+            color: {{ colors.color12 }};
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .date {
+            font-size: 1.2rem;
+            color: {{ colors.color14 }};
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .search-provider {
+            background-color: rgba(40, 40, 40, 0.9);
+            color: {{ colors.foreground }};
+            border: 2px solid {{ colors.color8 }};
+            border-radius: 5px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+            min-width: 140px;
+        }
+
+        .search-provider:hover {
+            border-color: {{ colors.color12 }};
+            background-color: rgba(60, 60, 60, 0.9);
+        }
+
+        .search-provider:focus {
+            outline: none;
+            border-color: {{ colors.color11 }};
+        }
+
+        .search-input {
+            flex: 1;
+            background-color: rgba(40, 40, 40, 0.9);
+            color: {{ colors.foreground }};
+            border: 2px solid {{ colors.color8 }};
+            border-radius: 5px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .search-input:hover {
+            border-color: {{ colors.color12 }};
+            background-color: rgba(60, 60, 60, 0.9);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: {{ colors.color11 }};
+            background-color: rgba(50, 50, 50, 0.9);
+        }
+
+        .search-input::placeholder {
+            color: {{ colors.color8 }};
+        }
+
+        .keyboard-shortcuts {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: {{ colors.color8 }};
+            text-align: center;
+        }
+
+        .links-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            width: 90%;
+            margin: 0 auto;
+        }
+
+        .category {
+            background-color: rgba(40, 40, 40, 0.9);
+            border: 2px solid {{ colors.color8 }};
+            border-radius: 10px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .category:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            border-color: {{ colors.color12 }};
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: {{ colors.color11 }};
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-icon {
+            font-size: 1.8rem;
+        }
+
+        .links-list {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .link-item {
+            margin-bottom: 8px;
+        }
+
+        .link-item a {
+            color: {{ colors.color14 }};
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .link-item a:hover {
+            background-color: {{ colors.color8 }};
+            color: {{ colors.color10 }};
+        }
+
+        .link-icon {
+            font-size: 1.1rem;
+        }
+
+        .subcategory {
+            margin-top: 15px;
+            margin-left: 10px;
+            padding-left: 15px;
+            border-left: 2px solid {{ colors.color8 }};
+        }
+
+        .subcategory-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: {{ colors.color9 }};
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subcategory-icon {
+            font-size: 1.3rem;
+        }
+
+        .help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .help-overlay.show {
+            display: flex;
+        }
+
+        .help-content {
+            background-color: {{ colors.background }};
+            border: 2px solid {{ colors.color12 }};
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            color: {{ colors.foreground }};
+        }
+
+        .help-content h2 {
+            color: {{ colors.color11 }};
+            margin-bottom: 20px;
+        }
+
+        .help-content table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .help-content td {
+            padding: 8px;
+            border-bottom: 1px solid {{ colors.color8 }};
+        }
+
+        .help-content kbd {
+            background-color: {{ colors.color0 }};
+            border: 1px solid {{ colors.color8 }};
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            color: {{ colors.color11 }};
+        }
+
+        @media (max-width: 768px) {
+            .clock {
+                font-size: 2rem;
+            }
+
+            .date {
+                font-size: 1rem;
+            }
+
+            .search-container {
+                max-width: 90%;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-provider {
+                min-width: unset;
+            }
+
+            .links-container {
+                grid-template-columns: 1fr;
+                width: 95%;
+            }
+
+            .category-title {
+                font-size: 1.3rem;
+            }
+
+            .subcategory-title {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .clock {
+                font-size: 1.5rem;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .category {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <div class="container">
+            <div class="header">
+                <div class="clock" id="clock">00:00:00</div>
+                <div class="date" id="date">Loading...</div>
+
+                <div class="search-container">
+                    <form class="search-form" onsubmit="handleSearch(event)">
+                        <select class="search-provider" id="searchProvider">
+                            <option value="brave">Brave Search</option>
+                            <option value="google">Google</option>
+                            <option value="duckduckgo">DuckDuckGo</option>
+                            <option value="bing">Bing</option>
+                        </select>
+                        <input
+                            type="text"
+                            class="search-input"
+                            id="searchInput"
+                            placeholder="Search the web..."
+                            autocomplete="off"
+                        />
+                    </form>
+                    <div class="keyboard-shortcuts">
+                        Press <kbd>?</kbd> for keyboard shortcuts
+                    </div>
+                </div>
+            </div>
+
+            <div class="links-container">
+                {% for category in categories %}
+                <div class="category">
+                    <div class="category-title">
+                        <span class="category-icon">{{ category.icon }}</span>
+                        <span>{{ category.name }}</span>
+                    </div>
+
+                    {% if category.links %}
+                    <ul class="links-list">
+                        {% for link in category.links %}
+                        <li class="link-item">
+                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" data-link="{{ link.name }}">
+                                <span class="link-icon">{{ link.icon }}</span>
+                                <span>{{ link.name }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+
+                    {% if category.subcategory %}
+                    {% for subcategory in category.subcategory %}
+                    <div class="subcategory">
+                        <div class="subcategory-title">
+                            <span class="subcategory-icon">{{ subcategory.icon }}</span>
+                            <span>{{ subcategory.name }}</span>
+                        </div>
+                        {% if subcategory.links %}
+                        <ul class="links-list">
+                            {% for link in subcategory.links %}
+                            <li class="link-item">
+                                <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" data-link="{{ link.name }}">
+                                    <span class="link-icon">{{ link.icon }}</span>
+                                    <span>{{ link.name }}</span>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="help-overlay" id="helpOverlay">
+        <div class="help-content">
+            <h2>Keyboard Shortcuts</h2>
+            <table>
+                <tr>
+                    <td><kbd>/</kbd></td>
+                    <td>Focus search bar</td>
+                </tr>
+                <tr>
+                    <td><kbd>?</kbd></td>
+                    <td>Show this help</td>
+                </tr>
+                <tr>
+                    <td><kbd>Esc</kbd></td>
+                    <td>Close help / Clear search</td>
+                </tr>
+                <tr>
+                    <td><kbd>Ctrl+1-4</kbd></td>
+                    <td>Switch search provider</td>
+                </tr>
+            </table>
+            <p style="margin-top: 20px; text-align: center; color: {{ colors.color8 }};">
+                Press <kbd>Esc</kbd> to close
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const CLOCK_FORMAT = '{{ clock_format }}';
+        const RELOAD_INTERVAL = {{ reload_interval }};
+
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            if (CLOCK_FORMAT === '12') {
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
+            } else {
+                hours = String(hours).padStart(2, '0');
+                document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+            }
+        }
+
+        function updateDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateString = now.toLocaleDateString('en-US', options);
+            document.getElementById('date').textContent = dateString;
+        }
+
+        function checkForReload() {
+            fetch('/check_reload')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.reload) {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => console.error('Error checking for reload:', error));
+        }
+
+        function handleSearch(event) {
+            event.preventDefault();
+
+            const searchInput = document.getElementById('searchInput');
+            const searchProvider = document.getElementById('searchProvider');
+            const query = searchInput.value.trim();
+
+            if (!query) {
+                return;
+            }
+
+            const searchUrls = {
+                'brave': 'https://search.brave.com/search?q=',
+                'google': 'https://www.google.com/search?q=',
+                'duckduckgo': 'https://duckduckgo.com/?q=',
+                'bing': 'https://www.bing.com/search?q='
+            };
+
+            const baseUrl = searchUrls[searchProvider.value] || searchUrls['brave'];
+            const searchUrl = baseUrl + encodeURIComponent(query);
+
+            // Track search
+            trackEvent('search', { provider: searchProvider.value, query: query });
+
+            window.open(searchUrl, '_blank', 'noopener,noreferrer');
+            
+            // Save to search history
+            saveSearchHistory(query, searchProvider.value);
+            searchInput.value = '';
+        }
+
+        function saveSearchHistory(query, provider) {
+            try {
+                let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                history.unshift({ query, provider, timestamp: Date.now() });
+                history = history.slice(0, 50); // Keep last 50 searches
+                localStorage.setItem('searchHistory', JSON.stringify(history));
+            } catch (e) {
+                console.error('Failed to save search history:', e);
+            }
+        }
+
+        function trackEvent(eventType, data) {
+            // Send tracking data to server
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event: eventType, data: data, timestamp: Date.now() })
+            }).catch(() => {}); // Silently fail
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            const searchInput = document.getElementById('searchInput');
+            const helpOverlay = document.getElementById('helpOverlay');
+            
+            // Ignore if typing in input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    searchInput.blur();
+                }
+                return;
+            }
+
+            switch(e.key) {
+                case '/':
+                    e.preventDefault();
+                    searchInput.focus();
+                    break;
+                case '?':
+                    e.preventDefault();
+                    helpOverlay.classList.toggle('show');
+                    break;
+                case 'Escape':
+                    helpOverlay.classList.remove('show');
+                    break;
+            }
+
+            // Ctrl+Number for search provider selection
+            if (e.ctrlKey && e.key >= '1' && e.key <= '4') {
+                e.preventDefault();
+                const provider = document.getElementById('searchProvider');
+                provider.selectedIndex = parseInt(e.key) - 1;
+            }
+        });
+
+        // Click outside help to close
+        document.getElementById('helpOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'helpOverlay') {
+                e.target.classList.remove('show');
+            }
+        });
+
+        // Track link clicks
+        document.querySelectorAll('.link-item a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                trackEvent('link_click', { 
+                    name: e.currentTarget.dataset.link,
+                    url: e.currentTarget.href 
+                });
+            });
+        });
+
+        // Update clock every second
+        updateClock();
+        updateDate();
+        setInterval(updateClock, 1000);
+
+        // Update date at midnight
+        setInterval(updateDate, 60000);
+
+        // Check for file changes
+        setInterval(checkForReload, RELOAD_INTERVAL);
+    </script>
+</body>
+</html>

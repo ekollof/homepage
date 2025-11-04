@@ -1,15 +1,30 @@
+# Homepage Systemd Service Template
+#
+# This file is a template. The INSTALL_DIR_PLACEHOLDER will be replaced
+# with the actual installation directory during installation.
+#
+# Install using:
+#   ./install.sh          (recommended)
+#   make service-install  (for development)
+#
+# Manual installation:
+#   sed "s|INSTALL_DIR_PLACEHOLDER|/path/to/homepage|g" homepage.service > ~/.config/systemd/user/homepage.service
+#   systemctl --user daemon-reload
+#
+
 [Unit]
 Description=Homepage Web Server
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/Code/homepage
-ExecStart=%h/Code/homepage/venv/bin/python app.py
+WorkingDirectory=INSTALL_DIR_PLACEHOLDER
+ExecStart=INSTALL_DIR_PLACEHOLDER/venv/bin/python app.py
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
+Environment="PATH=INSTALL_DIR_PLACEHOLDER/venv/bin:/usr/local/bin:/usr/bin:/bin"
 
 [Install]
 WantedBy=default.target

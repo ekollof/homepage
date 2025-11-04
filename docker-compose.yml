@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  homepage:
+    build: .
+    container_name: homepage
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount your links configuration
+      - ./links.toml:/app/links.toml:ro
+      # Mount pywal colors if available
+      - ~/.cache/wal:/root/.cache/wal:ro
+      # Mount wallpaper file if available
+      - ~/.wallpaper:/root/.wallpaper:ro
+      # Optional: Mount wallpaper directory
+      - ~/Pictures:/pictures:ro
+    environment:
+      - HOMEPAGE_ENV=production
+      - HOMEPAGE_HOST=0.0.0.0
+      - HOMEPAGE_PORT=5000
+      - HOMEPAGE_DEBUG=False
+      - HOMEPAGE_ENABLE_CACHE=True
+      - HOMEPAGE_ENABLE_METRICS=True
+      - HOMEPAGE_ENABLE_COMPRESSION=True
+      - HOMEPAGE_CACHE_TTL=5
+      - HOMEPAGE_CLOCK_FORMAT=24
+      - HOMEPAGE_LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

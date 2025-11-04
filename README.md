@@ -58,14 +58,14 @@ cd ~/Code/homepage
 python3 -m venv venv
 ```
 
-3. Install dependencies:
+3. Install the package:
 ```bash
-./venv/bin/pip install -r requirements.txt
+./venv/bin/pip install -e .
 ```
 
-4. Install development tools (optional):
+4. Install with development tools (optional):
 ```bash
-./venv/bin/pip install -r requirements-dev.txt
+./venv/bin/pip install -e ".[dev]"
 ```
 
 ## Configuration
@@ -269,9 +269,7 @@ homepage/
 ├── homepage.service        # Systemd service file
 ├── install.sh              # Installation script
 ├── Makefile                # Development task automation
-├── requirements.txt        # Production dependencies
-├── requirements-dev.txt    # Development dependencies
-├── pyproject.toml          # Project configuration
+├── pyproject.toml          # Project configuration and dependencies
 ├── README.md               # Full documentation
 └── docs/                   # Documentation
     ├── QUICKSTART.md       # Quick start guide

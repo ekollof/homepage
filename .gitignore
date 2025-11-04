@@ -135,3 +135,5 @@ pyrightconfig.json
 
 # Project specific
 *.bak
+metrics.json
+.ruff_cache/

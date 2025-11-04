@@ -53,8 +53,8 @@ icon = "👥"
   icon = "🔗"
 
   [[category.links]]
-  name = "Twitter"
-  url = "https://twitter.com"
+  name = "X (formerly twitter)"
+  url = "https://x.com"
   icon = "🐦"
 
   [[category.links]]

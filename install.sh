@@ -25,10 +25,10 @@ fi
 echo ""
 
 # Install dependencies
-echo "[2/4] Installing dependencies..."
+echo "[2/4] Installing package..."
 ./venv/bin/pip install --upgrade pip > /dev/null 2>&1
-./venv/bin/pip install -r requirements.txt
-echo "✓ Dependencies installed"
+./venv/bin/pip install -e .
+echo "✓ Package installed"
 echo ""
 
 # Create example config if it doesn't exist
@@ -44,9 +44,13 @@ echo ""
 echo "[4/4] Setting up systemd service..."
 SERVICE_DIR="$HOME/.config/systemd/user"
 mkdir -p "$SERVICE_DIR"
-cp homepage.service "$SERVICE_DIR/"
+
+# Create service file with actual paths
+sed "s|INSTALL_DIR_PLACEHOLDER|$SCRIPT_DIR|g" homepage.service > "$SERVICE_DIR/homepage.service"
+
 systemctl --user daemon-reload
-echo "✓ Service file installed"
+echo "✓ Service file installed to $SERVICE_DIR/homepage.service"
+echo "  Working directory: $SCRIPT_DIR"
 echo ""
 
 echo "=========================================="
@@ -81,5 +85,5 @@ echo "   docs/FEATURES.md    - Feature documentation"
 echo "   docs/USAGE.md       - Usage guide"
 echo ""
 echo "Optional: Install development tools"
-echo "   ./venv/bin/pip install -r requirements-dev.txt"
+echo "   ./venv/bin/pip install -e \".[dev]\""
 echo ""
