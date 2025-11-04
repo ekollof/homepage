@@ -5,6 +5,7 @@ import logging
 from io import BytesIO
 from pathlib import Path
 
+import requests
 from flask import Flask, jsonify, render_template, request, send_file
 from flask_compress import Compress
 from watchdog.events import FileSystemEventHandler
@@ -146,6 +147,7 @@ def index():
         categories=categories,
         clock_format=config.CLOCK_FORMAT,
         reload_interval=config.RELOAD_CHECK_INTERVAL,
+        config=config,
     )
 
 
@@ -190,6 +192,133 @@ def track():
     except (KeyError, ValueError, TypeError) as e:
         logger.error("Error tracking event: %s", e)
         return jsonify({"status": "error"}), 500
+
+
+@app.route("/api/weather")
+def get_weather():
+    """Get weather data using configured provider."""
+    if not config.ENABLE_WEATHER:
+        return jsonify({"error": "Weather feature not enabled"}), 404
+
+    try:
+        # Get location
+        lat, lon, location_name = _get_location()
+
+        # Get weather data based on provider
+        if config.WEATHER_PROVIDER == "openmeteo":
+            weather_data = _fetch_openmeteo_weather(lat, lon)
+        elif config.WEATHER_PROVIDER == "openweathermap":
+            if not config.WEATHER_API_KEY:
+                return jsonify({"error": "OpenWeatherMap API key required"}), 400
+            weather_data = _fetch_openweathermap_weather(lat, lon)
+        else:
+            return jsonify({"error": "Invalid weather provider"}), 400
+
+        weather_data["location"] = location_name
+        return jsonify(weather_data)
+
+    except (requests.RequestException, KeyError, ValueError) as e:
+        logger.error("Error fetching weather: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
+def _get_location():
+    """Get location from config or GeoIP."""
+    # Check if location is provided in config
+    if config.WEATHER_LOCATION:
+        # Parse lat,lon format
+        if "," in config.WEATHER_LOCATION:
+            try:
+                lat, lon = map(float, config.WEATHER_LOCATION.split(","))
+                return lat, lon, f"{lat:.2f},{lon:.2f}"
+            except ValueError:
+                pass
+
+    # Use GeoIP to determine location
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if client_ip and client_ip != "127.0.0.1":
+        client_ip = client_ip.split(",")[0].strip()
+    else:
+        client_ip = None
+
+    if config.GEOIP_PROVIDER == "ipapi":
+        # Use ipapi.co (30k requests/month free)
+        url = f"https://ipapi.co/{client_ip + '/' if client_ip else ''}json/"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        return data["latitude"], data["longitude"], data.get("city", "Unknown")
+
+    # ip-api provider
+    # Use ip-api.com (45 requests/minute free)
+    url = f"http://ip-api.com/json/{client_ip if client_ip else ''}"
+    response = requests.get(url, timeout=5)
+    response.raise_for_status()
+    data = response.json()
+    if data["status"] == "success":
+        return data["lat"], data["lon"], data.get("city", "Unknown")
+
+    raise ValueError("Could not determine location")
+
+
+def _fetch_openmeteo_weather(lat, lon):
+    """Fetch weather from Open-Meteo (no API key needed)."""
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "current": "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
+        "temperature_unit": "celsius" if config.WEATHER_UNITS == "metric" else "fahrenheit",
+        "wind_speed_unit": "kmh" if config.WEATHER_UNITS == "metric" else "mph",
+    }
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    current = data["current"]
+
+    # Map WMO weather codes to descriptions
+    weather_codes = {
+        0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+        45: "Foggy", 48: "Foggy", 51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
+        61: "Light rain", 63: "Rain", 65: "Heavy rain",
+        71: "Light snow", 73: "Snow", 75: "Heavy snow",
+        77: "Snow grains", 80: "Light showers", 81: "Showers", 82: "Heavy showers",
+        85: "Light snow showers", 86: "Snow showers",
+        95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Thunderstorm with hail"
+    }
+
+    return {
+        "temperature": current["temperature_2m"],
+        "humidity": current["relative_humidity_2m"],
+        "description": weather_codes.get(current["weather_code"], "Unknown"),
+        "wind_speed": current["wind_speed_10m"],
+        "units": config.WEATHER_UNITS,
+    }
+
+
+def _fetch_openweathermap_weather(lat, lon):
+    """Fetch weather from OpenWeatherMap (requires API key)."""
+    url = "https://api.openweathermap.org/data/2.5/weather"
+    params = {
+        "lat": lat,
+        "lon": lon,
+        "appid": config.WEATHER_API_KEY,
+        "units": config.WEATHER_UNITS,
+    }
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    return {
+        "temperature": data["main"]["temp"],
+        "humidity": data["main"]["humidity"],
+        "description": data["weather"][0]["description"].title(),
+        "wind_speed": data["wind"]["speed"],
+        "units": config.WEATHER_UNITS,
+    }
 
 
 @app.route("/check_reload")
