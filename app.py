@@ -13,17 +13,17 @@ from flask_compress import Compress
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from config import get_config
-from metrics import MetricsCollector
-from utils import (
+# Load environment variables from .env file BEFORE importing config
+load_dotenv()
+
+from config import get_config  # noqa: E402 # pylint: disable=wrong-import-position
+from metrics import MetricsCollector  # noqa: E402 # pylint: disable=wrong-import-position
+from utils import (  # noqa: E402 # pylint: disable=wrong-import-position
     SimpleCache,
     load_json_file,
     load_text_file,
     load_toml_file,
 )
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Initialize configuration
 config = get_config()
