@@ -17,6 +17,8 @@ else:
 class SimpleCache:
     """Simple in-memory cache with TTL support."""
 
+    __slots__ = ("cache", "ttl")
+
     def __init__(self, ttl: int = 5):
         """Initialize cache with time-to-live in seconds."""
         self.cache: dict[str, tuple[Any, float]] = {}
@@ -24,8 +26,8 @@ class SimpleCache:
 
     def get(self, key: str) -> Any | None:
         """Get value from cache if not expired."""
-        if key in self.cache:
-            value, timestamp = self.cache[key]
+        if (cached := self.cache.get(key)) is not None:
+            value, timestamp = cached
             if time.time() - timestamp < self.ttl:
                 return value
             del self.cache[key]

@@ -52,27 +52,27 @@ file_watcher_state = {"reload_needed": False}
 class ConfigFileHandler(FileSystemEventHandler):
     """Handler for file system events on config files."""
 
+    __slots__ = ()
+
     def on_modified(self, event):
         """Mark that a reload is needed when files are modified."""
         if not event.is_directory:
             file_path = Path(str(event.src_path))
-            if file_path.name in ("colors.json", ".wallpaper", "links.toml"):
-                logger.info("Configuration file changed: %s", file_path.name)
-                file_watcher_state["reload_needed"] = True
-                # Invalidate cache
-                if cache:
-                    cache.clear()
+            match file_path.name:
+                case "colors.json" | ".wallpaper" | "links.toml":
+                    logger.info("Configuration file changed: %s", file_path.name)
+                    file_watcher_state["reload_needed"] = True
+                    # Invalidate cache
+                    if cache:
+                        cache.clear()
 
 
 def load_colors():
     """Load colors from pywal cache or use gruvbox dark fallback."""
-    if cache:
-        cached = cache.get("colors")
-        if cached:
-            return cached
+    if cache and (cached := cache.get("colors")):
+        return cached
 
-    colors_data = load_json_file(config.COLORS_FILE)
-    if colors_data:
+    if colors_data := load_json_file(config.COLORS_FILE):
         try:
             colors = colors_data.get("colors", {})
             colors["background"] = colors_data.get("special", {}).get(
@@ -94,13 +94,10 @@ def load_colors():
 
 def load_wallpaper():
     """Load wallpaper path or return None."""
-    if cache:
-        cached = cache.get("wallpaper")
-        if cached is not None:
-            return cached
+    if cache and (cached := cache.get("wallpaper")) is not None:
+        return cached
 
-    wallpaper_text = load_text_file(config.WALLPAPER_FILE)
-    if wallpaper_text:
+    if wallpaper_text := load_text_file(config.WALLPAPER_FILE):
         wallpaper_path = Path(wallpaper_text)
         if wallpaper_path.exists():
             if cache:
@@ -114,10 +111,8 @@ def load_wallpaper():
 
 def load_links():
     """Load links from TOML configuration file."""
-    if cache:
-        cached = cache.get("links")
-        if cached:
-            return cached
+    if cache and (cached := cache.get("links")):
+        return cached
 
     toml_data = load_toml_file(config.CONFIG_FILE, {})
     categories = toml_data.get("category", [])

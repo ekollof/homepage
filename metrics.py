@@ -12,6 +12,18 @@ from typing import Any
 class MetricsCollector:
     """Collect and store application metrics."""
 
+    __slots__ = (
+        "max_events",
+        "start_time",
+        "request_count",
+        "page_views",
+        "search_count",
+        "link_clicks",
+        "search_providers",
+        "recent_events",
+        "lock",
+    )
+
     def __init__(self, max_events: int = 1000):
         """Initialize metrics collector."""
         self.max_events = max_events
