@@ -307,9 +307,7 @@ def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
             lon = response.location.longitude or 0.0
             return lat, lon, city
         except geoip2.errors.AddressNotFoundError as err:
-            raise ValueError(
-                f"IP address {ip_address} not found in GeoIP database"
-            ) from err
+            raise ValueError(f"IP address {ip_address} not found in GeoIP database") from err
 
 
 def _fetch_openmeteo_weather(lat: float, lon: float) -> dict[str, Any]:
