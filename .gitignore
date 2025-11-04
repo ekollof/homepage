@@ -137,3 +137,7 @@ pyrightconfig.json
 *.bak
 metrics.json
 .ruff_cache/
+
+# GeoIP Database
+GeoLite2-*.mmdb
+GeoLite2-City_*/
