@@ -112,7 +112,7 @@ def validate_url(url: str) -> bool:
 
 def merge_links_configs(base_config: dict, override_config: dict) -> dict:
     """Return override configuration if it exists, otherwise return base.
-    
+
     Simple override strategy:
     - If override has content, use it completely (ignore base)
     - If override is empty/missing, use base
