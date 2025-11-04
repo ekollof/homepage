@@ -286,13 +286,30 @@ def _fetch_openmeteo_weather(lat, lon):
 
     # Map WMO weather codes to descriptions
     weather_codes = {
-        0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
-        45: "Foggy", 48: "Foggy", 51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
-        61: "Light rain", 63: "Rain", 65: "Heavy rain",
-        71: "Light snow", 73: "Snow", 75: "Heavy snow",
-        77: "Snow grains", 80: "Light showers", 81: "Showers", 82: "Heavy showers",
-        85: "Light snow showers", 86: "Snow showers",
-        95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Thunderstorm with hail"
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Foggy",
+        48: "Foggy",
+        51: "Light drizzle",
+        53: "Drizzle",
+        55: "Heavy drizzle",
+        61: "Light rain",
+        63: "Rain",
+        65: "Heavy rain",
+        71: "Light snow",
+        73: "Snow",
+        75: "Heavy snow",
+        77: "Snow grains",
+        80: "Light showers",
+        81: "Showers",
+        82: "Heavy showers",
+        85: "Light snow showers",
+        86: "Snow showers",
+        95: "Thunderstorm",
+        96: "Thunderstorm with hail",
+        99: "Thunderstorm with hail",
     }
 
     return {

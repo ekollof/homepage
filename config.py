@@ -37,18 +37,10 @@ class Config:
     WEATHER_PROVIDER = os.getenv(
         "HOMEPAGE_WEATHER_PROVIDER", "openmeteo"
     )  # openmeteo or openweathermap
-    WEATHER_API_KEY = os.getenv(
-        "HOMEPAGE_WEATHER_API_KEY", ""
-    )  # Only needed for openweathermap
-    WEATHER_LOCATION = os.getenv(
-        "HOMEPAGE_WEATHER_LOCATION", ""
-    )  # Optional: lat,lon or city name
-    WEATHER_UNITS = os.getenv(
-        "HOMEPAGE_WEATHER_UNITS", "metric"
-    )  # metric or imperial
-    GEOIP_PROVIDER = os.getenv(
-        "HOMEPAGE_GEOIP_PROVIDER", "ipapi"
-    )  # ipapi or ip-api
+    WEATHER_API_KEY = os.getenv("HOMEPAGE_WEATHER_API_KEY", "")  # Only needed for openweathermap
+    WEATHER_LOCATION = os.getenv("HOMEPAGE_WEATHER_LOCATION", "")  # Optional: lat,lon or city name
+    WEATHER_UNITS = os.getenv("HOMEPAGE_WEATHER_UNITS", "metric")  # metric or imperial
+    GEOIP_PROVIDER = os.getenv("HOMEPAGE_GEOIP_PROVIDER", "ipapi")  # ipapi or ip-api
 
     # Clock settings
     CLOCK_FORMAT = os.getenv("HOMEPAGE_CLOCK_FORMAT", "24")  # 24 or 12
