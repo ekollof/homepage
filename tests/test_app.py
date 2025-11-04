@@ -289,6 +289,8 @@ class TestWeatherAPI:
 
     def test_geoip_database_not_found(self, monkeypatch):
         """Test MaxMind GeoIP raises error when database missing."""
+        pytest.importorskip("geoip2")  # Skip if geoip2 not installed
+        
         from app import _geoip_maxmind
         import tempfile
         from pathlib import Path
