@@ -300,6 +300,207 @@
             color: {{ colors.color11 }};
         }
 
+        /* Edit mode styles */
+        .edit-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(40, 40, 40, 0.95);
+            border: 2px solid {{ colors.color12 }};
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: {{ colors.color11 }};
+            cursor: pointer;
+            font-size: 0.9rem;
+            z-index: 999;
+            transition: background-color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .edit-toggle:hover {
+            background-color: rgba(60, 60, 60, 0.95);
+            transform: scale(1.05);
+        }
+
+        .edit-toggle.active {
+            background-color: {{ colors.color9 }};
+            border-color: {{ colors.color9 }};
+            color: {{ colors.background }};
+        }
+
+        .edit-mode .category {
+            border: 2px dashed {{ colors.color11 }};
+        }
+
+        .edit-controls {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid {{ colors.color8 }};
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .edit-mode .edit-controls {
+            display: flex;
+        }
+
+        .link-controls {
+            display: none !important;
+            gap: 3px;
+            margin-left: 8px;
+        }
+
+        .edit-mode .link-controls {
+            display: inline-flex !important;
+        }
+
+        .edit-mode .link-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .edit-mode .link-item a {
+            flex: 1;
+        }
+
+        .edit-btn-small {
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            min-width: unset;
+        }
+
+        .edit-btn {
+            background-color: {{ colors.color12 }};
+            color: {{ colors.background }};
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+        }
+
+        .edit-btn:hover {
+            background-color: {{ colors.color14 }};
+        }
+
+        .edit-btn.danger {
+            background-color: {{ colors.color9 }};
+        }
+
+        .edit-btn.danger:hover {
+            background-color: {{ colors.color1 }};
+        }
+
+        .edit-btn.add {
+            background-color: {{ colors.color10 }};
+        }
+
+        .edit-btn.add:hover {
+            background-color: {{ colors.color2 }};
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: {{ colors.background }};
+            border: 2px solid {{ colors.color12 }};
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: {{ colors.foreground }};
+        }
+
+        .modal-content h2 {
+            color: {{ colors.color11 }};
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: {{ colors.color14 }};
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            background-color: rgba(40, 40, 40, 0.9);
+            color: {{ colors.foreground }};
+            border: 2px solid {{ colors.color8 }};
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: {{ colors.color11 }};
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: {{ colors.color12 }};
+            color: {{ colors.background }};
+        }
+
+        .btn-primary:hover {
+            background-color: {{ colors.color14 }};
+        }
+
+        .btn-secondary {
+            background-color: {{ colors.color8 }};
+            color: {{ colors.foreground }};
+        }
+
+        .btn-secondary:hover {
+            background-color: {{ colors.color7 }};
+        }
+
         @media (max-width: 768px) {
             .clock {
                 font-size: 2rem;
@@ -351,6 +552,13 @@
     </style>
 </head>
 <body>
+    {% if config.ENABLE_EDITING %}
+    <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()">
+        <span id="editIcon">✏️</span>
+        <span id="editText">Edit Mode</span>
+    </button>
+    {% endif %}
+
     <div class="overlay">
         <div class="container">
             <div class="header">
@@ -384,9 +592,9 @@
                 </div>
             </div>
 
-            <div class="links-container">
+            <div class="links-container" id="linksContainer">
                 {% for category in categories %}
-                <div class="category">
+                <div class="category" data-category-index="{{ loop.index0 }}">
                     <div class="category-title">
                         <span class="category-icon">{{ category.icon }}</span>
                         <span>{{ category.name }}</span>
@@ -395,11 +603,25 @@
                     {% if category.links %}
                     <ul class="links-list">
                         {% for link in category.links %}
-                        <li class="link-item">
+                        <li class="link-item" data-link-index="{{ loop.index0 }}">
                             <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" data-link="{{ link.name }}">
-                                <span class="link-icon">{{ link.icon }}</span>
+                                <span class="link-icon">
+                                    {% if link.icon %}
+                                        {% if link.icon.startswith('data:image/') %}
+                                            <img src="{{ link.icon }}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">
+                                        {% else %}
+                                            {{ link.icon }}
+                                        {% endif %}
+                                    {% else %}
+                                        <img src="https://www.google.com/s2/favicons?domain={{ link.url }}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;" onerror="this.style.display='none'">
+                                    {% endif %}
+                                </span>
                                 <span>{{ link.name }}</span>
                             </a>
+                            <div class="edit-controls link-controls">
+                                <button class="edit-btn edit-btn-small" onclick="editLink(this, false, event)">Edit</button>
+                                <button class="edit-btn edit-btn-small danger" onclick="deleteLink(this, false, event)">×</button>
+                            </div>
                         </li>
                         {% endfor %}
                     </ul>
@@ -407,7 +629,7 @@
 
                     {% if category.subcategory %}
                     {% for subcategory in category.subcategory %}
-                    <div class="subcategory">
+                    <div class="subcategory" data-subcategory-index="{{ loop.index0 }}">
                         <div class="subcategory-title">
                             <span class="subcategory-icon">{{ subcategory.icon }}</span>
                             <span>{{ subcategory.name }}</span>
@@ -415,20 +637,50 @@
                         {% if subcategory.links %}
                         <ul class="links-list">
                             {% for link in subcategory.links %}
-                            <li class="link-item">
+                            <li class="link-item" data-link-index="{{ loop.index0 }}">
                                 <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" data-link="{{ link.name }}">
-                                    <span class="link-icon">{{ link.icon }}</span>
+                                    <span class="link-icon">
+                                        {% if link.icon %}
+                                            {% if link.icon.startswith('data:image/') %}
+                                                <img src="{{ link.icon }}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">
+                                            {% else %}
+                                                {{ link.icon }}
+                                            {% endif %}
+                                        {% else %}
+                                            <img src="https://www.google.com/s2/favicons?domain={{ link.url }}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;" onerror="this.style.display='none'">
+                                        {% endif %}
+                                    </span>
                                     <span>{{ link.name }}</span>
                                 </a>
+                                <div class="edit-controls link-controls">
+                                    <button class="edit-btn edit-btn-small" onclick="editLink(this, true, event)">Edit</button>
+                                    <button class="edit-btn edit-btn-small danger" onclick="deleteLink(this, true, event)">×</button>
+                                </div>
                             </li>
                             {% endfor %}
                         </ul>
                         {% endif %}
+                        <div class="edit-controls">
+                            <button class="edit-btn" onclick="editSubcategory(this)">Edit Subcategory</button>
+                            <button class="edit-btn add" onclick="addLink(this, true)">+ Link</button>
+                            <button class="edit-btn danger" onclick="deleteSubcategory(this)">Delete</button>
+                        </div>
                     </div>
                     {% endfor %}
                     {% endif %}
+
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editCategory(this)">Edit Category</button>
+                        <button class="edit-btn add" onclick="addLink(this, false)">+ Link</button>
+                        <button class="edit-btn add" onclick="addSubcategory(this)">+ Subcategory</button>
+                        <button class="edit-btn danger" onclick="deleteCategory(this)">Delete</button>
+                    </div>
                 </div>
                 {% endfor %}
+
+                <div class="edit-controls" style="display: flex; justify-content: center; padding: 20px;">
+                    <button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>
+                </div>
             </div>
         </div>
     </div>
@@ -453,12 +705,57 @@
                     <td><kbd>Ctrl+1-4</kbd></td>
                     <td>Switch search provider</td>
                 </tr>
+                {% if config.ENABLE_EDITING %}
+                <tr>
+                    <td><kbd>e</kbd></td>
+                    <td>Toggle edit mode</td>
+                </tr>
+                {% endif %}
             </table>
             <p style="margin-top: 20px; text-align: center; color: {{ colors.color8 }};">
                 Press <kbd>Esc</kbd> to close
             </p>
         </div>
     </div>
+
+    {% if config.ENABLE_EDITING %}
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Edit Item</h2>
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="itemName">Name</label>
+                    <input type="text" id="itemName" required>
+                </div>
+                <div class="form-group" id="urlGroup">
+                    <label for="itemUrl">URL</label>
+                    <input type="url" id="itemUrl">
+                </div>
+                <div class="form-group">
+                    <label for="itemIcon">Icon (emoji or leave empty for favicon)</label>
+                    <input type="text" id="itemIcon" maxlength="4" placeholder="Leave empty for favicon">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-content">
+            <h2>Confirm Action</h2>
+            <p id="confirmMessage">Are you sure?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmButton">Confirm</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <script>
         const CLOCK_FORMAT = '{{ clock_format }}';
@@ -530,6 +827,11 @@
         }
 
         function checkForReload() {
+            // Don't reload if in edit mode - user is actively editing
+            if (editMode) {
+                return;
+            }
+            
             fetch('/check_reload')
                 .then(response => response.json())
                 .then(data => {
@@ -660,6 +962,584 @@
 
         // Check for file changes
         setInterval(checkForReload, RELOAD_INTERVAL);
+
+        {% if config.ENABLE_EDITING %}
+        // Edit mode functionality
+        let editMode = false;
+        let currentConfig = null;
+        let editContext = null;
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            const container = document.getElementById('linksContainer');
+            const toggle = document.getElementById('editToggle');
+            const editIcon = document.getElementById('editIcon');
+            const editText = document.getElementById('editText');
+
+            if (editMode) {
+                container.classList.add('edit-mode');
+                toggle.classList.add('active');
+                editIcon.textContent = '💾';
+                editText.textContent = 'Save & Exit';
+                loadConfig();
+            } else {
+                container.classList.remove('edit-mode');
+                toggle.classList.remove('active');
+                editIcon.textContent = '✏️';
+                editText.textContent = 'Edit Mode';
+                saveAndExit();
+            }
+        }
+
+        function loadConfig() {
+            fetch('/api/config')
+                .then(response => response.json())
+                .then(data => {
+                    currentConfig = data;
+                    console.log('Configuration loaded', currentConfig);
+                    
+                    // Fetch and cache any missing favicons on load
+                    fetchMissingFavicons();
+                })
+                .catch(error => console.error('Failed to load config:', error));
+        }
+
+        async function fetchMissingFavicons() {
+            // Find all links with empty icons and fetch their favicons
+            let hasChanges = false;
+            
+            for (let catIndex = 0; catIndex < currentConfig.category.length; catIndex++) {
+                const category = currentConfig.category[catIndex];
+                
+                // Check category links
+                if (category.links) {
+                    for (let linkIndex = 0; linkIndex < category.links.length; linkIndex++) {
+                        const link = category.links[linkIndex];
+                        if (link.icon === '' || !link.icon) {
+                            console.log('Fetching favicon for:', link.name);
+                            try {
+                                const faviconData = await fetchAndCacheFavicon(link.url);
+                                link.icon = faviconData;
+                                hasChanges = true;
+                            } catch (error) {
+                                console.error('Failed to fetch favicon for', link.name, error);
+                            }
+                        }
+                    }
+                }
+                
+                // Check subcategory links
+                if (category.subcategory) {
+                    for (let subIndex = 0; subIndex < category.subcategory.length; subIndex++) {
+                        const subcategory = category.subcategory[subIndex];
+                        if (subcategory.links) {
+                            for (let linkIndex = 0; linkIndex < subcategory.links.length; linkIndex++) {
+                                const link = subcategory.links[linkIndex];
+                                if (link.icon === '' || !link.icon) {
+                                    console.log('Fetching favicon for:', link.name);
+                                    try {
+                                        const faviconData = await fetchAndCacheFavicon(link.url);
+                                        link.icon = faviconData;
+                                        hasChanges = true;
+                                    } catch (error) {
+                                        console.error('Failed to fetch favicon for', link.name, error);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If we fetched any favicons, update the DOM
+            if (hasChanges) {
+                console.log('Favicons fetched, updating display');
+                updateCategoryDisplay();
+            }
+        }
+
+        function saveAndExit() {
+            if (!currentConfig) return;
+
+            // Show saving indicator
+            const toggle = document.getElementById('editToggle');
+            const originalText = toggle.innerHTML;
+            toggle.innerHTML = '<span>💾</span><span>Saving...</span>';
+            toggle.style.pointerEvents = 'none';
+
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentConfig)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Save failed');
+                return response.json();
+            })
+            .then(() => {
+                console.log('Configuration saved');
+                // Add cache-busting parameter to force reload
+                setTimeout(() => {
+                    window.location.href = window.location.pathname + '?t=' + Date.now();
+                }, 500);
+            })
+            .catch(error => {
+                console.error('Failed to save config:', error);
+                alert('Failed to save configuration. Please try again.');
+                toggle.innerHTML = originalText;
+                toggle.style.pointerEvents = 'auto';
+            });
+        }
+
+        function getCategoryFromElement(element) {
+            const categoryDiv = element.closest('.category');
+            const categoryIndex = parseInt(categoryDiv.dataset.categoryIndex);
+            return { categoryDiv, categoryIndex };
+        }
+
+        async function fetchAndCacheFavicon(url) {
+            try {
+                // Use our proxy endpoint to avoid CORS issues
+                const response = await fetch(`/api/favicon?url=${encodeURIComponent(url)}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch favicon');
+                }
+                
+                const data = await response.json();
+                return data.favicon;
+            } catch (error) {
+                console.error('Error fetching favicon:', error);
+                throw error;
+            }
+        }
+
+        function saveLinkToConfig(link) {
+            if (editContext.action === 'edit') {
+                // Edit existing link
+                if (editContext.subcategoryIndex !== undefined) {
+                    currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links[editContext.linkIndex] = link;
+                } else {
+                    currentConfig.category[editContext.categoryIndex].links[editContext.linkIndex] = link;
+                }
+            } else {
+                // Add new link
+                if (editContext.subcategoryIndex !== undefined) {
+                    if (!currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links) {
+                        currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links = [];
+                    }
+                    currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links.push(link);
+                } else {
+                    if (!currentConfig.category[editContext.categoryIndex].links) {
+                        currentConfig.category[editContext.categoryIndex].links = [];
+                    }
+                    currentConfig.category[editContext.categoryIndex].links.push(link);
+                }
+            }
+            
+            closeModal();
+            updateCategoryDisplay();
+        }
+
+        function updateCategoryDisplay() {
+            // Changes are stored in currentConfig and will be saved when exiting edit mode
+            // Rebuild the links container from currentConfig
+            const container = document.getElementById('linksContainer');
+            if (!container || !currentConfig) return;
+            
+            // Simple approach: regenerate the entire container HTML
+            // This ensures the DOM matches currentConfig
+            let html = '';
+            
+            currentConfig.category.forEach((category, catIndex) => {
+                html += `<div class="category" data-category-index="${catIndex}">`;
+                html += `<div class="category-title">`;
+                html += `<span class="category-icon">${category.icon || '📁'}</span>`;
+                html += `<span>${category.name}</span>`;
+                html += `</div>`;
+                
+                // Category links
+                if (category.links && category.links.length > 0) {
+                    html += `<ul class="links-list">`;
+                    category.links.forEach((link, linkIndex) => {
+                        let iconHtml;
+                        if (link.icon) {
+                            // Check if it's a base64 data URI
+                            if (link.icon.startsWith('data:image/')) {
+                                iconHtml = `<img src="${link.icon}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                            } else {
+                                // It's an emoji or text
+                                iconHtml = link.icon;
+                            }
+                        } else {
+                            // Fallback to Google favicon service
+                            iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                        }
+                        html += `<li class="link-item" data-link-index="${linkIndex}">`;
+                        html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">`;
+                        html += `<span class="link-icon">${iconHtml}</span>`;
+                        html += `<span>${link.name}</span>`;
+                        html += `</a>`;
+                        html += `<div class="edit-controls link-controls">`;
+                        html += `<button class="edit-btn edit-btn-small" onclick="editLink(this, false, event)">Edit</button>`;
+                        html += `<button class="edit-btn edit-btn-small danger" onclick="deleteLink(this, false, event)">×</button>`;
+                        html += `</div>`;
+                        html += `</li>`;
+                    });
+                    html += `</ul>`;
+                }
+                
+                // Subcategories
+                if (category.subcategory && category.subcategory.length > 0) {
+                    category.subcategory.forEach((subcategory, subIndex) => {
+                        html += `<div class="subcategory" data-subcategory-index="${subIndex}">`;
+                        html += `<div class="subcategory-title">`;
+                        html += `<span class="subcategory-icon">${subcategory.icon || '📂'}</span>`;
+                        html += `<span>${subcategory.name}</span>`;
+                        html += `</div>`;
+                        
+                        if (subcategory.links && subcategory.links.length > 0) {
+                            html += `<ul class="links-list">`;
+                            subcategory.links.forEach((link, linkIndex) => {
+                                let iconHtml;
+                                if (link.icon) {
+                                    // Check if it's a base64 data URI
+                                    if (link.icon.startsWith('data:image/')) {
+                                        iconHtml = `<img src="${link.icon}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                                    } else {
+                                        // It's an emoji or text
+                                        iconHtml = link.icon;
+                                    }
+                                } else {
+                                    // Fallback to Google favicon service
+                                    iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                                }
+                                html += `<li class="link-item" data-link-index="${linkIndex}">`;
+                                html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">`;
+                                html += `<span class="link-icon">${iconHtml}</span>`;
+                                html += `<span>${link.name}</span>`;
+                                html += `</a>`;
+                                html += `<div class="edit-controls link-controls">`;
+                                html += `<button class="edit-btn edit-btn-small" onclick="editLink(this, true, event)">Edit</button>`;
+                                html += `<button class="edit-btn edit-btn-small danger" onclick="deleteLink(this, true, event)">×</button>`;
+                                html += `</div>`;
+                                html += `</li>`;
+                            });
+                            html += `</ul>`;
+                        }
+                        
+                        html += `<div class="edit-controls">`;
+                        html += `<button class="edit-btn" onclick="editSubcategory(this)">Edit Subcategory</button>`;
+                        html += `<button class="edit-btn add" onclick="addLink(this, true)">+ Link</button>`;
+                        html += `<button class="edit-btn danger" onclick="deleteSubcategory(this)">Delete</button>`;
+                        html += `</div>`;
+                        html += `</div>`;
+                    });
+                }
+                
+                // Category edit controls
+                html += `<div class="edit-controls">`;
+                html += `<button class="edit-btn" onclick="editCategory(this)">Edit Category</button>`;
+                html += `<button class="edit-btn add" onclick="addLink(this, false)">+ Link</button>`;
+                html += `<button class="edit-btn add" onclick="addSubcategory(this)">+ Subcategory</button>`;
+                html += `<button class="edit-btn danger" onclick="deleteCategory(this)">Delete</button>`;
+                html += `</div>`;
+                html += `</div>`;
+            });
+            
+            // Add category button
+            html += `<div class="edit-controls" style="display: flex; justify-content: center; padding: 20px;">`;
+            html += `<button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>`;
+            html += `</div>`;
+            
+            container.innerHTML = html;
+            
+            // Re-apply edit mode class if still in edit mode
+            if (editMode) {
+                container.classList.add('edit-mode');
+            }
+            
+            console.log('DOM updated from currentConfig');
+        }
+
+        function addCategory() {
+            if (!currentConfig) return;
+
+            editContext = { type: 'category', action: 'add' };
+            document.getElementById('modalTitle').textContent = 'Add Category';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemIcon').value = '📁';
+            document.getElementById('urlGroup').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function editCategory(button) {
+            const { categoryDiv, categoryIndex } = getCategoryFromElement(button);
+            const category = currentConfig.category[categoryIndex];
+
+            editContext = { type: 'category', action: 'edit', index: categoryIndex };
+            document.getElementById('modalTitle').textContent = 'Edit Category';
+            document.getElementById('itemName').value = category.name;
+            document.getElementById('itemIcon').value = category.icon || '📁';
+            document.getElementById('urlGroup').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteCategory(button) {
+            const { categoryIndex } = getCategoryFromElement(button);
+            const category = currentConfig.category[categoryIndex];
+
+            showConfirmDialog(
+                `Delete category "${category.name}" and all its contents?`,
+                () => {
+                    currentConfig.category.splice(categoryIndex, 1);
+                    updateCategoryDisplay();
+                }
+            );
+        }
+
+        function addSubcategory(button) {
+            const { categoryIndex } = getCategoryFromElement(button);
+
+            editContext = { type: 'subcategory', action: 'add', categoryIndex };
+            document.getElementById('modalTitle').textContent = 'Add Subcategory';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemIcon').value = '📂';
+            document.getElementById('urlGroup').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function editSubcategory(button) {
+            const subcategoryDiv = button.closest('.subcategory');
+            const { categoryIndex } = getCategoryFromElement(button);
+            const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+            const subcategory = currentConfig.category[categoryIndex].subcategory[subcategoryIndex];
+
+            editContext = { type: 'subcategory', action: 'edit', categoryIndex, subcategoryIndex };
+            document.getElementById('modalTitle').textContent = 'Edit Subcategory';
+            document.getElementById('itemName').value = subcategory.name;
+            document.getElementById('itemIcon').value = subcategory.icon || '📂';
+            document.getElementById('urlGroup').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteSubcategory(button) {
+            const subcategoryDiv = button.closest('.subcategory');
+            const { categoryIndex } = getCategoryFromElement(button);
+            const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+            const subcategory = currentConfig.category[categoryIndex].subcategory[subcategoryIndex];
+
+            showConfirmDialog(
+                `Delete subcategory "${subcategory.name}" and all its links?`,
+                () => {
+                    currentConfig.category[categoryIndex].subcategory.splice(subcategoryIndex, 1);
+                    updateCategoryDisplay();
+                }
+            );
+        }
+
+        function addLink(button, isSubcategory) {
+            if (isSubcategory) {
+                const subcategoryDiv = button.closest('.subcategory');
+                const { categoryIndex } = getCategoryFromElement(button);
+                const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                editContext = { type: 'link', action: 'add', categoryIndex, subcategoryIndex };
+            } else {
+                const { categoryIndex } = getCategoryFromElement(button);
+                editContext = { type: 'link', action: 'add', categoryIndex };
+            }
+
+            document.getElementById('modalTitle').textContent = 'Add Link';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemUrl').value = '';
+            document.getElementById('itemIcon').value = '';
+            document.getElementById('urlGroup').style.display = 'block';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function editLink(button, isSubcategory, event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const linkItem = button.closest('.link-item');
+            const linkIndex = parseInt(linkItem.dataset.linkIndex);
+            
+            if (isSubcategory) {
+                const subcategoryDiv = button.closest('.subcategory');
+                const { categoryIndex } = getCategoryFromElement(button);
+                const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[linkIndex];
+                
+                editContext = { type: 'link', action: 'edit', categoryIndex, subcategoryIndex, linkIndex };
+                
+                document.getElementById('modalTitle').textContent = 'Edit Link';
+                document.getElementById('itemName').value = link.name;
+                document.getElementById('itemUrl').value = link.url;
+                document.getElementById('itemIcon').value = link.icon || '🔗';
+            } else {
+                const { categoryIndex } = getCategoryFromElement(button);
+                const link = currentConfig.category[categoryIndex].links[linkIndex];
+                
+                editContext = { type: 'link', action: 'edit', categoryIndex, linkIndex };
+                
+                document.getElementById('modalTitle').textContent = 'Edit Link';
+                document.getElementById('itemName').value = link.name;
+                document.getElementById('itemUrl').value = link.url;
+                document.getElementById('itemIcon').value = link.icon || '🔗';
+            }
+
+            document.getElementById('urlGroup').style.display = 'block';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteLink(button, isSubcategory, event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const linkItem = button.closest('.link-item');
+            const linkIndex = parseInt(linkItem.dataset.linkIndex);
+
+            if (isSubcategory) {
+                const subcategoryDiv = button.closest('.subcategory');
+                const { categoryIndex } = getCategoryFromElement(button);
+                const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[linkIndex];
+
+                showConfirmDialog(
+                    `Delete link "${link.name}"?`,
+                    () => {
+                        currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links.splice(linkIndex, 1);
+                        updateCategoryDisplay();
+                    }
+                );
+            } else {
+                const { categoryIndex } = getCategoryFromElement(button);
+                const link = currentConfig.category[categoryIndex].links[linkIndex];
+
+                showConfirmDialog(
+                    `Delete link "${link.name}"?`,
+                    () => {
+                        currentConfig.category[categoryIndex].links.splice(linkIndex, 1);
+                        updateCategoryDisplay();
+                    }
+                );
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
+            editContext = null;
+        }
+
+        function showConfirmDialog(message, onConfirm) {
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmButton').onclick = () => {
+                onConfirm();
+                closeConfirmModal();
+            };
+            document.getElementById('confirmModal').classList.add('show');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('show');
+        }
+
+        document.getElementById('editForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('itemName').value.trim();
+            const url = document.getElementById('itemUrl').value.trim();
+            const icon = document.getElementById('itemIcon').value.trim();
+
+            if (!name) {
+                alert('Name is required');
+                return;
+            }
+
+            if (!editContext || !currentConfig) return;
+
+            switch (editContext.type) {
+                case 'category':
+                    if (editContext.action === 'add') {
+                        currentConfig.category.push({
+                            name,
+                            icon: icon || '📁',
+                            links: [],
+                            subcategory: []
+                        });
+                    } else {
+                        currentConfig.category[editContext.index].name = name;
+                        currentConfig.category[editContext.index].icon = icon || '📁';
+                    }
+                    break;
+
+                case 'subcategory':
+                    if (editContext.action === 'add') {
+                        if (!currentConfig.category[editContext.categoryIndex].subcategory) {
+                            currentConfig.category[editContext.categoryIndex].subcategory = [];
+                        }
+                        currentConfig.category[editContext.categoryIndex].subcategory.push({
+                            name,
+                            icon: icon || '📂',
+                            links: []
+                        });
+                    } else {
+                        const subcat = currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex];
+                        subcat.name = name;
+                        subcat.icon = icon || '📂';
+                    }
+                    break;
+
+                case 'link':
+                    if (!url) {
+                        alert('URL is required for links');
+                        return;
+                    }
+                    
+                    // If icon is empty, fetch favicon and convert to base64
+                    if (!icon || icon.trim() === '') {
+                        fetchAndCacheFavicon(url).then(faviconData => {
+                            const link = { name, url, icon: faviconData };
+                            saveLinkToConfig(link);
+                        }).catch(error => {
+                            console.error('Failed to fetch favicon:', error);
+                            // Save with empty icon if fetch fails
+                            const link = { name, url, icon: '' };
+                            saveLinkToConfig(link);
+                        });
+                        return; // Exit early, will continue in promise
+                    }
+                    
+                    const link = { name, url, icon };
+                    saveLinkToConfig(link);
+                    break;
+            }
+
+            // For non-link items (category, subcategory), close and update immediately
+            if (editContext.type !== 'link') {
+                closeModal();
+                updateCategoryDisplay();
+            }
+        });
+
+        // Close modals on click outside
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') closeModal();
+        });
+
+        document.getElementById('confirmModal').addEventListener('click', (e) => {
+            if (e.target.id === 'confirmModal') closeConfirmModal();
+        });
+
+        // Add 'e' keyboard shortcut for edit mode
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'e' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                toggleEditMode();
+            }
+        });
+        {% endif %}
     </script>
 </body>
 </html>

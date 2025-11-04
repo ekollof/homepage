@@ -2,13 +2,14 @@
 
 import base64
 import logging
+import os
 from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, render_template, request, send_file, make_response
 from flask_compress import Compress
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -23,6 +24,7 @@ from utils import (  # noqa: E402 # pylint: disable=wrong-import-position
     load_json_file,
     load_text_file,
     load_toml_file,
+    merge_links_configs,
 )
 
 # Initialize configuration
@@ -63,7 +65,7 @@ class ConfigFileHandler(FileSystemEventHandler):
         if not event.is_directory:
             file_path = Path(str(event.src_path))
             match file_path.name:
-                case "colors.json" | ".wallpaper" | "links.toml":
+                case "colors.json" | ".wallpaper" | "links.toml" | "links.override.toml":
                     logger.info("Configuration file changed: %s", file_path.name)
                     file_watcher_state["reload_needed"] = True
                     # Invalidate cache
@@ -114,12 +116,23 @@ def load_wallpaper():
 
 
 def load_links():
-    """Load links from TOML configuration file."""
+    """Load links from TOML configuration file.
+    
+    If override file exists, use it exclusively.
+    Otherwise, use base configuration.
+    """
     if cache and (cached := cache.get("links")):
         return cached
 
-    toml_data = load_toml_file(config.CONFIG_FILE, {})
-    categories = toml_data.get("category", [])
+    # Load base configuration
+    base_data = load_toml_file(config.CONFIG_FILE, {})
+    
+    # Load override configuration if it exists
+    override_data = load_toml_file(config.CONFIG_OVERRIDE_FILE, {})
+    
+    # Use override if it exists, otherwise use base
+    merged_data = merge_links_configs(base_data, override_data)
+    categories = merged_data.get("category", [])
 
     if cache:
         cache.set("links", categories)
@@ -140,15 +153,25 @@ def index():
     wallpaper = load_wallpaper()
     categories = load_links()
 
-    return render_template(
-        "index.html",
-        colors=colors,
-        wallpaper=wallpaper,
-        categories=categories,
-        clock_format=config.CLOCK_FORMAT,
-        reload_interval=config.RELOAD_CHECK_INTERVAL,
-        config=config,
+    response = make_response(
+        render_template(
+            "index.html",
+            colors=colors,
+            wallpaper=wallpaper,
+            categories=categories,
+            clock_format=config.CLOCK_FORMAT,
+            reload_interval=config.RELOAD_CHECK_INTERVAL,
+            config=config,
+        )
     )
+    
+    # Prevent caching when editing is enabled
+    if config.ENABLE_EDITING:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    
+    return response
 
 
 @app.route("/health")
@@ -394,6 +417,158 @@ def check_reload():
     if reload:
         file_watcher_state["reload_needed"] = False
     return jsonify({"reload": reload})
+
+
+@app.route("/api/config")
+def get_config_data():
+    """Get current links configuration.
+    
+    On first access, copies base to override if override doesn't exist.
+    This allows editing without modifying the base file.
+    """
+    if not config.ENABLE_EDITING:
+        return jsonify({"error": "Editing not enabled"}), 404
+    
+    # Copy base to override if override doesn't exist
+    if not config.CONFIG_OVERRIDE_FILE.exists():
+        base_data = load_toml_file(config.CONFIG_FILE, {})
+        if base_data:
+            try:
+                import sys
+                if sys.version_info >= (3, 11):
+                    try:
+                        import tomli_w
+                    except ImportError:
+                        return jsonify({"error": "tomli_w package required for editing"}), 500
+                else:
+                    try:
+                        import tomli_w
+                    except ImportError:
+                        return jsonify({"error": "tomli_w package required for editing"}), 500
+                
+                with open(config.CONFIG_OVERRIDE_FILE, "wb") as f:
+                    tomli_w.dump(base_data, f)
+                
+                logger.info("Created override file from base configuration")
+                
+                # Invalidate cache
+                if cache:
+                    cache.clear()
+            except (OSError, ValueError) as e:
+                logger.error("Failed to create override file: %s", e)
+                return jsonify({"error": "Failed to initialize override file"}), 500
+    
+    categories = load_links()
+    return jsonify({"category": categories})
+
+
+@app.route("/api/config", methods=["POST"])
+def save_config_data():
+    """Save links configuration to override file."""
+    if not config.ENABLE_EDITING:
+        return jsonify({"error": "Editing not enabled"}), 404
+    
+    try:
+        data = request.get_json()
+        if not data or "category" not in data:
+            return jsonify({"error": "Invalid configuration data"}), 400
+        
+        # Validate the configuration
+        from utils import validate_links_config
+        valid, errors = validate_links_config(data)
+        if not valid:
+            return jsonify({"error": "Invalid configuration", "details": errors}), 400
+        
+        # Write to override file using tomli_w
+        import sys
+        if sys.version_info >= (3, 11):
+            import tomllib
+            # Python 3.11+ doesn't have tomli_w in stdlib, need to install it
+            try:
+                import tomli_w
+            except ImportError:
+                return jsonify({"error": "tomli_w package required for editing"}), 500
+        else:
+            try:
+                import tomli_w
+            except ImportError:
+                return jsonify({"error": "tomli_w package required for editing"}), 500
+        
+        with open(config.CONFIG_OVERRIDE_FILE, "wb") as f:
+            tomli_w.dump(data, f)
+            f.flush()  # Ensure data is written to disk
+            os.fsync(f.fileno())  # Force OS to write to disk
+        
+        # Invalidate cache
+        if cache:
+            cache.clear()
+        
+        # Set reload flag for file watcher
+        file_watcher_state["reload_needed"] = True
+        
+        logger.info("Configuration saved to override file")
+        return jsonify({"status": "ok"})
+    
+    except (ValueError, TypeError, OSError) as e:
+        logger.error("Error saving configuration: %s", e)
+        return jsonify({"error": "Failed to save configuration"}), 500
+
+
+@app.route("/api/config/reset", methods=["POST"])
+def reset_config():
+    """Reset configuration by removing override file."""
+    if not config.ENABLE_EDITING:
+        return jsonify({"error": "Editing not enabled"}), 404
+    
+    try:
+        if config.CONFIG_OVERRIDE_FILE.exists():
+            config.CONFIG_OVERRIDE_FILE.unlink()
+            logger.info("Override configuration deleted")
+        
+        # Invalidate cache
+        if cache:
+            cache.clear()
+        
+        return jsonify({"status": "ok"})
+    
+    except OSError as e:
+        logger.error("Error deleting override file: %s", e)
+        return jsonify({"error": "Failed to reset configuration"}), 500
+
+
+@app.route("/api/favicon")
+def get_favicon_proxy():
+    """Proxy favicon requests to avoid CORS issues.
+    
+    Fetches favicon from Google's service and returns as base64 data URI.
+    """
+    url = request.args.get("url")
+    if not url:
+        return jsonify({"error": "URL parameter required"}), 400
+    
+    try:
+        # Extract domain from URL
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        domain = parsed.hostname or parsed.path
+        
+        # Fetch favicon from Google's service
+        favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+        response = requests.get(favicon_url, timeout=5)
+        
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch favicon"}), 404
+        
+        # Convert to base64 data URI
+        content_type = response.headers.get('Content-Type', 'image/png')
+        favicon_base64 = base64.b64encode(response.content).decode('utf-8')
+        data_uri = f"data:{content_type};base64,{favicon_base64}"
+        
+        return jsonify({"favicon": data_uri})
+    
+    except (requests.RequestException, ValueError) as e:
+        logger.error("Error fetching favicon: %s", e)
+        return jsonify({"error": "Failed to fetch favicon"}), 500
 
 
 @app.route("/wallpaper")

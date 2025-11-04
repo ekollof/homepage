@@ -16,6 +16,7 @@ class Config:
     # File paths
     BASE_DIR = Path(__file__).parent
     CONFIG_FILE = BASE_DIR / "links.toml"
+    CONFIG_OVERRIDE_FILE = BASE_DIR / "links.override.toml"
     COLORS_FILE = Path.home() / ".cache" / "wal" / "colors.json"
     WALLPAPER_FILE = Path.home() / ".wallpaper"
 
@@ -32,6 +33,7 @@ class Config:
     ENABLE_METRICS = os.getenv("HOMEPAGE_ENABLE_METRICS", "True").lower() == "true"
     ENABLE_WEATHER = os.getenv("HOMEPAGE_ENABLE_WEATHER", "False").lower() == "true"
     ENABLE_RSS = os.getenv("HOMEPAGE_ENABLE_RSS", "False").lower() == "true"
+    ENABLE_EDITING = os.getenv("HOMEPAGE_ENABLE_EDITING", "True").lower() == "true"
 
     # Weather settings (optional)
     WEATHER_PROVIDER = os.getenv(

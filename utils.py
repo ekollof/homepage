@@ -110,6 +110,19 @@ def validate_url(url: str) -> bool:
     return url.startswith(("http://", "https://"))
 
 
+def merge_links_configs(base_config: dict, override_config: dict) -> dict:
+    """Return override configuration if it exists, otherwise return base.
+    
+    Simple override strategy:
+    - If override has content, use it completely (ignore base)
+    - If override is empty/missing, use base
+    - This allows full control including deletions
+    """
+    if override_config and "category" in override_config:
+        return override_config
+    return base_config
+
+
 def validate_links_config(config: dict) -> tuple[bool, list[str]]:
     """Validate links configuration structure."""
     errors = []
