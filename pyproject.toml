@@ -90,6 +90,8 @@ disable = [
 [tool.pyright]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
+venvPath = "."
+venv = "venv"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

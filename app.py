@@ -55,7 +55,7 @@ class ConfigFileHandler(FileSystemEventHandler):
         if not event.is_directory:
             file_path = Path(str(event.src_path))
             if file_path.name in ("colors.json", ".wallpaper", "links.toml"):
-                logger.info(f"Configuration file changed: {file_path.name}")
+                logger.info("Configuration file changed: %s", file_path.name)
                 file_watcher_state["reload_needed"] = True
                 # Invalidate cache
                 if cache:
@@ -187,8 +187,8 @@ def track():
             metrics.track_link_click(event_data.get("name", "unknown"), event_data.get("url", ""))
 
         return jsonify({"status": "ok"})
-    except Exception as e:
-        logger.error(f"Error tracking event: {e}")
+    except (KeyError, ValueError, TypeError) as e:
+        logger.error("Error tracking event: %s", e)
         return jsonify({"status": "error"}), 500
 
 
@@ -209,7 +209,7 @@ def serve_wallpaper():
         try:
             return send_file(wallpaper_path)
         except (OSError, FileNotFoundError):
-            logger.warning(f"Wallpaper file not found: {wallpaper_path}")
+            logger.warning("Wallpaper file not found: %s", wallpaper_path)
     # Return a 1x1 transparent PNG if no wallpaper
     transparent_png = base64.b64decode(
         b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"
@@ -246,19 +246,19 @@ def start_file_watcher():
     colors_dir = config.COLORS_FILE.parent
     if colors_dir.exists():
         file_observer.schedule(handler, str(colors_dir), recursive=False)
-        logger.info(f"Watching directory: {colors_dir}")
+        logger.info("Watching directory: %s", colors_dir)
 
     # Watch wallpaper file directory
     wallpaper_dir = config.WALLPAPER_FILE.parent
     if wallpaper_dir.exists():
         file_observer.schedule(handler, str(wallpaper_dir), recursive=False)
-        logger.info(f"Watching directory: {wallpaper_dir}")
+        logger.info("Watching directory: %s", wallpaper_dir)
 
     # Watch links.toml directory
     links_dir = config.CONFIG_FILE.parent
     if links_dir.exists():
         file_observer.schedule(handler, str(links_dir), recursive=False)
-        logger.info(f"Watching directory: {links_dir}")
+        logger.info("Watching directory: %s", links_dir)
 
     file_observer.start()
     return file_observer
@@ -266,11 +266,11 @@ def start_file_watcher():
 
 if __name__ == "__main__":
     logger.info("Starting Homepage application v2.0.0")
-    logger.info(f"Host: {config.HOST}, Port: {config.PORT}")
-    logger.info(f"Debug: {config.DEBUG}")
-    logger.info(f"Cache enabled: {config.ENABLE_CACHE}")
-    logger.info(f"Metrics enabled: {config.ENABLE_METRICS}")
-    logger.info(f"Compression enabled: {config.ENABLE_COMPRESSION}")
+    logger.info("Host: %s, Port: %s", config.HOST, config.PORT)
+    logger.info("Debug: %s", config.DEBUG)
+    logger.info("Cache enabled: %s", config.ENABLE_CACHE)
+    logger.info("Metrics enabled: %s", config.ENABLE_METRICS)
+    logger.info("Compression enabled: %s", config.ENABLE_COMPRESSION)
 
     observer = start_file_watcher()
     try:
@@ -283,4 +283,4 @@ if __name__ == "__main__":
             # Export metrics on shutdown
             metrics_file = Path("metrics.json")
             metrics.export_to_file(metrics_file)
-            logger.info(f"Metrics exported to {metrics_file}")
+            logger.info("Metrics exported to %s", metrics_file)
