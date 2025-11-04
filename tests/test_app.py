@@ -222,6 +222,142 @@ class TestFlaskRoutes:
         assert "image/svg+xml" in response.content_type
 
 
+class TestWeatherAPI:
+    """Test weather API functionality."""
+
+    def test_weather_connection_error(self, client, monkeypatch):
+        """Test weather endpoint handles connection errors."""
+        from unittest.mock import patch
+        import requests
+        
+        # Import and patch the config in app module
+        import app as app_module
+        monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", True)
+        monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
+        monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
+        
+        with patch("app.requests.get", side_effect=requests.ConnectionError("No network")):
+            response = client.get("/api/weather")
+            assert response.status_code == 503
+            data = json.loads(response.data)
+            assert data["error"] == "No network connection"
+
+    def test_weather_timeout_error(self, client, monkeypatch):
+        """Test weather endpoint handles timeout errors."""
+        from unittest.mock import patch
+        import requests
+        
+        import app as app_module
+        monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", True)
+        monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
+        monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
+        
+        with patch("app.requests.get", side_effect=requests.Timeout("Timeout")):
+            response = client.get("/api/weather")
+            assert response.status_code == 504
+            data = json.loads(response.data)
+            assert data["error"] == "Request timed out"
+
+    def test_weather_with_manual_location(self, client, monkeypatch):
+        """Test weather endpoint with manual location."""
+        from unittest.mock import Mock, patch
+        
+        import app as app_module
+        monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", True)
+        monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
+        monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
+        
+        # Mock the requests to Open-Meteo
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "current": {
+                "temperature_2m": 15.0,
+                "relative_humidity_2m": 70,
+                "weather_code": 0,
+                "wind_speed_10m": 10.0
+            }
+        }
+        
+        with patch("app.requests.get", return_value=mock_response):
+            response = client.get("/api/weather")
+            assert response.status_code == 200
+            data = json.loads(response.data)
+            assert "temperature" in data
+            assert data["temperature"] == 15.0
+            assert "location" in data
+            assert data["location"] == "52.00,5.00"
+
+    def test_geoip_maxmind_fallback(self, monkeypatch):
+        """Test MaxMind GeoIP with fallback to public IP."""
+        from app import _geoip_maxmind
+        from unittest.mock import Mock, patch
+        import tempfile
+        from pathlib import Path
+        
+        # Create a temporary database path that doesn't exist
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fake_db = Path(tmpdir) / "GeoLite2-City.mmdb"
+            fake_db.write_text("fake db")
+            
+            import app as app_module
+            monkeypatch.setattr(app_module.config, "GEOIP_DB_PATH", str(fake_db))
+            
+            # Mock the database reader and requests
+            mock_reader = Mock()
+            mock_response = Mock()
+            mock_response.city.name = "Amsterdam"
+            mock_response.location.latitude = 52.37
+            mock_response.location.longitude = 4.89
+            mock_reader.city.return_value = mock_response
+            
+            mock_requests = Mock()
+            mock_requests.json.return_value = {"ip": "1.2.3.4"}
+            
+            with patch("geoip2.database.Reader") as mock_db:
+                mock_db.return_value.__enter__.return_value = mock_reader
+                with patch("app.requests.get", return_value=mock_requests):
+                    lat, lon, city = _geoip_maxmind(None)
+                    assert city == "Amsterdam"
+                    assert lat == 52.37
+                    assert lon == 4.89
+
+    def test_openmeteo_weather_codes(self, monkeypatch):
+        """Test Open-Meteo weather code mapping."""
+        from app import _fetch_openmeteo_weather
+        from unittest.mock import Mock, patch
+        
+        import app as app_module
+        monkeypatch.setattr(app_module.config, "WEATHER_UNITS", "metric")
+        
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "current": {
+                "temperature_2m": 20.0,
+                "relative_humidity_2m": 65,
+                "weather_code": 61,  # Light rain
+                "wind_speed_10m": 15.0
+            }
+        }
+        
+        with patch("app.requests.get", return_value=mock_response):
+            result = _fetch_openmeteo_weather(52.0, 5.0)
+            assert result["temperature"] == 20.0
+            assert result["description"] == "Light rain"
+            assert result["units"] == "metric"
+
+    def test_track_event_endpoint(self, client, monkeypatch):
+        """Test event tracking endpoint."""
+        import app as app_module
+        
+        # Metrics is enabled by default, just verify it works
+        response = client.post("/api/track", 
+                              json={"event": "search", "data": {"provider": "brave", "query": "test"}},
+                              content_type="application/json")
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["status"] == "ok"
+
+
 class TestConfig:
     """Test configuration management."""
 
