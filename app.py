@@ -301,16 +301,18 @@ def _get_location() -> tuple[float, float, str]:
 
 
 def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
-    """Get location using MaxMind GeoLite2 database."""
+    """Get location using MaxMind GeoLite2 database.
+
+    Tries databases in order: City -> Country
+    Also adds ASN info if available.
+    """
     import geoip2.database  # pylint: disable=import-outside-toplevel
     import geoip2.errors  # pylint: disable=import-outside-toplevel
 
-    db_path = Path(config.GEOIP_DB_PATH)
-    if not db_path.exists():
-        raise FileNotFoundError(
-            f"MaxMind database not found at {db_path}. "
-            "Download from https://dev.maxmind.com/geoip/geolite2-free-geolocation-data"
-        )
+    base_dir = Path(config.GEOIP_DB_PATH).parent
+    city_db = Path(config.GEOIP_DB_PATH)
+    country_db = base_dir / "GeoLite2-Country.mmdb"
+    asn_db = base_dir / "GeoLite2-ASN.mmdb"
 
     # Use a default IP if localhost
     if not ip_address:
@@ -322,25 +324,70 @@ def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
             # Ultimate fallback to a central location
             return 52.0, 5.0, "Netherlands"
 
-    with geoip2.database.Reader(str(db_path)) as reader:
+    # Try City database first (most detailed)
+    if city_db.exists():
         try:
-            # ip_address is guaranteed to be str here due to fallback above
-            assert ip_address is not None
-            response = reader.city(ip_address)
+            with geoip2.database.Reader(str(city_db)) as reader:
+                assert ip_address is not None
+                response = reader.city(ip_address)
 
-            # Try to get the most specific location name available
-            city = (
-                response.city.name
-                or (response.subdivisions.most_specific.name if response.subdivisions else None)
-                or response.country.name
-                or "Unknown"
-            )
+                # Try to get the most specific location name available
+                city = (
+                    response.city.name
+                    or (response.subdivisions.most_specific.name if response.subdivisions else None)
+                    or response.country.name
+                    or "Unknown"
+                )
 
-            lat = response.location.latitude or 0.0
-            lon = response.location.longitude or 0.0
-            return lat, lon, city
-        except geoip2.errors.AddressNotFoundError as err:
-            raise ValueError(f"IP address {ip_address} not found in GeoIP database") from err
+                # Add ASN info if available
+                if asn_db.exists():
+                    try:
+                        with geoip2.database.Reader(str(asn_db)) as asn_reader:
+                            asn_response = asn_reader.asn(ip_address)
+                            if asn_response.autonomous_system_organization:
+                                city = f"{city} ({asn_response.autonomous_system_organization})"
+                    except (geoip2.errors.AddressNotFoundError, AttributeError):
+                        pass  # ASN not found, continue without it
+
+                lat = response.location.latitude or 0.0
+                lon = response.location.longitude or 0.0
+                return lat, lon, city
+        except geoip2.errors.AddressNotFoundError:
+            pass  # Try Country database next
+
+    # Fallback to Country database (less detailed, but has coordinates)
+    if country_db.exists():
+        try:
+            with geoip2.database.Reader(str(country_db)) as reader:
+                assert ip_address is not None
+                response = reader.country(ip_address)
+
+                country_name = response.country.name or "Unknown"
+
+                # Add ASN info if available
+                if asn_db.exists():
+                    try:
+                        with geoip2.database.Reader(str(asn_db)) as asn_reader:
+                            asn_response = asn_reader.asn(ip_address)
+                            if asn_response.autonomous_system_organization:
+                                asn_org = asn_response.autonomous_system_organization
+                                country_name = f"{country_name} ({asn_org})"
+                    except (geoip2.errors.AddressNotFoundError, AttributeError):
+                        pass
+
+                # Country database doesn't have coordinates, use approximate center
+                # You could maintain a mapping, but for now return generic coordinates
+                lat = 52.0  # Approximate European center
+                lon = 5.0
+                return lat, lon, country_name
+        except geoip2.errors.AddressNotFoundError:
+            pass
+
+    # No database found or IP not in any database
+    raise FileNotFoundError(
+        f"MaxMind database not found at {city_db} or {country_db}. "
+        "Download from https://dev.maxmind.com/geoip/geolite2-free-geolocation-data"
+    )
 
 
 def _fetch_openmeteo_weather(lat: float, lon: float) -> dict[str, Any]:

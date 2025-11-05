@@ -139,6 +139,8 @@ metrics.json
 .ruff_cache/
 links.override.toml
 
-# GeoIP Database
+# GeoIP Database files
 GeoLite2-*.mmdb
 GeoLite2-City_*/
+GeoLite2-Country_*/
+GeoLite2-ASN_*/

@@ -8,7 +8,17 @@ This guide explains how to set up MaxMind's GeoLite2 database for local IP geolo
 - **No Rate Limits**: Unlimited lookups
 - **Reliable**: No dependency on external services
 - **Privacy**: IP addresses never leave your server
-- **Free**: GeoLite2 City database is free to use
+- **Free**: GeoLite2 databases are free to use
+
+### Available Databases
+
+The application supports three GeoLite2 databases:
+
+1. **GeoLite2-City** (Primary) - Most detailed, includes city names and coordinates
+2. **GeoLite2-Country** (Fallback) - Used when City database lacks data
+3. **GeoLite2-ASN** (Optional) - Adds ISP/organization information
+
+All databases work together automatically when present in the project root.
 
 ## Quick Setup
 
@@ -19,9 +29,11 @@ Run the interactive setup script:
 ```
 
 This will guide you through:
-1. **Test database** - Small database for testing (no registration needed)
-2. **Full database** - Complete database with worldwide coverage (requires free MaxMind account)
+1. **Test databases** - Small databases for testing (no registration needed)
+2. **Full databases** - Complete databases with worldwide coverage (requires free MaxMind account)
 3. **API providers** - Use online services instead (no database needed)
+
+The script can download all three databases (City, Country, ASN) for comprehensive location data.
 
 ## Manual Setup Instructions
 
@@ -43,29 +55,51 @@ This will guide you through:
 
 ### 3. Download GeoLite2-City Database
 
-#### Option A: Test Database (Quick Start)
+#### Option A: Test Databases (Quick Start)
 
-For testing and development, you can use the small test database:
+For testing and development, you can use the small test databases:
 
 ```bash
+# Download City database
 curl -L -o GeoLite2-City.mmdb \
   "https://github.com/maxmind/MaxMind-DB/raw/main/test-data/GeoLite2-City-Test.mmdb"
+
+# Download Country database (optional, for fallback)
+curl -L -o GeoLite2-Country.mmdb \
+  "https://github.com/maxmind/MaxMind-DB/raw/main/test-data/GeoLite2-Country-Test.mmdb"
+
+# Download ASN database (optional, for ISP info)
+curl -L -o GeoLite2-ASN.mmdb \
+  "https://github.com/maxmind/MaxMind-DB/raw/main/test-data/GeoLite2-ASN-Test.mmdb"
 ```
 
-**Note**: The test database has limited IP coverage (only a few test IPs). For production use, download the full database (Option B).
+**Note**: The test databases have limited IP coverage (only a few test IPs). For production use, download the full databases (Option B).
 
-#### Option B: Full Database (Direct Download)
+#### Option B: Full Databases (Direct Download)
 
 1. Go to https://www.maxmind.com/en/accounts/current/geoip/downloads
-2. Find "GeoLite2 City" in the list
+2. Find the databases you want to download:
+   - **GeoLite2 City** (Recommended) - Most detailed
+   - **GeoLite2 Country** (Recommended) - Fallback for missing City data
+   - **GeoLite2 ASN** (Optional) - Adds ISP/organization info
 3. Click "Download GZIP" for the binary format (.mmdb)
 4. Extract the `.tar.gz` file
-5. Copy `GeoLite2-City.mmdb` to your homepage directory
+5. Copy `GeoLite2-*.mmdb` files to your homepage directory
 
 ```bash
 cd ~/devel/homepage
+
+# Extract City database
 tar -xzf ~/Downloads/GeoLite2-City_*.tar.gz
 cp GeoLite2-City_*/GeoLite2-City.mmdb .
+
+# Extract Country database (optional but recommended)
+tar -xzf ~/Downloads/GeoLite2-Country_*.tar.gz
+cp GeoLite2-Country_*/GeoLite2-Country.mmdb .
+
+# Extract ASN database (optional)
+tar -xzf ~/Downloads/GeoLite2-ASN_*.tar.gz
+cp GeoLite2-ASN_*/GeoLite2-ASN.mmdb .
 ```
 
 #### Option C: Using geoipupdate (Automatic Updates)
