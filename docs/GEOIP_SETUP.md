@@ -10,7 +10,20 @@ This guide explains how to set up MaxMind's GeoLite2 database for local IP geolo
 - **Privacy**: IP addresses never leave your server
 - **Free**: GeoLite2 City database is free to use
 
-## Setup Instructions
+## Quick Setup
+
+Run the interactive setup script:
+
+```bash
+./setup_geoip.sh
+```
+
+This will guide you through:
+1. **Test database** - Small database for testing (no registration needed)
+2. **Full database** - Complete database with worldwide coverage (requires free MaxMind account)
+3. **API providers** - Use online services instead (no database needed)
+
+## Manual Setup Instructions
 
 ### 1. Create a MaxMind Account
 
@@ -30,7 +43,18 @@ This guide explains how to set up MaxMind's GeoLite2 database for local IP geolo
 
 ### 3. Download GeoLite2-City Database
 
-#### Option A: Direct Download (Manual)
+#### Option A: Test Database (Quick Start)
+
+For testing and development, you can use the small test database:
+
+```bash
+curl -L -o GeoLite2-City.mmdb \
+  "https://github.com/maxmind/MaxMind-DB/raw/main/test-data/GeoLite2-City-Test.mmdb"
+```
+
+**Note**: The test database has limited IP coverage (only a few test IPs). For production use, download the full database (Option B).
+
+#### Option B: Full Database (Direct Download)
 
 1. Go to https://www.maxmind.com/en/accounts/current/geoip/downloads
 2. Find "GeoLite2 City" in the list
@@ -44,7 +68,7 @@ tar -xzf ~/Downloads/GeoLite2-City_*.tar.gz
 cp GeoLite2-City_*/GeoLite2-City.mmdb .
 ```
 
-#### Option B: Using geoipupdate (Automatic Updates)
+#### Option C: Using geoipupdate (Automatic Updates)
 
 Install geoipupdate:
 

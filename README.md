@@ -22,6 +22,7 @@ A customizable homepage web server that displays links from a TOML configuration
 - **[Quick Start Guide](docs/QUICKSTART.md)** - Get up and running in 5 minutes
 - **[Features](docs/FEATURES.md)** - Comprehensive feature documentation
 - **[Usage Guide](docs/USAGE.md)** - Complete usage instructions
+- **[GeoIP Setup](docs/GEOIP_SETUP.md)** - Configure location-based weather (optional)
 - **[Technical Notes](docs/TECHNICAL.md)** - Implementation details for developers
 - **[Changelog](docs/CHANGELOG.md)** - Version history and updates
 
@@ -157,6 +158,24 @@ The editor uses a simple two-file system:
 - The override file completely replaces the base configuration when it exists
 - To reset to the base configuration, simply delete `links.override.toml`
 - The base file remains untouched, so you never lose the default configuration
+
+### Optional: Weather and Location Features
+
+The application supports location-based weather display using GeoIP. To enable:
+
+1. **Run the GeoIP setup script**:
+   ```bash
+   ./setup_geoip.sh
+   ```
+   Choose option 1 for a test database (no registration) or option 2 for instructions on the full database.
+
+2. **Enable weather in `.env`**:
+   ```bash
+   HOMEPAGE_ENABLE_WEATHER=True
+   HOMEPAGE_GEOIP_PROVIDER=maxmind
+   ```
+
+For detailed setup instructions, see **[GeoIP Setup Guide](docs/GEOIP_SETUP.md)**.
 
 ## Usage
 
