@@ -327,7 +327,15 @@ def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
             # ip_address is guaranteed to be str here due to fallback above
             assert ip_address is not None
             response = reader.city(ip_address)
-            city = response.city.name or "Unknown"
+
+            # Try to get the most specific location name available
+            city = (
+                response.city.name
+                or (response.subdivisions.most_specific.name if response.subdivisions else None)
+                or response.country.name
+                or "Unknown"
+            )
+
             lat = response.location.latitude or 0.0
             lon = response.location.longitude or 0.0
             return lat, lon, city
