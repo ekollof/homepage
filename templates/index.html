@@ -347,6 +347,11 @@
             display: flex;
         }
 
+        .edit-controls.add-category-container {
+            justify-content: center;
+            padding: 20px;
+        }
+
         .link-controls {
             display: none !important;
             gap: 3px;
@@ -678,7 +683,7 @@
                 </div>
                 {% endfor %}
 
-                <div class="edit-controls" style="display: flex; justify-content: center; padding: 20px;">
+                <div class="edit-controls add-category-container">
                     <button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>
                 </div>
             </div>
@@ -1248,7 +1253,7 @@
             });
             
             // Add category button
-            html += `<div class="edit-controls" style="display: flex; justify-content: center; padding: 20px;">`;
+            html += `<div class="edit-controls add-category-container">`;
             html += `<button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>`;
             html += `</div>`;
             

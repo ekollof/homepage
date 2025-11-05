@@ -12,6 +12,7 @@ A customizable homepage web server that displays links from a TOML configuration
 - 🔍 **Web Search**: Integrated search bar with multiple providers (Brave, Google, DuckDuckGo, Bing)
 - 🔗 **Hierarchical Links**: Organize links in categories and subcategories
 - 🎯 **Icon Support**: Use emojis or other icons for visual organization
+- ✏️ **In-Browser Editing**: Add, edit, and delete links directly from the web interface
 - ⚡ **Lightweight**: Inline CSS and JavaScript for simplicity
 
 ## Documentation
@@ -116,6 +117,46 @@ echo "/path/to/your/wallpaper.jpg" > ~/.wallpaper
 ```
 
 The wallpaper is served through Flask at the `/wallpaper` endpoint to avoid browser CORS restrictions with local `file://` URLs.
+
+### In-Browser Link Editing
+
+The application includes a built-in link editor that allows you to manage your links directly from the web interface.
+
+#### Enabling Edit Mode
+
+Edit mode is enabled by default. To disable it, set the environment variable:
+```bash
+export HOMEPAGE_ENABLE_EDITING=False
+```
+
+Or add to your `.env` file:
+```
+HOMEPAGE_ENABLE_EDITING=False
+```
+
+#### Using the Editor
+
+1. **Open Edit Mode**: Click the edit button (pencil icon) in the top-right corner, or press the `e` key
+2. **Add Items**: 
+   - Click "Add Category" to create a new top-level category
+   - Click "Add Link" within a category to add a direct link
+   - Click "Add Subcategory" to create a nested group with its own links
+3. **Edit Items**: Click the edit icon (✏️) next to any item to modify its properties
+4. **Delete Items**: Click the delete icon (🗑️) to remove items (with confirmation)
+5. **Reorder Items**: Use the up/down arrows to change the order of items
+6. **Save Changes**: Changes are automatically saved to `links.override.toml`
+
+#### Configuration Override System
+
+The editor uses a simple two-file system:
+- `links.toml` - Base configuration (tracked in git)
+- `links.override.toml` - Your customized version (gitignored, auto-created on first edit)
+
+**Important notes:**
+- Once you make your first edit, a `links.override.toml` file is created
+- The override file completely replaces the base configuration when it exists
+- To reset to the base configuration, simply delete `links.override.toml`
+- The base file remains untouched, so you never lose the default configuration
 
 ## Usage
 
@@ -346,8 +387,23 @@ Ensure `~/.cache/wal/colors.json` exists and is valid JSON. The application will
 The auto-reload feature watches the directories containing:
 - `~/.cache/wal/colors.json`
 - `~/.wallpaper`
+- `links.toml` and `links.override.toml`
 
 Ensure these directories exist and are accessible.
+
+### Edit Mode Not Available
+
+If the edit button doesn't appear:
+- Check that `HOMEPAGE_ENABLE_EDITING` is set to `True` (default)
+- If running in production mode, ensure the environment variable is set
+- Clear your browser cache and reload the page
+
+### Changes Not Saving
+
+If edits don't persist:
+- Check that the application has write permissions to the installation directory
+- Verify that `links.override.toml` was created in the same directory as `links.toml`
+- Check the application logs for any errors: `journalctl --user -u homepage.service -n 50`
 
 ## License
 

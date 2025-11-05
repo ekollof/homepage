@@ -141,16 +141,16 @@ def stats_command(args):
                 print(f"\n💾 Statistics exported to: {export_file}")
 
             return 0
-        else:
-            print(f"❌ Error: HTTP {response.status_code}")
-            return 1
+
+        print(f"❌ Error: HTTP {response.status_code}")
+        return 1
     except requests.RequestException as e:
         print(f"❌ Failed to connect: {e}")
         print("   Make sure the application is running.")
         return 1
 
 
-def health_command(args):
+def health_command(args):  # pylint: disable=unused-argument
     """Check application health."""
     config = get_config()
     url = f"http://{config.HOST}:{config.PORT}/health"
@@ -165,9 +165,9 @@ def health_command(args):
             print(f"   Version: {health.get('version', 'unknown')}")
             print(f"   Uptime: {health.get('uptime', 0):.2f}s")
             return 0
-        else:
-            print(f"❌ Unhealthy: HTTP {response.status_code}")
-            return 1
+
+        print(f"❌ Unhealthy: HTTP {response.status_code}")
+        return 1
     except requests.RequestException as e:
         print(f"❌ Cannot reach application: {e}")
         return 1
