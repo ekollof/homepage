@@ -157,7 +157,7 @@ def index():
 
     response = make_response(
         render_template(
-            "index.html",
+            "index.html.j2",
             colors=colors,
             wallpaper=wallpaper,
             categories=categories,
