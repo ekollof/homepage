@@ -35,6 +35,13 @@ echo "🔍 Running pyright type checker..."
     echo "⚠️  Pyright found type issues (continuing anyway)"
 }
 
+# Run mypy
+echo "🔍 Running mypy type checker..."
+./venv/bin/mypy $PY_FILES || {
+    echo "❌ Mypy found type errors"
+    exit 1
+}
+
 # Re-add files that may have been modified by formatters
 git add $PY_FILES
 

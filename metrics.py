@@ -31,9 +31,9 @@ class MetricsCollector:
         self.request_count = 0
         self.page_views = 0
         self.search_count = 0
-        self.link_clicks = defaultdict(int)
-        self.search_providers = defaultdict(int)
-        self.recent_events = deque(maxlen=max_events)
+        self.link_clicks: defaultdict[str, int] = defaultdict(int)
+        self.search_providers: defaultdict[str, int] = defaultdict(int)
+        self.recent_events: deque[dict[str, Any]] = deque(maxlen=max_events)
         self.lock = Lock()
 
     def track_request(self, endpoint: str) -> None:

@@ -300,6 +300,22 @@ def _get_location() -> tuple[float, float, str]:
     raise ValueError("Could not determine location")
 
 
+def _get_asn_info(ip_address: str, asn_db: Path) -> str | None:
+    """Get ASN organization name for an IP address."""
+    if not asn_db.exists():
+        return None
+
+    try:
+        import geoip2.database  # pylint: disable=import-outside-toplevel
+        import geoip2.errors  # pylint: disable=import-outside-toplevel
+
+        with geoip2.database.Reader(str(asn_db)) as asn_reader:
+            asn_response = asn_reader.asn(ip_address)
+            return asn_response.autonomous_system_organization
+    except (geoip2.errors.AddressNotFoundError, AttributeError, ImportError):
+        return None
+
+
 def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
     """Get location using MaxMind GeoLite2 database.
 
@@ -329,28 +345,27 @@ def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
         try:
             with geoip2.database.Reader(str(city_db)) as reader:
                 assert ip_address is not None
-                response = reader.city(ip_address)
+                city_response = reader.city(ip_address)
 
                 # Try to get the most specific location name available
                 city = (
-                    response.city.name
-                    or (response.subdivisions.most_specific.name if response.subdivisions else None)
-                    or response.country.name
+                    city_response.city.name
+                    or (
+                        city_response.subdivisions.most_specific.name
+                        if city_response.subdivisions
+                        else None
+                    )
+                    or city_response.country.name
                     or "Unknown"
                 )
 
                 # Add ASN info if available
-                if asn_db.exists():
-                    try:
-                        with geoip2.database.Reader(str(asn_db)) as asn_reader:
-                            asn_response = asn_reader.asn(ip_address)
-                            if asn_response.autonomous_system_organization:
-                                city = f"{city} ({asn_response.autonomous_system_organization})"
-                    except (geoip2.errors.AddressNotFoundError, AttributeError):
-                        pass  # ASN not found, continue without it
+                asn_org = _get_asn_info(ip_address, asn_db)
+                if asn_org:
+                    city = f"{city} ({asn_org})"
 
-                lat = response.location.latitude or 0.0
-                lon = response.location.longitude or 0.0
+                lat = city_response.location.latitude or 0.0
+                lon = city_response.location.longitude or 0.0
                 return lat, lon, city
         except geoip2.errors.AddressNotFoundError:
             pass  # Try Country database next
@@ -360,20 +375,14 @@ def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
         try:
             with geoip2.database.Reader(str(country_db)) as reader:
                 assert ip_address is not None
-                response = reader.country(ip_address)
+                country_response = reader.country(ip_address)
 
-                country_name = response.country.name or "Unknown"
+                country_name = country_response.country.name or "Unknown"
 
                 # Add ASN info if available
-                if asn_db.exists():
-                    try:
-                        with geoip2.database.Reader(str(asn_db)) as asn_reader:
-                            asn_response = asn_reader.asn(ip_address)
-                            if asn_response.autonomous_system_organization:
-                                asn_org = asn_response.autonomous_system_organization
-                                country_name = f"{country_name} ({asn_org})"
-                    except (geoip2.errors.AddressNotFoundError, AttributeError):
-                        pass
+                asn_org = _get_asn_info(ip_address, asn_db)
+                if asn_org:
+                    country_name = f"{country_name} ({asn_org})"
 
                 # Country database doesn't have coordinates, use approximate center
                 # You could maintain a mapping, but for now return generic coordinates
@@ -393,7 +402,7 @@ def _geoip_maxmind(ip_address: str | None) -> tuple[float, float, str]:
 def _fetch_openmeteo_weather(lat: float, lon: float) -> dict[str, Any]:
     """Fetch weather from Open-Meteo (no API key needed)."""
     url = "https://api.open-meteo.com/v1/forecast"
-    params = {
+    params: dict[str, str | float] = {
         "latitude": lat,
         "longitude": lon,
         "current": "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
@@ -447,10 +456,10 @@ def _fetch_openmeteo_weather(lat: float, lon: float) -> dict[str, Any]:
 def _fetch_openweathermap_weather(lat: float, lon: float) -> dict[str, Any]:
     """Fetch weather from OpenWeatherMap (requires API key)."""
     url = "https://api.openweathermap.org/data/2.5/weather"
-    params = {
+    params: dict[str, str | float] = {
         "lat": lat,
         "lon": lon,
-        "appid": config.WEATHER_API_KEY,
+        "appid": str(config.WEATHER_API_KEY),
         "units": config.WEATHER_UNITS,
     }
 

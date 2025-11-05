@@ -84,6 +84,8 @@ lint:
 	-$(PYLINT) app.py
 	@echo "Running pyright..."
 	$(PYRIGHT) app.py
+	@echo "Running mypy..."
+	$(PYTHON) -m mypy app.py
 	@echo "Linting complete!"
 
 check: format lint
