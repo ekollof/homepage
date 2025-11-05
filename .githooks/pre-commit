@@ -17,6 +17,7 @@ echo "📝 Python files to check: $PY_FILES"
 
 # Run black
 echo "🎨 Running black formatter..."
+# shellcheck disable=SC2086
 ./venv/bin/black $PY_FILES || {
     echo "❌ Black formatting failed"
     exit 1
@@ -24,6 +25,7 @@ echo "🎨 Running black formatter..."
 
 # Run ruff
 echo "🔧 Running ruff linter..."
+# shellcheck disable=SC2086
 ./venv/bin/ruff check --fix --unsafe-fixes $PY_FILES || {
     echo "❌ Ruff linting failed"
     exit 1
@@ -31,18 +33,21 @@ echo "🔧 Running ruff linter..."
 
 # Run pyright (basic check)
 echo "🔍 Running pyright type checker..."
+# shellcheck disable=SC2086
 ./venv/bin/pyright $PY_FILES || {
     echo "⚠️  Pyright found type issues (continuing anyway)"
 }
 
 # Run mypy
 echo "🔍 Running mypy type checker..."
+# shellcheck disable=SC2086
 ./venv/bin/mypy $PY_FILES || {
     echo "❌ Mypy found type errors"
     exit 1
 }
 
 # Re-add files that may have been modified by formatters
+# shellcheck disable=SC2086
 git add $PY_FILES
 
 echo "✅ All pre-commit checks passed!"
