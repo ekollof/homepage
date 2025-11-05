@@ -21,21 +21,22 @@ class SimpleCache:
 
     def __init__(self, ttl: int = 5):
         """Initialize cache with time-to-live in seconds."""
-        self.cache: dict[str, tuple[Any, float]] = {}
+        self.cache: dict[str, tuple[Any, float, int]] = {}
         self.ttl = ttl
 
     def get(self, key: str) -> Any | None:
         """Get value from cache if not expired."""
         if (cached := self.cache.get(key)) is not None:
-            value, timestamp = cached
-            if time.time() - timestamp < self.ttl:
+            value, timestamp, item_ttl = cached
+            if time.time() - timestamp < item_ttl:
                 return value
             del self.cache[key]
         return None
 
-    def set(self, key: str, value: Any) -> None:
-        """Set value in cache with current timestamp."""
-        self.cache[key] = (value, time.time())
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
+        """Set value in cache with current timestamp and optional custom TTL."""
+        item_ttl = ttl if ttl is not None else self.ttl
+        self.cache[key] = (value, time.time(), item_ttl)
 
     def clear(self) -> None:
         """Clear all cache entries."""

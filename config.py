@@ -50,6 +50,13 @@ class Config:
     # Clock settings
     CLOCK_FORMAT = os.getenv("HOMEPAGE_CLOCK_FORMAT", "24")  # 24 or 12
 
+    # RSS feed settings (optional)
+    RSS_FEEDS = (
+        os.getenv("HOMEPAGE_RSS_FEEDS", "").split("|") if os.getenv("HOMEPAGE_RSS_FEEDS") else []
+    )
+    RSS_MAX_ITEMS = int(os.getenv("HOMEPAGE_RSS_MAX_ITEMS", "5"))  # Max items per feed
+    RSS_CACHE_TTL = int(os.getenv("HOMEPAGE_RSS_CACHE_TTL", "300"))  # 5 minutes default
+
     # Logging
     LOG_LEVEL = os.getenv("HOMEPAGE_LOG_LEVEL", "INFO")
 

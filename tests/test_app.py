@@ -348,6 +348,78 @@ class TestWeatherAPI:
         assert data["status"] == "ok"
 
 
+class TestRSSFeeds:
+    """Test RSS feed functionality."""
+
+    def test_rss_endpoint_disabled(self, client, monkeypatch):
+        """Test RSS endpoint returns 404 when disabled."""
+        import app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_RSS", False)
+
+        response = client.get("/api/rss")
+        assert response.status_code == 404
+        data = json.loads(response.data)
+        assert "not enabled" in data["error"]
+
+    def test_rss_endpoint_no_feeds(self, client, monkeypatch):
+        """Test RSS endpoint with no feeds configured."""
+        import app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_RSS", True)
+        monkeypatch.setattr(app_module.config, "RSS_FEEDS", [])
+
+        response = client.get("/api/rss")
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["items"] == []
+        assert data["count"] == 0
+
+    def test_rss_endpoint_with_feeds(self, client, monkeypatch):
+        """Test RSS endpoint fetches feeds successfully."""
+        import app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_RSS", True)
+        monkeypatch.setattr(
+            app_module.config,
+            "RSS_FEEDS",
+            ["https://example.com/feed.xml"],
+        )
+        monkeypatch.setattr(app_module.config, "RSS_MAX_ITEMS", 5)
+
+        # Mock feedparser module
+        import sys
+        from types import SimpleNamespace
+
+        mock_feedparser = SimpleNamespace()
+        mock_feed = SimpleNamespace(
+            feed={"title": "Test Feed"},
+            entries=[
+                {
+                    "title": "Test Article",
+                    "link": "https://example.com/article",
+                    "summary": "Test description",
+                    "published": "2024-01-01",
+                }
+            ],
+        )
+        mock_feedparser.parse = lambda url: mock_feed
+        sys.modules["feedparser"] = mock_feedparser  # type: ignore[assignment]
+
+        try:
+            response = client.get("/api/rss")
+            assert response.status_code == 200
+            data = json.loads(response.data)
+            assert data["count"] == 1
+            assert len(data["items"]) == 1
+            assert data["items"][0]["title"] == "Test Article"
+            assert data["items"][0]["feed_title"] == "Test Feed"
+        finally:
+            # Cleanup
+            if "feedparser" in sys.modules:
+                del sys.modules["feedparser"]
+
+
 class TestConfig:
     """Test configuration management."""
 

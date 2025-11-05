@@ -141,6 +141,72 @@ def load_links():
     return categories
 
 
+def load_rss_feeds() -> list[dict[str, Any]]:
+    """Load and parse RSS feeds.
+
+    Returns list of feed items with title, link, description, published date.
+    """
+    if not config.ENABLE_RSS or not config.RSS_FEEDS:
+        return []
+
+    cache_key = "rss_feeds"
+    if cache and (cached := cache.get(cache_key)):
+        return cached  # type: ignore[no-any-return,return-value]
+
+    import feedparser  # pylint: disable=import-outside-toplevel
+
+    all_items: list[dict[str, Any]] = []
+
+    for feed_url in config.RSS_FEEDS:
+        if not feed_url.strip():
+            continue
+
+        try:
+            feed = feedparser.parse(feed_url)
+
+            if not hasattr(feed, "entries") or not feed.entries:
+                continue
+
+            for entry in feed.entries[: config.RSS_MAX_ITEMS]:
+                # feedparser entries are dict-like
+                title = entry.get("title", "No title") if hasattr(entry, "get") else "No title"
+                link = entry.get("link", "") if hasattr(entry, "get") else ""
+                summary = (
+                    entry.get("summary", entry.get("description", ""))
+                    if hasattr(entry, "get")
+                    else ""
+                )
+                description = summary[:200] if summary else ""
+                published = (
+                    entry.get("published", entry.get("updated", ""))
+                    if hasattr(entry, "get")
+                    else ""
+                )
+                feed_title = "Unknown Feed"
+                if hasattr(feed, "feed") and hasattr(feed.feed, "get"):
+                    feed_title = feed.feed.get("title", "Unknown Feed")  # type: ignore[union-attr]
+
+                item = {
+                    "title": title,
+                    "link": link,
+                    "description": description,
+                    "published": published,
+                    "feed_title": feed_title,
+                }
+                all_items.append(item)
+
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Error fetching RSS feed %s: %s", feed_url, e)
+            continue
+
+    # Cache for RSS_CACHE_TTL seconds (default 5 minutes)
+    if cache:
+        # Use a separate cache with custom TTL for RSS
+        cache.set(cache_key, all_items, ttl=config.RSS_CACHE_TTL)
+
+    return all_items
+
+
 @app.before_request
 def before_request():
     """Track request metrics."""
@@ -257,6 +323,20 @@ def get_weather():  # pylint: disable=too-many-return-statements
     except (requests.RequestException, KeyError, ValueError) as e:
         logger.error("Error fetching weather: %s", e)
         return jsonify({"error": "Weather service unavailable"}), 503
+
+
+@app.route("/api/rss")
+def get_rss():
+    """Get RSS feed items."""
+    if not config.ENABLE_RSS:
+        return jsonify({"error": "RSS feature not enabled"}), 404
+
+    try:
+        feeds = load_rss_feeds()
+        return jsonify({"items": feeds, "count": len(feeds)})
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error("RSS error: %s", e)
+        return jsonify({"error": "Failed to fetch RSS feeds"}), 500
 
 
 def _get_location() -> tuple[float, float, str]:

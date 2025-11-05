@@ -98,6 +98,93 @@
             color: {{ colors.color8 }};
         }
 
+        .rss-widget {
+            margin: 20px auto 30px;
+            max-width: 900px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid {{ colors.color8 }};
+        }
+
+        .rss-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: {{ colors.color11 }};
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rss-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .rss-item {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            border-left: 3px solid {{ colors.color9 }};
+            transition: all 0.2s;
+        }
+
+        .rss-item:hover {
+            background: rgba(0, 0, 0, 0.4);
+            border-left-color: {{ colors.color11 }};
+            transform: translateX(3px);
+        }
+
+        .rss-item-link {
+            display: block;
+            color: {{ colors.color14 }};
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .rss-item-link:hover {
+            color: {{ colors.color12 }};
+        }
+
+        .rss-item-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: {{ colors.color8 }};
+        }
+
+        .rss-item-feed {
+            font-weight: 500;
+            color: {{ colors.color10 }};
+        }
+
+        .rss-item-date {
+            color: {{ colors.color7 }};
+        }
+
+        .rss-item-description {
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: {{ colors.color7 }};
+            line-height: 1.4;
+        }
+
+        .rss-loading {
+            text-align: center;
+            color: {{ colors.color8 }};
+            padding: 20px;
+        }
+
+        .rss-error {
+            text-align: center;
+            color: {{ colors.color9 }};
+            padding: 20px;
+        }
+
         .search-container {
             max-width: 600px;
             margin: 0 auto;
@@ -575,6 +662,12 @@
                 </div>
                 {% endif %}
 
+                {% if config.ENABLE_RSS %}
+                <div class="rss-widget" id="rssWidget">
+                    <div class="rss-loading">Loading RSS feeds...</div>
+                </div>
+                {% endif %}
+
                 <div class="search-container">
                     <form class="search-form" onsubmit="handleSearch(event)">
                         <select class="search-provider" id="searchProvider">
@@ -831,6 +924,50 @@
                 });
         }
 
+        function updateRSSFeeds() {
+            const rssElement = document.getElementById('rssWidget');
+            if (!rssElement) return;
+
+            fetch('/api/rss')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error || !data.items || data.items.length === 0) {
+                        rssElement.innerHTML = `<div class="rss-error">No RSS items available</div>`;
+                        return;
+                    }
+
+                    let html = '<div class="rss-title">📰 Latest News</div><div class="rss-items">';
+                    
+                    data.items.forEach(item => {
+                        const date = item.published ? new Date(item.published).toLocaleDateString() : '';
+                        html += `
+                            <div class="rss-item">
+                                <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="rss-item-link">
+                                    ${item.title}
+                                </a>
+                                <div class="rss-item-meta">
+                                    <span class="rss-item-feed">${item.feed_title}</span>
+                                    ${date ? `<span class="rss-item-date">${date}</span>` : ''}
+                                </div>
+                                ${item.description ? `<div class="rss-item-description">${item.description}...</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    rssElement.innerHTML = html;
+                })
+                .catch(error => {
+                    rssElement.innerHTML = `<div class="rss-error">RSS feeds unavailable</div>`;
+                    console.warn('RSS fetch failed:', error.message);
+                });
+        }
+
         function checkForReload() {
             // Don't reload if in edit mode - user is actively editing
             if (editMode) {
@@ -963,6 +1100,12 @@
         // Update weather on load and every 10 minutes
         updateWeather();
         setInterval(updateWeather, 600000);
+        {% endif %}
+
+        {% if config.ENABLE_RSS %}
+        // Update RSS feeds on load and every 5 minutes
+        updateRSSFeeds();
+        setInterval(updateRSSFeeds, 300000);
         {% endif %}
 
         // Check for file changes
