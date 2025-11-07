@@ -675,8 +675,17 @@ class TestFaviconExtraction:
             assert result is not None
             assert result.startswith("data:image/png;base64,")
 
-    def test_favicon_endpoint_with_cache(self, client):
+    def test_favicon_endpoint_with_cache(self, client, monkeypatch):
         """Test /api/favicon endpoint uses cache."""
+        # Enable cache for this test
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_CACHE", True)
+        # Reinitialize cache
+        from homepage.utils import SimpleCache
+
+        app_module.cache = SimpleCache(ttl=3600)
+
         with patch("homepage.utils.extract_favicon_from_page") as mock_extract:
             mock_extract.return_value = "data:image/png;base64,fake_data"
 
