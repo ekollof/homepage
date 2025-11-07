@@ -285,6 +285,7 @@
                     widgetsContainer.parentElement.classList.add('edit-mode');
                     enableWidgetDragging();
                 }
+                enableCategoryDragging();
                 toggle.classList.add('active');
                 editIcon.textContent = '💾';
                 editText.textContent = 'Save & Exit';
@@ -295,6 +296,7 @@
                     widgetsContainer.parentElement.classList.remove('edit-mode');
                     disableWidgetDragging();
                 }
+                disableCategoryDragging();
                 toggle.classList.remove('active');
                 editIcon.textContent = '✏️';
                 editText.textContent = 'Edit Mode';
@@ -857,6 +859,9 @@
         // Widget dragging functionality
         let draggedWidget = null;
         let widgetOrder = [];
+        
+        // Category dragging functionality
+        let draggedCategory = null;
 
         function enableWidgetDragging() {
             const widgetsContainer = document.getElementById('widgetsContainer');
@@ -1034,6 +1039,124 @@
                 widgetsContainer.insertBefore(widgets[index + 1], focused);
                 updateWidgetOrder();
             }
+        }
+
+        // Category dragging functions
+        function enableCategoryDragging() {
+            const container = document.getElementById('linksContainer');
+            if (!container) return;
+
+            const categories = container.querySelectorAll('.category');
+            
+            categories.forEach(category => {
+                category.draggable = true;
+                
+                category.addEventListener('dragstart', handleCategoryDragStart);
+                category.addEventListener('dragover', handleCategoryDragOver);
+                category.addEventListener('drop', handleCategoryDrop);
+                category.addEventListener('dragend', handleCategoryDragEnd);
+                category.addEventListener('dragenter', handleCategoryDragEnter);
+                category.addEventListener('dragleave', handleCategoryDragLeave);
+            });
+        }
+
+        function disableCategoryDragging() {
+            const container = document.getElementById('linksContainer');
+            if (!container) return;
+
+            const categories = container.querySelectorAll('.category');
+            categories.forEach(category => {
+                category.draggable = false;
+                category.removeEventListener('dragstart', handleCategoryDragStart);
+                category.removeEventListener('dragover', handleCategoryDragOver);
+                category.removeEventListener('drop', handleCategoryDrop);
+                category.removeEventListener('dragend', handleCategoryDragEnd);
+                category.removeEventListener('dragenter', handleCategoryDragEnter);
+                category.removeEventListener('dragleave', handleCategoryDragLeave);
+            });
+        }
+
+        function handleCategoryDragStart(e) {
+            draggedCategory = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleCategoryDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleCategoryDragEnter(e) {
+            if (this !== draggedCategory && this.classList.contains('category')) {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleCategoryDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleCategoryDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (draggedCategory !== this && this.classList.contains('category')) {
+                const container = document.getElementById('linksContainer');
+                const categories = Array.from(container.querySelectorAll('.category'));
+                const draggedIndex = categories.indexOf(draggedCategory);
+                const targetIndex = categories.indexOf(this);
+                
+                if (draggedIndex < targetIndex) {
+                    this.parentNode.insertBefore(draggedCategory, this.nextSibling);
+                } else {
+                    this.parentNode.insertBefore(draggedCategory, this);
+                }
+                
+                // Update config with new category order
+                updateCategoryOrder();
+            }
+            
+            return false;
+        }
+
+        function handleCategoryDragEnd(e) {
+            this.classList.remove('dragging');
+            
+            const categories = document.querySelectorAll('.category');
+            categories.forEach(category => {
+                category.classList.remove('drag-over');
+            });
+        }
+
+        function updateCategoryOrder() {
+            if (!currentConfig) return;
+            
+            const container = document.getElementById('linksContainer');
+            const categories = container.querySelectorAll('.category');
+            
+            // Reorder the config based on DOM order
+            const newOrder = [];
+            categories.forEach(categoryEl => {
+                const index = parseInt(categoryEl.dataset.categoryIndex);
+                if (!isNaN(index) && currentConfig.category[index]) {
+                    newOrder.push(currentConfig.category[index]);
+                }
+            });
+            
+            currentConfig.category = newOrder;
+            
+            // Update the data-category-index attributes to match new order
+            categories.forEach((categoryEl, newIndex) => {
+                categoryEl.dataset.categoryIndex = newIndex;
+            });
+            
+            console.log('Category order updated');
         }
 
         {% endif %}

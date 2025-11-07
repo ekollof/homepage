@@ -71,7 +71,8 @@
 
             <div class="links-container" id="linksContainer">
                 {% for category in categories %}
-                <div class="category" data-category-index="{{ loop.index0 }}">
+                <div class="category" data-category-index="{{ loop.index0 }}" draggable="false">
+                    <span class="category-drag-handle">⋮⋮</span>
                     <div class="category-title">
                         <span class="category-icon">{{ category.icon }}</span>
                         <span>{{ category.name }}</span>

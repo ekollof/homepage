@@ -540,6 +540,36 @@ body {
     display: block;
 }
 
+.category-drag-handle {
+    display: none;
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    color: {{ colors.color8 }};
+    font-size: 1.2rem;
+    cursor: move;
+    z-index: 10;
+}
+
+.edit-mode .category {
+    position: relative;
+    cursor: move;
+}
+
+.edit-mode .category-drag-handle {
+    display: block;
+}
+
+.edit-mode .category.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+}
+
+.edit-mode .category.drag-over {
+    border-color: {{ colors.color14 }};
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
