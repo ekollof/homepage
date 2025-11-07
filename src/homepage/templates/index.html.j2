@@ -19,6 +19,131 @@
     </button>
     {% endif %}
 
+    {% if config.ENABLE_SYSTEM_STATS %}
+    <!-- System Stats Sidebar -->
+    <button class="stats-toggle" id="statsToggle" onclick="toggleSystemStats()">
+        <span>📊</span>
+    </button>
+    
+    <div class="system-stats-sidebar" id="systemStatsSidebar">
+        <div class="stats-header">
+            <span class="stats-title">System Stats</span>
+            <div class="stats-position-controls">
+                <button class="position-btn" onclick="setStatsPosition('left')" title="Left">⬅️</button>
+                <button class="position-btn" onclick="setStatsPosition('right')" title="Right">➡️</button>
+                <button class="position-btn" onclick="setStatsPosition('top')" title="Top">⬆️</button>
+                <button class="position-btn" onclick="setStatsPosition('bottom')" title="Bottom">⬇️</button>
+            </div>
+            <button class="stats-close" onclick="toggleSystemStats()">✕</button>
+        </div>
+        
+        <div class="stats-content">
+            <!-- Iconized Panel (always visible) -->
+            <div class="stats-icon-panel">
+                <div class="stat-icon" title="CPU">
+                    <span class="icon">💻</span>
+                    <span class="value" id="cpuIconValue">--</span>
+                </div>
+                <div class="stat-icon" title="Memory">
+                    <span class="icon">🧠</span>
+                    <span class="value" id="memoryIconValue">--</span>
+                </div>
+                <div class="stat-icon" title="Disk">
+                    <span class="icon">💾</span>
+                    <span class="value" id="diskIconValue">--</span>
+                </div>
+                <div class="stat-icon" title="Network">
+                    <span class="icon">🌐</span>
+                    <span class="value" id="networkIconValue">--</span>
+                </div>
+            </div>
+            
+            <!-- Detailed Stats (expandable) -->
+            <div class="stats-details" id="statsDetails">
+                <!-- CPU Section -->
+                <div class="stat-section">
+                    <div class="stat-label">CPU Usage</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar" id="cpuBar"></div>
+                        <span class="stat-value" id="cpuValue">--</span>
+                    </div>
+                    <div class="stat-info">
+                        <span id="cpuCores">-- cores</span> • 
+                        <span id="cpuFreq">-- MHz</span>
+                    </div>
+                    <div class="sparkline-container">
+                        <svg class="sparkline" id="cpuSparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
+                            <polyline id="cpuSparklinePath" fill="none" stroke="{{ colors.color2 }}" stroke-width="1.5"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Memory Section -->
+                <div class="stat-section">
+                    <div class="stat-label">Memory Usage</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar" id="memoryBar"></div>
+                        <span class="stat-value" id="memoryValue">--</span>
+                    </div>
+                    <div class="stat-info">
+                        <span id="memoryUsed">-- MB</span> / 
+                        <span id="memoryTotal">-- MB</span>
+                    </div>
+                    <div class="sparkline-container">
+                        <svg class="sparkline" id="memorySparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
+                            <polyline id="memorySparklinePath" fill="none" stroke="{{ colors.color4 }}" stroke-width="1.5"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Disk Section -->
+                <div class="stat-section">
+                    <div class="stat-label">Disk Usage</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar" id="diskBar"></div>
+                        <span class="stat-value" id="diskValue">--</span>
+                    </div>
+                    <div class="stat-info">
+                        <span id="diskUsed">-- GB</span> / 
+                        <span id="diskTotal">-- GB</span>
+                    </div>
+                </div>
+                
+                <!-- Network Section -->
+                <div class="stat-section">
+                    <div class="stat-label">Network I/O</div>
+                    <div class="stat-info">
+                        ↓ <span id="networkRecv">-- MB</span> • 
+                        ↑ <span id="networkSent">-- MB</span>
+                    </div>
+                </div>
+                
+                <!-- Battery Section (conditional) -->
+                <div class="stat-section" id="batterySection" style="display: none;">
+                    <div class="stat-label">Battery</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar" id="batteryBar"></div>
+                        <span class="stat-value" id="batteryValue">--</span>
+                    </div>
+                    <div class="stat-info" id="batteryInfo">
+                        <span id="batteryStatus">--</span>
+                    </div>
+                </div>
+                
+                <!-- System Info -->
+                <div class="stat-section">
+                    <div class="stat-label">System</div>
+                    <div class="stat-info">
+                        Processes: <span id="processCount">--</span><br>
+                        Uptime: <span id="uptime">--</span>
+                        <span id="temperatureInfo" style="display: none;"><br>Temp: <span id="temperature">--</span>°C</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="overlay">
         <div class="container">
             <div class="header">

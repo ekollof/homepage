@@ -67,6 +67,30 @@ This document provides a comprehensive overview of all features included in the 
 - **Configurable items**: Set max items per feed (default 5)
 - **Error handling**: Graceful fallback when feeds are unavailable
 
+### System Stats Sidebar
+- **4-position toggle**: Left (default), right, top, or bottom sidebar placement
+- **Iconized panel**: Quick-glance CPU, memory, disk, and network stats with emojis
+- **Detailed stats view**: Expandable section with progress bars and comprehensive metrics
+- **Real-time sparklines**: SVG-based CPU and memory usage graphs (30-point rolling history)
+- **Auto-refresh**: Updates every 5 seconds (configurable via `SYSTEM_STATS_REFRESH_INTERVAL`)
+- **Keyboard shortcut**: Press `s` key to toggle sidebar visibility
+- **Position persistence**: Sidebar position saved to browser localStorage
+- **Terminal aesthetic**: Monospace font matching rest of application
+- **Cross-platform support**: Works on Linux, macOS, and Windows via psutil
+- **CPU metrics**: Percentage, core count, current/max frequency
+- **Memory metrics**: Percentage, used/total/available in MB, with sparkline
+- **Disk metrics**: Percentage, used/total/free in GB
+- **Network I/O**: Cumulative sent/received data in MB
+- **Battery stats (conditional)**: Percentage, charging status, time remaining (laptops only)
+- **Temperature (conditional)**: Average system temperature when sensors available
+- **System info**: Process count, uptime (formatted as days/hours/minutes)
+- **Progress bars**: Visual percentage indicators with color coding
+- **Collapsible design**: Sidebar slides in/out with smooth transitions
+- **Toggle button**: 📊 icon button in top-right (next to edit button if enabled)
+- **Feature flag**: `ENABLE_SYSTEM_STATS` (default: `True`)
+- **API endpoint**: `/api/system-stats` (JSON response with all metrics)
+- **Error handling**: Graceful fallback when stats unavailable
+
 ## Theming & Appearance
 
 ### Dynamic Color Scheme

@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **System Stats Sidebar**: Real-time system monitoring with collapsible design
+  - **4-Position Toggle**: Left, right, top, or bottom positioning with on-screen controls
+  - **Iconized Panel**: Quick-glance CPU, memory, disk, and network stats
+  - **Detailed Stats**: Expandable view with progress bars and historical trends
+  - **SVG Sparklines**: Real-time CPU and memory usage graphs (30-point rolling window)
+  - **Conditional Rendering**: Battery stats (laptops) and temperature (when available)
+  - Displays: CPU % (with core count & frequency), memory usage, disk usage, network I/O
+  - System info: process count, uptime, temperature (if available)
+  - Auto-refresh every 5 seconds (configurable via `SYSTEM_STATS_REFRESH_INTERVAL`)
+  - Keyboard shortcut: Press `s` key to toggle sidebar
+  - Position persisted to localStorage
+  - Terminal aesthetic with monospace font
+  - Cross-platform support via psutil library
+  - API endpoint: `/api/system-stats`
+  - Feature flag: `ENABLE_SYSTEM_STATS` (default: `True`)
+  
 - **Weather Forecast Widget**: 12-hour hourly and 7-day daily forecasts
   - **Toggle Functionality**: Switch between hourly (12h) and daily (7d) forecasts with button
   - **Collapsible Design**: Forecast hidden by default to save vertical space

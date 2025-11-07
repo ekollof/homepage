@@ -803,3 +803,117 @@ class TestFaviconExtraction:
             assert response.status_code == 404
             data = response.get_json()
             assert "error" in data
+
+
+class TestSystemStats:
+    """Test system stats API endpoint."""
+
+    def test_system_stats_enabled(self, client, monkeypatch):
+        """Test /api/system-stats returns data when feature is enabled."""
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_SYSTEM_STATS", True)
+
+        response = client.get("/api/system-stats")
+        assert response.status_code == 200
+        data = response.get_json()
+
+        # Check required fields are present
+        assert "cpu_percent" in data
+        assert "cpu_count" in data
+        assert "cpu_freq_current" in data
+        assert "memory_percent" in data
+        assert "memory_used_mb" in data
+        assert "memory_total_mb" in data
+        assert "disk_percent" in data
+        assert "disk_used_gb" in data
+        assert "disk_total_gb" in data
+        assert "network_sent_mb" in data
+        assert "network_recv_mb" in data
+        assert "processes" in data
+        assert "uptime_seconds" in data
+
+        # Check data types and ranges
+        assert isinstance(data["cpu_percent"], (int, float))
+        assert 0 <= data["cpu_percent"] <= 100
+        assert isinstance(data["cpu_count"], int)
+        assert data["cpu_count"] > 0
+        assert isinstance(data["memory_percent"], (int, float))
+        assert 0 <= data["memory_percent"] <= 100
+        assert isinstance(data["processes"], int)
+        assert data["processes"] > 0
+        assert isinstance(data["uptime_seconds"], (int, float))
+        assert data["uptime_seconds"] >= 0
+
+    def test_system_stats_disabled(self, client, monkeypatch):
+        """Test /api/system-stats returns 404 when feature is disabled."""
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_SYSTEM_STATS", False)
+
+        response = client.get("/api/system-stats")
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data
+
+    def test_system_stats_battery_conditional(self, client, monkeypatch):
+        """Test battery data is only present when available."""
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_SYSTEM_STATS", True)
+
+        response = client.get("/api/system-stats")
+        assert response.status_code == 200
+        data = response.get_json()
+
+        # Battery data is optional
+        if "battery" in data:
+            assert "percent" in data["battery"]
+            assert "plugged" in data["battery"]
+            assert isinstance(data["battery"]["percent"], (int, float))
+            assert 0 <= data["battery"]["percent"] <= 100
+            assert isinstance(data["battery"]["plugged"], bool)
+
+    def test_system_stats_temperature_conditional(self, client, monkeypatch):
+        """Test temperature data is only present when available."""
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_SYSTEM_STATS", True)
+
+        response = client.get("/api/system-stats")
+        assert response.status_code == 200
+        data = response.get_json()
+
+        # Temperature data is optional
+        if "temperature_avg" in data:
+            assert isinstance(data["temperature_avg"], (int, float))
+            # Reasonable temperature range (Celsius)
+            assert -50 <= data["temperature_avg"] <= 150
+
+    def test_system_stats_network_counters(self, client, monkeypatch):
+        """Test network counters are reasonable values."""
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_SYSTEM_STATS", True)
+
+        response = client.get("/api/system-stats")
+        assert response.status_code == 200
+        data = response.get_json()
+
+        # Network I/O should be non-negative
+        assert data["network_sent_mb"] >= 0
+        assert data["network_recv_mb"] >= 0
+
+    def test_system_stats_error_handling(self, client, monkeypatch):
+        """Test system stats handles psutil errors gracefully."""
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_SYSTEM_STATS", True)
+
+        # Mock psutil to raise an exception
+        with patch("psutil.cpu_percent", side_effect=Exception("Test error")):
+            response = client.get("/api/system-stats")
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data
+            assert "Failed to fetch system stats" in data["error"]

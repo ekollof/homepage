@@ -10,6 +10,7 @@ A customizable homepage web server that displays links from a TOML configuration
 - 📱 **Responsive Design**: Works on desktop and mobile devices
 - ⏰ **Digital Clock**: 24-hour format clock with current date
 - 🔍 **Web Search**: Integrated search bar with multiple providers (Brave, Google, DuckDuckGo, Bing)
+- 📊 **System Stats Sidebar**: Real-time CPU, memory, disk, network monitoring with sparklines and 4-position toggle
 - 🌤️ **Weather Forecast**: Hourly (12h) and daily (7d) forecasts with toggle, collapsible to save space
 - 📰 **RSS Feed Carousel**: Auto-rotating news carousel with customizable feeds
 - 🔗 **Hierarchical Links**: Organize links in categories and subcategories

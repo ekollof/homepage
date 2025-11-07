@@ -35,6 +35,15 @@ class Config:
     ENABLE_WEATHER = os.getenv("HOMEPAGE_ENABLE_WEATHER", "False").lower() == "true"
     ENABLE_RSS = os.getenv("HOMEPAGE_ENABLE_RSS", "False").lower() == "true"
     ENABLE_EDITING = os.getenv("HOMEPAGE_ENABLE_EDITING", "True").lower() == "true"
+    ENABLE_SYSTEM_STATS = os.getenv("HOMEPAGE_ENABLE_SYSTEM_STATS", "True").lower() == "true"
+
+    # System stats settings
+    SYSTEM_STATS_REFRESH_INTERVAL = int(
+        os.getenv("HOMEPAGE_SYSTEM_STATS_REFRESH_INTERVAL", "5")
+    )  # seconds
+    SYSTEM_STATS_POSITION = os.getenv(
+        "HOMEPAGE_SYSTEM_STATS_POSITION", "left"
+    )  # left, right, top, bottom
 
     # Weather settings (optional)
     WEATHER_PROVIDER = os.getenv(
