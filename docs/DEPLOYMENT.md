@@ -415,7 +415,7 @@ homepage.example.com {
    git pull
    
    # Update dependencies
-   ./venv/bin/pip install -r requirements.txt --upgrade
+   ./venv/bin/pip install -e . --upgrade
    
    # Restart service
    systemctl --user start homepage.service

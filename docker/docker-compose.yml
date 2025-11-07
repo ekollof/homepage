@@ -2,13 +2,15 @@ version: '3.8'
 
 services:
   homepage:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: homepage
     ports:
       - "5000:5000"
     volumes:
       # Mount your links configuration
-      - ./links.toml:/app/links.toml:ro
+      - ../data/links.toml:/app/data/links.toml:ro
       # Mount pywal colors if available
       - ~/.cache/wal:/root/.cache/wal:ro
       # Mount wallpaper file if available

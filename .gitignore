@@ -137,10 +137,14 @@ pyrightconfig.json
 *.bak
 metrics.json
 .ruff_cache/
-links.override.toml
+data/links.override.toml
+data/*.mmdb
+data/GeoLite2-City_*/
+data/GeoLite2-Country_*/
+data/GeoLite2-ASN_*/
+data/.env
 
-# GeoIP Database files
-GeoLite2-*.mmdb
-GeoLite2-City_*/
-GeoLite2-Country_*/
-GeoLite2-ASN_*/
+# Backward compatibility symlinks (optional)
+/links.toml
+/links.override.toml
+/.env.example

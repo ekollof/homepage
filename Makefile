@@ -62,7 +62,7 @@ setup-hooks:
 
 run:
 	@echo "Starting homepage server on http://localhost:5000"
-	$(PYTHON) app.py
+	$(PYTHON) -m homepage.app
 
 clean:
 	@echo "Cleaning up..."
@@ -74,18 +74,18 @@ clean:
 
 format:
 	@echo "Formatting code with black..."
-	$(BLACK) app.py
+	$(BLACK) src/homepage/ tests/
 	@echo "Formatting complete!"
 
 lint:
 	@echo "Running ruff..."
-	$(RUFF) check app.py
+	$(RUFF) check src/homepage/ tests/
 	@echo "Running pylint..."
-	-$(PYLINT) app.py
+	-$(PYLINT) src/homepage/*.py tests/*.py
 	@echo "Running pyright..."
-	$(PYRIGHT) app.py
+	$(PYRIGHT) src/homepage/ tests/
 	@echo "Running mypy..."
-	$(PYTHON) -m mypy app.py
+	$(PYTHON) -m mypy src/homepage/
 	@echo "Linting complete!"
 
 check: format lint
@@ -102,36 +102,36 @@ test-cov:
 
 validate-config:
 	@echo "Validating configuration..."
-	$(PYTHON) cli.py validate
+	$(PYTHON) -m homepage.cli validate
 
 stats:
 	@echo "Fetching application statistics..."
-	$(PYTHON) cli.py stats
+	$(PYTHON) -m homepage.cli stats
 
 health:
 	@echo "Checking application health..."
-	$(PYTHON) cli.py health
+	$(PYTHON) -m homepage.cli health
 
 export-metrics:
 	@echo "Exporting metrics..."
-	$(PYTHON) cli.py stats --export metrics_export.json
+	$(PYTHON) -m homepage.cli stats --export metrics_export.json
 
 docker-build:
 	@echo "Building Docker image..."
-	docker build -t homepage:latest .
+	docker build -f docker/Dockerfile -t homepage:latest .
 
 docker-run:
 	@echo "Running Docker container..."
-	docker-compose up -d
+	docker-compose -f docker/docker-compose.yml up -d
 
 docker-stop:
 	@echo "Stopping Docker container..."
-	docker-compose down
+	docker-compose -f docker/docker-compose.yml down
 
 service-install:
 	@echo "Installing systemd service..."
 	@mkdir -p ~/.config/systemd/user
-	@sed "s|INSTALL_DIR_PLACEHOLDER|$(shell pwd)|g" homepage.service > ~/.config/systemd/user/homepage.service
+	@sed "s|INSTALL_DIR_PLACEHOLDER|$(shell pwd)|g" scripts/homepage.service > ~/.config/systemd/user/homepage.service
 	@systemctl --user daemon-reload
 	@echo "Service installed to ~/.config/systemd/user/homepage.service"
 	@echo "Working directory: $(shell pwd)"

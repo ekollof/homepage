@@ -147,6 +147,57 @@ curl -X POST http://localhost:5000/api/track \
 
 ---
 
+### GET /api/favicon
+
+**Description:** Fetch and cache favicon for a given URL with dark mode optimization.
+
+**Query Parameters:**
+- `url` (required): The URL to fetch the favicon for
+
+**Response:**
+```json
+{
+  "favicon": "data:image/png;base64,iVBORw0KG...",
+  "cached": false
+}
+```
+
+**Status Codes:**
+- 200: Favicon fetched successfully
+- 400: Missing or invalid URL parameter
+- 404: Favicon not found
+- 500: Server error
+
+**Behavior:**
+1. Checks cache for previously fetched favicon
+2. Attempts direct extraction from webpage HTML with dark mode preference:
+   - Explicit dark mode favicons (`media="(prefers-color-scheme: dark)"`)
+   - SVG favicons (resolution-independent, often dark-friendly)
+   - Standard favicon tags
+3. Falls back to `/favicon.ico` at domain root
+4. Falls back to Google's favicon service if direct extraction fails
+5. Caches successful results for 1 hour
+
+**Dark Mode Optimization:**
+- Prioritizes SVG favicons which are resolution-independent
+- Detects and uses explicit dark mode favicons when available
+- Skips light-mode specific icons on dark backgrounds
+- CSS filters applied for better visibility on dark backgrounds
+
+**Example:**
+```bash
+curl "http://localhost:5000/api/favicon?url=https://github.com"
+```
+
+**Notes:**
+- Favicons are converted to base64 data URIs for easy embedding
+- SVG favicons provide better quality and dark mode compatibility
+- Direct extraction provides better quality than external services
+- Cache reduces network requests and improves performance
+- Google fallback ensures reliability when direct extraction fails
+
+---
+
 ### GET /wallpaper
 
 **Description:** Serve the configured wallpaper image.

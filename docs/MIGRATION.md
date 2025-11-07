@@ -67,7 +67,14 @@ systemctl --user start homepage.service
 
 ## Old Files
 
-The `requirements.txt` and `requirements-dev.txt` files have been kept for backwards compatibility but are no longer the primary source of dependencies. They may be removed in a future version.
+The `requirements.txt` and `requirements-dev.txt` files have been removed. All dependencies are now managed exclusively in `pyproject.toml`.
+
+## New Dependencies
+
+When the project needs new dependencies:
+- Add to `dependencies` in `pyproject.toml` for production
+- Add to `[project.optional-dependencies].dev` for development tools
+- Run `pip install -e .` or `pip install -e ".[dev]"` to install
 
 ## Questions or Issues?
 

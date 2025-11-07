@@ -33,6 +33,9 @@ dependencies = [
     "geoip2>=4.7.0",
     "tomli>=2.0.1; python_version < '3.11'",
     "tomli-w>=1.0.0",
+    "feedparser>=6.0.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",
 ]
 
 [project.optional-dependencies]
@@ -41,21 +44,23 @@ dev = [
     "ruff>=0.1.0",
     "pylint>=3.0.0",
     "pyright>=1.1.0",
+    "mypy>=1.18.0",
+    "types-requests>=2.32.0",
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pre-commit>=3.5.0",
-    "tomli-w>=1.0.0",
 ]
 
 [project.scripts]
-homepage = "app:main"
-homepage-cli = "cli:main"
+homepage = "homepage.app:main"
+homepage-cli = "homepage.cli:main"
 
 [tool.setuptools]
-py-modules = ["app", "cli", "config", "metrics", "utils"]
+packages = ["homepage"]
+package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-"*" = ["templates/*", "static/*"]
+homepage = ["templates/*", "static/*", "data/*"]
 
 [tool.black]
 line-length = 100
@@ -111,7 +116,7 @@ addopts = [
 ]
 
 [tool.coverage.run]
-source = ["."]
+source = ["src"]
 omit = [
     "*/tests/*",
     "*/venv/*",

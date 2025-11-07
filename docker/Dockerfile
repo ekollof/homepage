@@ -9,15 +9,17 @@ RUN apt-get update && \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy pyproject.toml first for better caching
+COPY pyproject.toml .
 
-# Copy application files
-COPY *.py ./
-COPY templates/ ./templates/
-COPY static/ ./static/
-COPY links.toml .
+# Copy source code
+COPY src/ ./src/
+
+# Install the package
+RUN pip install --no-cache-dir -e .
+
+# Copy data files
+COPY data/ ./data/
 
 # Create directories for mounted volumes
 RUN mkdir -p /root/.cache/wal
@@ -36,4 +38,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5000/health')" || exit 1
 
 # Run application
-CMD ["python", "app.py"]
+CMD ["python", "-m", "homepage.app"]

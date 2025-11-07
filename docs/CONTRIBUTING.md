@@ -168,8 +168,8 @@ homepage/
 
 ### New Dependencies
 
-1. Add to `requirements.txt` (production) or `requirements-dev.txt` (development)
-2. Update `pyproject.toml` if needed
+1. Add to `pyproject.toml` under `dependencies` (production) or `[project.optional-dependencies].dev` (development)
+2. Reinstall the package: `pip install -e ".[dev]"`
 3. Update Dockerfile if affects Docker build
 4. Document why dependency is needed
 

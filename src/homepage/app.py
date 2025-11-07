@@ -19,9 +19,9 @@ from watchdog.observers import Observer
 # Load environment variables from .env file BEFORE importing config
 load_dotenv()
 
-from config import get_config  # noqa: E402 # pylint: disable=wrong-import-position
-from metrics import MetricsCollector  # noqa: E402 # pylint: disable=wrong-import-position
-from utils import (  # noqa: E402 # pylint: disable=wrong-import-position
+from .config import get_config  # noqa: E402 # pylint: disable=wrong-import-position
+from .metrics import MetricsCollector  # noqa: E402 # pylint: disable=wrong-import-position
+from .utils import (  # noqa: E402 # pylint: disable=wrong-import-position
     SimpleCache,
     load_json_file,
     load_text_file,
@@ -662,7 +662,7 @@ def save_config_data():
             return jsonify({"error": "Invalid configuration data"}), 400
 
         # Validate the configuration
-        from utils import validate_links_config  # pylint: disable=import-outside-toplevel
+        from .utils import validate_links_config  # pylint: disable=import-outside-toplevel
 
         valid, errors = validate_links_config(data)
         if not valid:
@@ -723,33 +723,48 @@ def reset_config():
 def get_favicon_proxy():
     """Proxy favicon requests to avoid CORS issues.
 
-    Fetches favicon from Google's service and returns as base64 data URI.
+    Attempts to extract favicon directly from the page, falls back to Google's service.
+    Caches results to avoid repeated requests.
     """
     url = request.args.get("url")
     if not url:
         return jsonify({"error": "URL parameter required"}), 400
 
     try:
-        # Extract domain from URL
+        # Check cache first
+        cache_key = f"favicon:{url}"
+        if cache and (cached_favicon := cache.get(cache_key)):
+            return jsonify({"favicon": cached_favicon, "cached": True})
+
+        # Extract domain for fallback
         parsed = urlparse(url)
         domain = parsed.hostname or parsed.path
 
-        # Fetch favicon from Google's service
-        favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
-        response = requests.get(favicon_url, timeout=5)
+        # Import favicon utilities
+        from .utils import (  # pylint: disable=import-outside-toplevel
+            extract_favicon_from_page,
+            fetch_favicon_google,
+        )
 
-        if response.status_code != 200:
+        # Try direct extraction first
+        favicon_data = extract_favicon_from_page(url, timeout=5)
+
+        # Fallback to Google's service if direct extraction fails
+        if not favicon_data:
+            logger.debug("Direct extraction failed for %s, using Google fallback", url)
+            favicon_data = fetch_favicon_google(domain, size=64, timeout=5)
+
+        if not favicon_data:
             return jsonify({"error": "Failed to fetch favicon"}), 404
 
-        # Convert to base64 data URI
-        content_type = response.headers.get("Content-Type", "image/png")
-        favicon_base64 = base64.b64encode(response.content).decode("utf-8")
-        data_uri = f"data:{content_type};base64,{favicon_base64}"
+        # Cache the result for 1 hour
+        if cache:
+            cache.set(cache_key, favicon_data, ttl=3600)
 
-        return jsonify({"favicon": data_uri})
+        return jsonify({"favicon": favicon_data, "cached": False})
 
-    except (requests.RequestException, ValueError) as e:
-        logger.error("Error fetching favicon: %s", e)
+    except (ValueError, TypeError) as e:
+        logger.error("Error processing favicon request: %s", e)
         return jsonify({"error": "Failed to fetch favicon"}), 500
 
 

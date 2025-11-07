@@ -10,8 +10,8 @@ import requests
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import get_config
-from utils import load_toml_file, validate_links_config
+from .config import get_config
+from .utils import load_toml_file, validate_links_config
 
 
 def validate_config_command(args):

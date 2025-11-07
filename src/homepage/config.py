@@ -14,9 +14,10 @@ class Config:
     SECRET_KEY = os.getenv("HOMEPAGE_SECRET_KEY", "dev-secret-key-change-in-production")
 
     # File paths
-    BASE_DIR = Path(__file__).parent
-    CONFIG_FILE = BASE_DIR / "links.toml"
-    CONFIG_OVERRIDE_FILE = BASE_DIR / "links.override.toml"
+    BASE_DIR = Path(__file__).parent.parent.parent  # Project root
+    DATA_DIR = BASE_DIR / "data"
+    CONFIG_FILE = DATA_DIR / "links.toml"
+    CONFIG_OVERRIDE_FILE = DATA_DIR / "links.override.toml"
     COLORS_FILE = Path.home() / ".cache" / "wal" / "colors.json"
     WALLPAPER_FILE = Path.home() / ".wallpaper"
 
@@ -44,7 +45,8 @@ class Config:
     WEATHER_UNITS = os.getenv("HOMEPAGE_WEATHER_UNITS", "metric")  # metric or imperial
     GEOIP_PROVIDER = os.getenv("HOMEPAGE_GEOIP_PROVIDER", "maxmind")  # maxmind, ipapi, or ip-api
     GEOIP_DB_PATH = os.getenv(
-        "HOMEPAGE_GEOIP_DB_PATH", str(Path(__file__).parent / "GeoLite2-City.mmdb")
+        "HOMEPAGE_GEOIP_DB_PATH",
+        str(Path(__file__).parent.parent.parent / "data" / "GeoLite2-City.mmdb"),
     )
 
     # Clock settings

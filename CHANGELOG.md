@@ -8,12 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Build System**: Migrated from requirements.txt to full pyproject.toml configuration
-  - All dependencies now managed in pyproject.toml
-  - Supports editable installation with `pip install -e .`
-  - Development dependencies available via `pip install -e ".[dev]"`
-  - Updated Makefile and install.sh to use new build system
-  - Backwards compatible: existing venv installations can be upgraded
+- **Project Structure**: Reorganized to follow modern Python packaging standards
+  - Source code moved to `src/homepage/` (proper package structure)
+  - Configuration files moved to `data/` directory
+  - Docker files moved to `docker/` directory
+  - Scripts moved to `scripts/` directory
+  - Documentation consolidated in `docs/` directory
+  - Package now uses relative imports (`.config`, `.utils`, etc.)
+  - Backward compatibility maintained with symlinks
+  - All paths updated in Makefile, CI/CD, Docker, and systemd service
+
+- **Build System**: Fully migrated to pyproject.toml-only configuration
+  - Removed `requirements.txt` and `requirements-dev.txt` files
+  - All dependencies now managed exclusively in `pyproject.toml`
+  - Production install: `pip install -e .`
+  - Development install: `pip install -e ".[dev]"`
+  - Works with pipx for isolated installation
+  - All dev tools (black, ruff, pylint, pyright, mypy, pytest) in `[project.optional-dependencies].dev`
+  - Updated Dockerfile to use pyproject.toml
+  - Updated CI/CD workflows to use pyproject.toml
+
+### Added
+- **Favicon Extraction**: Direct extraction from webpages with dark mode optimization
+  - Prioritizes SVG favicons (resolution-independent, dark-friendly)
+  - Detects explicit dark mode favicons when available
+  - Falls back to Google favicon service for reliability
+  - 1-hour caching for performance
+  - CSS filters for better visibility on dark backgrounds
+  - Dependencies: `beautifulsoup4>=4.12.0`, `lxml>=5.0.0`
 
 ## [2.0.0] - 2024-01-XX
 

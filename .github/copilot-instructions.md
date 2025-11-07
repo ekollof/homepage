@@ -5,11 +5,32 @@
 Homepage is a Flask-based customizable startpage server that displays hierarchical links from TOML config with dynamic theming from pywal. The app serves a single-page interface with live wallpaper backgrounds, integrated search, and optional weather/metrics features.
 
 **Key Architecture:**
-- Single Flask app (`app.py`) with inline HTML template generation
+- Modern Python package structure in `src/homepage/`
+- Flask app (`src/homepage/app.py`) with Jinja2 template generation
 - Configuration-driven theming (pywal colors → Gruvbox dark fallback)
 - File watchers for hot-reload without server restart
 - Optional metrics collection with in-memory state
-- CLI tool for validation and monitoring (`cli.py`)
+- CLI tool for validation and monitoring (`src/homepage/cli.py`)
+
+**Project Structure:**
+```
+homepage/
+├── src/homepage/          # Python package source code
+│   ├── app.py            # Main Flask application
+│   ├── cli.py            # Command-line interface
+│   ├── config.py         # Configuration management
+│   ├── metrics.py        # Metrics collection
+│   ├── utils.py          # Utility functions
+│   ├── templates/        # Jinja2 templates
+│   └── static/           # Static assets
+├── data/                  # Configuration and data files
+│   ├── links.toml        # Link configuration
+│   └── *.mmdb            # GeoIP databases
+├── docker/                # Docker configuration
+├── scripts/               # Installation scripts
+├── docs/                  # All documentation
+└── tests/                 # Test suite
+```
 
 ## Core Development Workflows
 
@@ -17,11 +38,11 @@ Homepage is a Flask-based customizable startpage server that displays hierarchic
 
 ```bash
 # Development setup (creates venv, installs deps, sets up systemd)
-./install.sh
+./scripts/install.sh
 
 # Run locally (uses dev config, caching disabled)
 make run
-# OR direct: ./venv/bin/python app.py
+# OR direct: ./venv/bin/python -m homepage.app
 
 # Run all code quality checks (black + ruff + pylint + pyright)
 make check
@@ -45,11 +66,11 @@ make service-start      # Start service
 make logs              # Follow logs (journalctl)
 ```
 
-Service file (`homepage.service`) uses placeholder `INSTALL_DIR_PLACEHOLDER` that gets replaced during installation.
+Service file (`scripts/homepage.service`) uses placeholder `INSTALL_DIR_PLACEHOLDER` that gets replaced during installation.
 
 ## Configuration System
 
-### Environment-Based Config (`config.py`)
+### Environment-Based Config (`src/homepage/config.py`)
 
 The app uses a class-based config with environment variable overrides:
 
@@ -66,12 +87,14 @@ The app uses a class-based config with environment variable overrides:
 - `HOMEPAGE_GEOIP_PROVIDER` - `maxmind` (default), `ipapi`, or `ip-api`
 
 **Critical Paths:**
-- `CONFIG_FILE = BASE_DIR / "links.toml"` - default link configuration
-- `CONFIG_OVERRIDE_FILE = BASE_DIR / "links.override.toml"` - user edits (gitignored)
+- `BASE_DIR = Path(__file__).parent.parent.parent` - Project root
+- `DATA_DIR = BASE_DIR / "data"` - Data directory
+- `CONFIG_FILE = DATA_DIR / "links.toml"` - default link configuration
+- `CONFIG_OVERRIDE_FILE = DATA_DIR / "links.override.toml"` - user edits (gitignored)
 - `COLORS_FILE = Path.home() / ".cache/wal/colors.json"` - pywal colors
 - `WALLPAPER_FILE = Path.home() / ".wallpaper"` - wallpaper path file
 
-### Links Configuration (`links.toml`)
+### Links Configuration (`data/links.toml`)
 
 Hierarchical structure with 3 levels:
 ```toml
@@ -91,15 +114,15 @@ icon = "💻"
     url = "https://docs.python.org"
 ```
 
-**Validation:** Use `cli.py validate` or `validate_links_config()` in `utils.py` to check structure before runtime.
+**Validation:** Use `python -m homepage.cli validate` or `validate_links_config()` in `src/homepage/utils.py` to check structure before runtime.
 
-### Configuration Override System (`links.override.toml`)
+### Configuration Override System (`data/links.override.toml`)
 
 The app supports a simple two-file system:
-- `links.toml` - base configuration (tracked in git)
-- `links.override.toml` - user version (gitignored, auto-created on first edit)
+- `data/links.toml` - base configuration (tracked in git)
+- `data/links.override.toml` - user version (gitignored, auto-created on first edit)
 
-**Override behavior** (see `merge_links_configs()` in `utils.py`):
+**Override behavior** (see `merge_links_configs()` in `src/homepage/utils.py`):
 - If override exists, use it **exclusively** (base ignored)
 - If override doesn't exist, use base
 - First edit: base automatically copied to override
@@ -128,7 +151,7 @@ match config.WEATHER_PROVIDER:
 
 ### File Loading with Graceful Fallbacks
 
-All file loaders (`utils.py`) return defaults on error rather than raising exceptions:
+All file loaders (`src/homepage/utils.py`) return defaults on error rather than raising exceptions:
 
 ```python
 # Pattern: Safe loading with walrus + early return
@@ -143,7 +166,7 @@ return config.GRUVBOX_DARK  # Fallback always
 
 **Never let missing config files crash the app** - pywal colors, wallpaper, and links all have fallbacks.
 
-### Caching Strategy (`SimpleCache` in `utils.py`)
+### Caching Strategy (`SimpleCache` in `src/homepage/utils.py`)
 
 In-memory TTL cache for expensive operations (file I/O, color parsing):
 
@@ -256,17 +279,19 @@ Template (`templates/index.html`) is Flask-rendered with inline CSS/JS:
 
 ## Common Pitfalls
 
-1. **Don't import `config` directly in tests** - import `app` module and patch `app.config`
-2. **File watchers need directories** - don't watch individual files
-3. **Systemd service paths** - use `INSTALL_DIR_PLACEHOLDER` in service file, replaced by install script
-4. **Weather location format** - must be `"lat,lon"` string (comma-separated floats)
-5. **Cache invalidation** - file watchers call `cache.clear()` on change events
-6. **Python 3.10 compatibility** - use `tomli` package, not `tomllib` directly
+1. **Don't import modules directly in tests** - use `homepage.app`, `homepage.config`, etc.
+2. **Use relative imports in package** - `.config`, `.utils`, `.metrics` within `src/homepage/`
+3. **File watchers need directories** - don't watch individual files
+4. **Systemd service paths** - use `INSTALL_DIR_PLACEHOLDER` in service file, replaced by install script
+5. **Weather location format** - must be `"lat,lon"` string (comma-separated floats)
+6. **Cache invalidation** - file watchers call `cache.clear()` on change events
+7. **Python 3.10 compatibility** - use `tomli` package, not `tomllib` directly
+8. **Configuration files** - always reference `data/` directory for config files
 
 ## Adding New Features
 
 **Before adding new routes/features:**
-1. Add feature flag in `Config` class with env var override
+1. Add feature flag in `Config` class in `src/homepage/config.py` with env var override
 2. Add corresponding settings to both `DevelopmentConfig` and `ProductionConfig`
 3. Check feature flag in route handler and return 404 if disabled
 4. Add tests with monkeypatching to enable feature
@@ -280,6 +305,16 @@ def new_feature():
         return jsonify({"error": "Feature not enabled"}), 404
     # ... implementation
 ```
+
+## Documentation Guidelines
+
+**Important:** Do NOT create summary markdown files to document changes. The git changelog (`CHANGELOG.md`) is the single source of truth for project changes.
+
+- Update `CHANGELOG.md` with all changes following Keep a Changelog format
+- Keep only `README.md` and `CHANGELOG.md` in the project root
+- All other documentation belongs in `docs/` directory
+- Use git commit messages for detailed change history
+- Summary documents are redundant and add maintenance burden
 
 ---
 

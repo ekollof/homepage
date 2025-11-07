@@ -7,10 +7,10 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from app import app as flask_app
-from config import Config
-from metrics import MetricsCollector
-from utils import (
+from homepage.app import app as flask_app
+from homepage.config import Config
+from homepage.metrics import MetricsCollector
+from homepage.utils import (
     SimpleCache,
     load_json_file,
     load_text_file,
@@ -230,13 +230,13 @@ class TestWeatherAPI:
     def test_weather_connection_error(self, client, monkeypatch):
         """Test weather endpoint handles connection errors."""
         # Import and patch the config in app module
-        import app as app_module
+        import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", True)
         monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
         monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
 
-        with patch("app.requests.get", side_effect=requests.ConnectionError("No network")):
+        with patch("homepage.app.requests.get", side_effect=requests.ConnectionError("No network")):
             response = client.get("/api/weather")
             assert response.status_code == 503
             data = json.loads(response.data)
@@ -248,13 +248,13 @@ class TestWeatherAPI:
 
         import requests
 
-        import app as app_module
+        import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", True)
         monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
         monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
 
-        with patch("app.requests.get", side_effect=requests.Timeout("Timeout")):
+        with patch("homepage.app.requests.get", side_effect=requests.Timeout("Timeout")):
             response = client.get("/api/weather")
             assert response.status_code == 504
             data = json.loads(response.data)
@@ -264,7 +264,7 @@ class TestWeatherAPI:
         """Test weather endpoint with manual location."""
         from unittest.mock import Mock, patch
 
-        import app as app_module
+        import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", True)
         monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
@@ -281,7 +281,7 @@ class TestWeatherAPI:
             }
         }
 
-        with patch("app.requests.get", return_value=mock_response):
+        with patch("homepage.app.requests.get", return_value=mock_response):
             response = client.get("/api/weather")
             assert response.status_code == 200
             data = json.loads(response.data)
@@ -297,12 +297,12 @@ class TestWeatherAPI:
         import tempfile
         from pathlib import Path
 
-        from app import _geoip_maxmind
+        from homepage.app import _geoip_maxmind
 
         with tempfile.TemporaryDirectory() as tmpdir:
             missing_db = Path(tmpdir) / "missing.mmdb"
 
-            import app as app_module
+            import homepage.app as app_module
 
             monkeypatch.setattr(app_module.config, "GEOIP_DB_PATH", str(missing_db))
 
@@ -313,8 +313,8 @@ class TestWeatherAPI:
         """Test Open-Meteo weather code mapping."""
         from unittest.mock import Mock, patch
 
-        import app as app_module
-        from app import _fetch_openmeteo_weather
+        import homepage.app as app_module
+        from homepage.app import _fetch_openmeteo_weather
 
         monkeypatch.setattr(app_module.config, "WEATHER_UNITS", "metric")
 
@@ -328,7 +328,7 @@ class TestWeatherAPI:
             }
         }
 
-        with patch("app.requests.get", return_value=mock_response):
+        with patch("homepage.app.requests.get", return_value=mock_response):
             result = _fetch_openmeteo_weather(52.0, 5.0)
             assert result["temperature"] == 20.0
             assert result["description"] == "Light rain"
@@ -353,7 +353,7 @@ class TestRSSFeeds:
 
     def test_rss_endpoint_disabled(self, client, monkeypatch):
         """Test RSS endpoint returns 404 when disabled."""
-        import app as app_module
+        import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_RSS", False)
 
@@ -364,7 +364,7 @@ class TestRSSFeeds:
 
     def test_rss_endpoint_no_feeds(self, client, monkeypatch):
         """Test RSS endpoint with no feeds configured."""
-        import app as app_module
+        import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_RSS", True)
         monkeypatch.setattr(app_module.config, "RSS_FEEDS", [])
@@ -377,7 +377,7 @@ class TestRSSFeeds:
 
     def test_rss_endpoint_with_feeds(self, client, monkeypatch):
         """Test RSS endpoint fetches feeds successfully."""
-        import app as app_module
+        import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_RSS", True)
         monkeypatch.setattr(
@@ -458,7 +458,7 @@ class TestEditingFeature:
 
     def test_get_config_endpoint(self, client, monkeypatch):
         """Test getting configuration via API."""
-        import app as app_module
+        import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_EDITING", True)
 
@@ -469,7 +469,7 @@ class TestEditingFeature:
 
     def test_get_config_disabled(self, client, monkeypatch):
         """Test config endpoint when editing is disabled."""
-        import app as app_module
+        import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_EDITING", False)
 
@@ -480,7 +480,7 @@ class TestEditingFeature:
 
     def test_save_config_endpoint(self, client, monkeypatch, tmp_path):
         """Test saving configuration via API."""
-        import app as app_module
+        import homepage.app as app_module
 
         # Use temporary override file
         override_file = tmp_path / "links.override.toml"
@@ -506,7 +506,7 @@ class TestEditingFeature:
 
     def test_save_config_invalid(self, client, monkeypatch, tmp_path):
         """Test saving invalid configuration."""
-        import app as app_module
+        import homepage.app as app_module
 
         # Use temporary override file
         override_file = tmp_path / "links.override.toml"
@@ -525,7 +525,7 @@ class TestEditingFeature:
 
     def test_reset_config(self, client, monkeypatch, tmp_path):
         """Test resetting configuration."""
-        import app as app_module
+        import homepage.app as app_module
 
         override_file = tmp_path / "links.override.toml"
         override_file.write_text("# test file")
@@ -543,7 +543,7 @@ class TestConfigMerging:
 
     def test_merge_configs_with_override(self):
         """Test that override completely replaces base."""
-        from utils import merge_links_configs
+        from homepage.utils import merge_links_configs
 
         base = {
             "category": [
@@ -574,7 +574,7 @@ class TestConfigMerging:
 
     def test_merge_empty_override(self):
         """Test merging with empty override returns base."""
-        from utils import merge_links_configs
+        from homepage.utils import merge_links_configs
 
         base = {"category": [{"name": "Test", "icon": "📝", "links": []}]}
         override: dict = {}
@@ -584,10 +584,152 @@ class TestConfigMerging:
 
     def test_merge_no_override_category(self):
         """Test that missing category key in override returns base."""
-        from utils import merge_links_configs
+        from homepage.utils import merge_links_configs
 
         base = {"category": [{"name": "Test", "icon": "📝", "links": []}]}
         override = {"other": "data"}
 
         result = merge_links_configs(base, override)
         assert result == base
+
+
+class TestFaviconExtraction:
+    """Test favicon extraction functionality."""
+
+    def test_extract_favicon_from_page_success(self):
+        """Test successful favicon extraction from HTML page."""
+        from homepage.utils import extract_favicon_from_page
+
+        # Mock the requests to avoid actual network calls
+        with patch("homepage.utils.requests.get") as mock_get:
+            # Mock HTML page response
+            html_content = """
+            <html>
+            <head>
+                <link rel="icon" href="/favicon.ico">
+            </head>
+            </html>
+            """
+
+            class MockResponse:
+                """Mock response object."""
+
+                def __init__(self, content, status_code=200, headers=None):
+                    self.content = content
+                    self.status_code = status_code
+                    self.headers = headers or {}
+
+                def raise_for_status(self):
+                    """Raise for status."""
+                    if self.status_code >= 400:
+                        raise requests.HTTPError()
+
+            mock_page_response = MockResponse(
+                content=html_content.encode(), headers={"Content-Type": "text/html"}
+            )
+            mock_favicon_response = MockResponse(
+                content=b"fake_favicon_data", headers={"Content-Type": "image/x-icon"}
+            )
+
+            # Setup mock to return different responses for page and favicon
+            mock_get.side_effect = [mock_page_response, mock_favicon_response]
+
+            result = extract_favicon_from_page("https://example.com")
+
+            assert result is not None
+            assert result.startswith("data:image/x-icon;base64,")
+
+    def test_extract_favicon_from_page_timeout(self):
+        """Test favicon extraction handles timeout."""
+        from homepage.utils import extract_favicon_from_page
+
+        with patch("homepage.utils.requests.get") as mock_get:
+            mock_get.side_effect = requests.Timeout("Connection timeout")
+
+            result = extract_favicon_from_page("https://example.com", timeout=1)
+
+            assert result is None
+
+    def test_fetch_favicon_google_success(self):
+        """Test fetching favicon from Google service."""
+        from homepage.utils import fetch_favicon_google
+
+        with patch("homepage.utils.requests.get") as mock_get:
+
+            class MockResponse:
+                """Mock response object."""
+
+                def __init__(self, content, status_code=200, headers=None):
+                    self.content = content
+                    self.status_code = status_code
+                    self.headers = headers or {}
+
+            mock_response = MockResponse(
+                content=b"google_favicon_data", headers={"Content-Type": "image/png"}
+            )
+
+            mock_get.return_value = mock_response
+
+            result = fetch_favicon_google("example.com")
+
+            assert result is not None
+            assert result.startswith("data:image/png;base64,")
+
+    def test_favicon_endpoint_with_cache(self, client):
+        """Test /api/favicon endpoint uses cache."""
+        with patch("homepage.utils.extract_favicon_from_page") as mock_extract:
+            mock_extract.return_value = "data:image/png;base64,fake_data"
+
+            # First request - should call extraction
+            response1 = client.get("/api/favicon?url=https://example.com")
+            assert response1.status_code == 200
+            data1 = response1.get_json()
+            assert data1["cached"] is False
+            assert "favicon" in data1
+
+            # Second request - should use cache
+            response2 = client.get("/api/favicon?url=https://example.com")
+            assert response2.status_code == 200
+            data2 = response2.get_json()
+            assert data2["cached"] is True
+
+    def test_favicon_endpoint_fallback_to_google(self, client):
+        """Test /api/favicon falls back to Google when direct extraction fails."""
+        # Clear cache to avoid interference from previous tests
+        import homepage.app as app_module
+
+        if app_module.cache:
+            app_module.cache.clear()
+
+        with (
+            patch("homepage.utils.extract_favicon_from_page") as mock_extract,
+            patch("homepage.utils.fetch_favicon_google") as mock_google,
+        ):
+            mock_extract.return_value = None  # Direct extraction fails
+            mock_google.return_value = "data:image/png;base64,google_data"
+
+            response = client.get("/api/favicon?url=https://example2.com")
+            assert response.status_code == 200
+            data = response.get_json()
+            assert "favicon" in data
+            assert data["favicon"] == "data:image/png;base64,google_data"
+
+    def test_favicon_endpoint_both_methods_fail(self, client):
+        """Test /api/favicon returns 404 when both methods fail."""
+        # Clear cache to avoid interference from previous tests
+        import homepage.app as app_module
+
+        if app_module.cache:
+            app_module.cache.clear()
+
+        with (
+            patch("homepage.utils.extract_favicon_from_page") as mock_extract,
+            patch("homepage.utils.fetch_favicon_google") as mock_google,
+        ):
+            mock_extract.return_value = None
+            mock_google.return_value = None
+
+            response = client.get("/api/favicon?url=https://example3.com")
+            assert response.status_code == 404
+            data = response.get_json()
+            assert "error" in data

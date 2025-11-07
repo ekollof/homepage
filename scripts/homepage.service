@@ -4,11 +4,11 @@
 # with the actual installation directory during installation.
 #
 # Install using:
-#   ./install.sh          (recommended)
+#   ./scripts/install.sh  (recommended)
 #   make service-install  (for development)
 #
 # Manual installation:
-#   sed "s|INSTALL_DIR_PLACEHOLDER|/path/to/homepage|g" homepage.service > ~/.config/systemd/user/homepage.service
+#   sed "s|INSTALL_DIR_PLACEHOLDER|/path/to/homepage|g" scripts/homepage.service > ~/.config/systemd/user/homepage.service
 #   systemctl --user daemon-reload
 #
 
@@ -19,7 +19,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=INSTALL_DIR_PLACEHOLDER
-ExecStart=INSTALL_DIR_PLACEHOLDER/venv/bin/python app.py
+ExecStart=INSTALL_DIR_PLACEHOLDER/venv/bin/python -m homepage.app
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal

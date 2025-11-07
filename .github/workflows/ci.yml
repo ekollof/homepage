@@ -25,32 +25,30 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
-        pip install pytest pytest-cov
+        pip install -e ".[dev]"
 
     - name: Lint with ruff
       run: |
-        ruff check *.py
+        ruff check src/homepage/ tests/
 
     - name: Format check with black
       run: |
-        black --check *.py
+        black --check src/homepage/ tests/
 
     - name: Type check with pyright
       run: |
-        pyright *.py
+        pyright src/homepage/ tests/
 
     - name: Test with pytest
       run: |
-        pytest tests/ -v --cov=. --cov-report=xml --cov-report=term
+        pytest tests/ -v --cov=src --cov-report=xml --cov-report=term
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -70,7 +68,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t homepage:test .
+        docker build -f docker/Dockerfile -t homepage:test .
 
     - name: Test Docker image
       run: |

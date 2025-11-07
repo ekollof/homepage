@@ -7,15 +7,17 @@ echo "Homepage Installation Script"
 echo "=========================================="
 echo ""
 
-# Get the directory where the script is located
+# Get the directory where the script is located (scripts/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+# Get project root (parent of scripts/)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
-echo "Installation directory: $SCRIPT_DIR"
+echo "Installation directory: $PROJECT_ROOT"
 echo ""
 
 # Create virtual environment
-echo "[1/4] Creating virtual environment..."
+echo "[1/5] Creating virtual environment..."
 if [ ! -d "venv" ]; then
     python3 -m venv venv
     echo "✓ Virtual environment created"
@@ -25,32 +27,48 @@ fi
 echo ""
 
 # Install dependencies
-echo "[2/4] Installing package..."
+echo "[2/5] Installing package..."
 ./venv/bin/pip install --upgrade pip > /dev/null 2>&1
 ./venv/bin/pip install -e .
 echo "✓ Package installed"
 echo ""
 
-# Create example config if it doesn't exist
-echo "[3/4] Checking configuration..."
-if [ ! -f "links.toml" ]; then
-    echo "⚠ links.toml not found - using default configuration"
+# Create data directory and example config if it doesn't exist
+echo "[3/5] Checking configuration..."
+mkdir -p data
+if [ ! -f "data/links.toml" ]; then
+    echo "⚠ data/links.toml not found - please copy your configuration"
+    if [ -f "links.toml" ]; then
+        cp links.toml data/links.toml
+        echo "✓ Copied links.toml to data/"
+    fi
 else
-    echo "✓ links.toml exists"
+    echo "✓ data/links.toml exists"
 fi
 echo ""
 
+# Create symlinks for backward compatibility
+echo "[4/5] Creating compatibility symlinks..."
+if [ ! -L "links.toml" ]; then
+    ln -sf data/links.toml links.toml 2>/dev/null || true
+fi
+if [ ! -L ".env.example" ]; then
+    ln -sf data/.env.example .env.example 2>/dev/null || true
+fi
+echo "✓ Symlinks created"
+echo ""
+
 # Install systemd service
-echo "[4/4] Setting up systemd service..."
+echo "[5/5] Setting up systemd service..."
 SERVICE_DIR="$HOME/.config/systemd/user"
 mkdir -p "$SERVICE_DIR"
 
 # Create service file with actual paths
-sed "s|INSTALL_DIR_PLACEHOLDER|$SCRIPT_DIR|g" homepage.service > "$SERVICE_DIR/homepage.service"
+sed "s|INSTALL_DIR_PLACEHOLDER|$PROJECT_ROOT|g" scripts/homepage.service > "$SERVICE_DIR/homepage.service"
 
 systemctl --user daemon-reload
 echo "✓ Service file installed to $SERVICE_DIR/homepage.service"
-echo "  Working directory: $SCRIPT_DIR"
+echo "  Working directory: $PROJECT_ROOT"
 echo ""
 
 echo "=========================================="
@@ -62,7 +80,7 @@ echo ""
 echo "1. Read the documentation:"
 echo "   cat docs/QUICKSTART.md"
 echo ""
-echo "2. Edit links.toml to customize your links"
+echo "2. Edit data/links.toml to customize your links"
 echo ""
 echo "3. Start the service:"
 echo "   systemctl --user start homepage.service"
