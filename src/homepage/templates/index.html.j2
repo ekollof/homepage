@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Homepage</title>
-    <link rel="icon" href="{{ url_for('favicon') }}" type="image/png">
-    <link rel="stylesheet" href="{{ url_for('serve_styles') }}">
+    <link rel="icon" href="{{ url_for('assets.favicon') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('assets.styles') }}">
 </head>
 <body>
     <div class="overlay">
@@ -405,6 +405,6 @@
     </div>
     {% endif %}
 
-    <script src="{{ url_for('serve_scripts') }}"></script>
+    <script src="{{ url_for('assets.scripts') }}"></script>
 </body>
 </html>
