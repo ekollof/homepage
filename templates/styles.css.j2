@@ -570,6 +570,57 @@ body {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
+.link-drag-handle {
+    display: none;
+    color: {{ colors.color8 }};
+    font-size: 0.9rem;
+    cursor: move;
+    margin-right: 8px;
+    user-select: none;
+}
+
+.edit-mode .link-drag-handle {
+    display: inline-block;
+}
+
+.edit-mode .link-item {
+    position: relative;
+}
+
+.edit-mode .link-item.dragging {
+    opacity: 0.5;
+}
+
+.edit-mode .link-item.drag-over {
+    border-top: 2px solid {{ colors.color14 }};
+}
+
+.subcategory-drag-handle {
+    display: none;
+    color: {{ colors.color8 }};
+    font-size: 1rem;
+    cursor: move;
+    margin-right: 8px;
+    user-select: none;
+}
+
+.edit-mode .subcategory-drag-handle {
+    display: inline-block;
+}
+
+.edit-mode .subcategory {
+    cursor: move;
+}
+
+.edit-mode .subcategory.dragging {
+    opacity: 0.5;
+}
+
+.edit-mode .subcategory.drag-over {
+    border-left-color: {{ colors.color14 }};
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;

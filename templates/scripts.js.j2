@@ -286,6 +286,8 @@
                     enableWidgetDragging();
                 }
                 enableCategoryDragging();
+                enableLinkDragging();
+                enableSubcategoryDragging();
                 toggle.classList.add('active');
                 editIcon.textContent = '💾';
                 editText.textContent = 'Save & Exit';
@@ -297,6 +299,8 @@
                     disableWidgetDragging();
                 }
                 disableCategoryDragging();
+                disableLinkDragging();
+                disableSubcategoryDragging();
                 toggle.classList.remove('active');
                 editIcon.textContent = '✏️';
                 editText.textContent = 'Edit Mode';
@@ -468,7 +472,8 @@
             let html = '';
             
             currentConfig.category.forEach((category, catIndex) => {
-                html += `<div class="category" data-category-index="${catIndex}">`;
+                html += `<div class="category" data-category-index="${catIndex}" draggable="false">`;
+                html += `<span class="category-drag-handle">⋮⋮</span>`;
                 html += `<div class="category-title">`;
                 html += `<span class="category-icon">${category.icon || '📁'}</span>`;
                 html += `<span>${category.name}</span>`;
@@ -491,7 +496,8 @@
                             // Fallback to Google favicon service
                             iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
                         }
-                        html += `<li class="link-item" data-link-index="${linkIndex}">`;
+                        html += `<li class="link-item" data-link-index="${linkIndex}" draggable="false">`;
+                        html += `<span class="link-drag-handle">⋮⋮</span>`;
                         html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">`;
                         html += `<span class="link-icon">${iconHtml}</span>`;
                         html += `<span>${link.name}</span>`;
@@ -508,8 +514,9 @@
                 // Subcategories
                 if (category.subcategory && category.subcategory.length > 0) {
                     category.subcategory.forEach((subcategory, subIndex) => {
-                        html += `<div class="subcategory" data-subcategory-index="${subIndex}">`;
+                        html += `<div class="subcategory" data-subcategory-index="${subIndex}" draggable="false">`;
                         html += `<div class="subcategory-title">`;
+                        html += `<span class="subcategory-drag-handle">⋮⋮</span>`;
                         html += `<span class="subcategory-icon">${subcategory.icon || '📂'}</span>`;
                         html += `<span>${subcategory.name}</span>`;
                         html += `</div>`;
@@ -530,7 +537,8 @@
                                     // Fallback to Google favicon service
                                     iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
                                 }
-                                html += `<li class="link-item" data-link-index="${linkIndex}">`;
+                                html += `<li class="link-item" data-link-index="${linkIndex}" draggable="false">`;
+                                html += `<span class="link-drag-handle">⋮⋮</span>`;
                                 html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">`;
                                 html += `<span class="link-icon">${iconHtml}</span>`;
                                 html += `<span>${link.name}</span>`;
@@ -573,6 +581,10 @@
             // Re-apply edit mode class if still in edit mode
             if (editMode) {
                 container.classList.add('edit-mode');
+                // Re-enable dragging for newly created elements
+                enableCategoryDragging();
+                enableLinkDragging();
+                enableSubcategoryDragging();
             }
             
             console.log('DOM updated from currentConfig');
@@ -862,6 +874,10 @@
         
         // Category dragging functionality
         let draggedCategory = null;
+        
+        // Link and subcategory dragging
+        let draggedLink = null;
+        let draggedSubcategory = null;
 
         function enableWidgetDragging() {
             const widgetsContainer = document.getElementById('widgetsContainer');
@@ -1158,5 +1174,275 @@
             
             console.log('Category order updated');
         }
+
+        // Link dragging functions
+        function enableLinkDragging() {
+            const container = document.getElementById('linksContainer');
+            if (!container) return;
+
+            const links = container.querySelectorAll('.link-item');
+            
+            links.forEach(link => {
+                link.draggable = true;
+                
+                link.addEventListener('dragstart', handleLinkDragStart);
+                link.addEventListener('dragover', handleLinkDragOver);
+                link.addEventListener('drop', handleLinkDrop);
+                link.addEventListener('dragend', handleLinkDragEnd);
+                link.addEventListener('dragenter', handleLinkDragEnter);
+                link.addEventListener('dragleave', handleLinkDragLeave);
+            });
+        }
+
+        function disableLinkDragging() {
+            const container = document.getElementById('linksContainer');
+            if (!container) return;
+
+            const links = container.querySelectorAll('.link-item');
+            links.forEach(link => {
+                link.draggable = false;
+                link.removeEventListener('dragstart', handleLinkDragStart);
+                link.removeEventListener('dragover', handleLinkDragOver);
+                link.removeEventListener('drop', handleLinkDrop);
+                link.removeEventListener('dragend', handleLinkDragEnd);
+                link.removeEventListener('dragenter', handleLinkDragEnter);
+                link.removeEventListener('dragleave', handleLinkDragLeave);
+            });
+        }
+
+        function handleLinkDragStart(e) {
+            draggedLink = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.stopPropagation();
+        }
+
+        function handleLinkDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            e.stopPropagation();
+            return false;
+        }
+
+        function handleLinkDragEnter(e) {
+            if (this !== draggedLink && this.classList.contains('link-item')) {
+                this.classList.add('drag-over');
+            }
+            e.stopPropagation();
+        }
+
+        function handleLinkDragLeave(e) {
+            this.classList.remove('drag-over');
+            e.stopPropagation();
+        }
+
+        function handleLinkDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (draggedLink !== this && this.classList.contains('link-item')) {
+                // Check if both links are in the same parent (same category or subcategory)
+                const draggedParent = draggedLink.closest('.links-list');
+                const targetParent = this.closest('.links-list');
+                
+                if (draggedParent === targetParent) {
+                    const links = Array.from(draggedParent.children);
+                    const draggedIndex = links.indexOf(draggedLink);
+                    const targetIndex = links.indexOf(this);
+                    
+                    if (draggedIndex < targetIndex) {
+                        this.parentNode.insertBefore(draggedLink, this.nextSibling);
+                    } else {
+                        this.parentNode.insertBefore(draggedLink, this);
+                    }
+                    
+                    // Update config with new link order
+                    updateLinkOrder(draggedParent);
+                }
+            }
+            
+            return false;
+        }
+
+        function handleLinkDragEnd(e) {
+            this.classList.remove('dragging');
+            
+            const links = document.querySelectorAll('.link-item');
+            links.forEach(link => {
+                link.classList.remove('drag-over');
+            });
+            
+            draggedLink = null;
+            e.stopPropagation();
+        }
+
+        function updateLinkOrder(linksList) {
+            if (!currentConfig) return;
+            
+            // Find which category/subcategory this links-list belongs to
+            const subcategoryDiv = linksList.closest('.subcategory');
+            const categoryDiv = linksList.closest('.category');
+            const categoryIndex = parseInt(categoryDiv.dataset.categoryIndex);
+            
+            const newLinks = [];
+            const linkItems = linksList.querySelectorAll('.link-item');
+            
+            linkItems.forEach((linkItem, newIndex) => {
+                const oldIndex = parseInt(linkItem.dataset.linkIndex);
+                
+                if (subcategoryDiv) {
+                    const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                    const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[oldIndex];
+                    if (link) {
+                        newLinks.push(link);
+                        linkItem.dataset.linkIndex = newIndex;
+                    }
+                } else {
+                    const link = currentConfig.category[categoryIndex].links[oldIndex];
+                    if (link) {
+                        newLinks.push(link);
+                        linkItem.dataset.linkIndex = newIndex;
+                    }
+                }
+            });
+            
+            // Update config
+            if (subcategoryDiv) {
+                const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links = newLinks;
+            } else {
+                currentConfig.category[categoryIndex].links = newLinks;
+            }
+            
+            console.log('Link order updated');
+        }
+
+        // Subcategory dragging functions
+        function enableSubcategoryDragging() {
+            const container = document.getElementById('linksContainer');
+            if (!container) return;
+
+            const subcategories = container.querySelectorAll('.subcategory');
+            
+            subcategories.forEach(subcategory => {
+                subcategory.draggable = true;
+                
+                subcategory.addEventListener('dragstart', handleSubcategoryDragStart);
+                subcategory.addEventListener('dragover', handleSubcategoryDragOver);
+                subcategory.addEventListener('drop', handleSubcategoryDrop);
+                subcategory.addEventListener('dragend', handleSubcategoryDragEnd);
+                subcategory.addEventListener('dragenter', handleSubcategoryDragEnter);
+                subcategory.addEventListener('dragleave', handleSubcategoryDragLeave);
+            });
+        }
+
+        function disableSubcategoryDragging() {
+            const container = document.getElementById('linksContainer');
+            if (!container) return;
+
+            const subcategories = container.querySelectorAll('.subcategory');
+            subcategories.forEach(subcategory => {
+                subcategory.draggable = false;
+                subcategory.removeEventListener('dragstart', handleSubcategoryDragStart);
+                subcategory.removeEventListener('dragover', handleSubcategoryDragOver);
+                subcategory.removeEventListener('drop', handleSubcategoryDrop);
+                subcategory.removeEventListener('dragend', handleSubcategoryDragEnd);
+                subcategory.removeEventListener('dragenter', handleSubcategoryDragEnter);
+                subcategory.removeEventListener('dragleave', handleSubcategoryDragLeave);
+            });
+        }
+
+        function handleSubcategoryDragStart(e) {
+            draggedSubcategory = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.stopPropagation();
+        }
+
+        function handleSubcategoryDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            e.stopPropagation();
+            return false;
+        }
+
+        function handleSubcategoryDragEnter(e) {
+            if (this !== draggedSubcategory && this.classList.contains('subcategory')) {
+                this.classList.add('drag-over');
+            }
+            e.stopPropagation();
+        }
+
+        function handleSubcategoryDragLeave(e) {
+            this.classList.remove('drag-over');
+            e.stopPropagation();
+        }
+
+        function handleSubcategoryDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (draggedSubcategory !== this && this.classList.contains('subcategory')) {
+                // Check if both subcategories are in the same category
+                const draggedParent = draggedSubcategory.closest('.category');
+                const targetParent = this.closest('.category');
+                
+                if (draggedParent === targetParent) {
+                    const subcategories = Array.from(draggedParent.querySelectorAll('.subcategory'));
+                    const draggedIndex = subcategories.indexOf(draggedSubcategory);
+                    const targetIndex = subcategories.indexOf(this);
+                    
+                    if (draggedIndex < targetIndex) {
+                        this.parentNode.insertBefore(draggedSubcategory, this.nextSibling);
+                    } else {
+                        this.parentNode.insertBefore(draggedSubcategory, this);
+                    }
+                    
+                    // Update config with new subcategory order
+                    updateSubcategoryOrder(draggedParent);
+                }
+            }
+            
+            return false;
+        }
+
+        function handleSubcategoryDragEnd(e) {
+            this.classList.remove('dragging');
+            
+            const subcategories = document.querySelectorAll('.subcategory');
+            subcategories.forEach(subcategory => {
+                subcategory.classList.remove('drag-over');
+            });
+            
+            draggedSubcategory = null;
+            e.stopPropagation();
+        }
+
+        function updateSubcategoryOrder(categoryDiv) {
+            if (!currentConfig) return;
+            
+            const categoryIndex = parseInt(categoryDiv.dataset.categoryIndex);
+            const subcategoryDivs = categoryDiv.querySelectorAll('.subcategory');
+            
+            const newOrder = [];
+            subcategoryDivs.forEach((subcategoryDiv, newIndex) => {
+                const oldIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                const subcategory = currentConfig.category[categoryIndex].subcategory[oldIndex];
+                if (subcategory) {
+                    newOrder.push(subcategory);
+                    subcategoryDiv.dataset.subcategoryIndex = newIndex;
+                }
+            });
+            
+            currentConfig.category[categoryIndex].subcategory = newOrder;
+            console.log('Subcategory order updated');
+        }
+
 
         {% endif %}

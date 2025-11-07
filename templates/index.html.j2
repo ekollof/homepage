@@ -79,7 +79,8 @@
                     {% if category.links %}
                     <ul class="links-list">
                         {% for link in category.links %}
-                        <li class="link-item" data-link-index="{{ loop.index0 }}">
+                        <li class="link-item" data-link-index="{{ loop.index0 }}" draggable="false">
+                            <span class="link-drag-handle">⋮⋮</span>
                             <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" data-link="{{ link.name }}">
                                 <span class="link-icon">
                                     {% if link.icon %}
@@ -105,15 +106,17 @@
 
                     {% if category.subcategory %}
                     {% for subcategory in category.subcategory %}
-                    <div class="subcategory" data-subcategory-index="{{ loop.index0 }}">
+                    <div class="subcategory" data-subcategory-index="{{ loop.index0 }}" draggable="false">
                         <div class="subcategory-title">
+                            <span class="subcategory-drag-handle">⋮⋮</span>
                             <span class="subcategory-icon">{{ subcategory.icon }}</span>
                             <span>{{ subcategory.name }}</span>
                         </div>
                         {% if subcategory.links %}
                         <ul class="links-list">
                             {% for link in subcategory.links %}
-                            <li class="link-item" data-link-index="{{ loop.index0 }}">
+                            <li class="link-item" data-link-index="{{ loop.index0 }}" draggable="false">
+                                <span class="link-drag-handle">⋮⋮</span>
                                 <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" data-link="{{ link.name }}">
                                     <span class="link-icon">
                                         {% if link.icon %}
