@@ -1,0 +1,58 @@
+/* Responsive Design - Media Queries */
+
+/* Tablet and below (768px) */
+@media (max-width: 768px) {
+    /* Clock adjustments */
+    .clock {
+        font-size: 2rem;
+    }
+
+    .date {
+        font-size: 1rem;
+    }
+
+    /* Search adjustments */
+    .search-container {
+        max-width: 90%;
+    }
+
+    .search-form {
+        flex-direction: column;
+    }
+
+    .search-provider {
+        min-width: unset;
+    }
+
+    /* Links layout */
+    .links-container {
+        grid-template-columns: 1fr;
+        width: 95%;
+    }
+
+    .category-title {
+        font-size: 1.3rem;
+    }
+
+    .subcategory-title {
+        font-size: 1.1rem;
+    }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px) {
+    /* Clock adjustments */
+    .clock {
+        font-size: 1.5rem;
+    }
+
+    /* Container padding */
+    .container {
+        padding: 10px;
+    }
+
+    /* Category padding */
+    .category {
+        padding: 15px;
+    }
+}

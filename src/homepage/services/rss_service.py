@@ -39,9 +39,7 @@ class RSSService:
 
                 for entry in feed.entries[:max_items_per_feed]:
                     # feedparser entries are dict-like
-                    title = (
-                        entry.get("title", "No title") if hasattr(entry, "get") else "No title"
-                    )
+                    title = entry.get("title", "No title") if hasattr(entry, "get") else "No title"
                     link = entry.get("link", "") if hasattr(entry, "get") else ""
                     summary = (
                         entry.get("summary", entry.get("description", ""))

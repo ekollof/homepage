@@ -1,0 +1,19 @@
+/* Typography and Text Styles */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--color-foreground);
+}
+
+/* Monospace font for technical elements */
+.rss-widget,
+.weather-forecast,
+.system-stats-sidebar,
+.forecast-toggle-btn,
+.forecast-expand-btn {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+kbd {
+    font-family: monospace;
+}

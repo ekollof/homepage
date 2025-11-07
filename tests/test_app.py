@@ -235,7 +235,10 @@ class TestWeatherAPI:
         monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
         monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
 
-        with patch("homepage.services.weather_service.requests.get", side_effect=requests.ConnectionError("No network")):
+        with patch(
+            "homepage.services.weather_service.requests.get",
+            side_effect=requests.ConnectionError("No network"),
+        ):
             response = client.get("/api/weather")
             assert response.status_code == 503
             data = json.loads(response.data)
@@ -253,7 +256,10 @@ class TestWeatherAPI:
         monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
         monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
 
-        with patch("homepage.services.weather_service.requests.get", side_effect=requests.Timeout("Timeout")):
+        with patch(
+            "homepage.services.weather_service.requests.get",
+            side_effect=requests.Timeout("Timeout"),
+        ):
             response = client.get("/api/weather")
             assert response.status_code == 504
             data = json.loads(response.data)
@@ -401,7 +407,10 @@ class TestWeatherAPI:
         monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
         monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
 
-        with patch("homepage.services.weather_service.requests.get", side_effect=requests.ConnectionError("No network")):
+        with patch(
+            "homepage.services.weather_service.requests.get",
+            side_effect=requests.ConnectionError("No network"),
+        ):
             response = client.get("/api/weather/forecast")
             assert response.status_code == 503
             data = json.loads(response.data)
@@ -449,7 +458,7 @@ class TestRSSFeeds:
 
         # Mock the RSSService.fetch_feeds method directly
         from unittest.mock import patch
-        
+
         mock_feeds = [
             {
                 "title": "Test Article",

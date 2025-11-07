@@ -1,0 +1,111 @@
+/* System Stats Sidebar Layout and Positioning */
+
+.system-stats-sidebar {
+    position: fixed;
+    background: var(--color-0);
+    border: 2px solid var(--color-8);
+    color: var(--color-foreground);
+    z-index: 998;
+    transition: all 0.3s ease;
+}
+
+/* Slim bar (always visible) */
+.stats-slim-bar {
+    cursor: pointer;
+    padding: 12px 2px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.stats-slim-bar:hover {
+    background: var(--color-8);
+}
+
+.slim-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 2px;
+    margin: 4px 0;
+    font-size: 0.7rem;
+}
+
+.slim-icon {
+    font-size: 1.2rem;
+    margin-bottom: 2px;
+}
+
+.slim-value {
+    font-weight: bold;
+    color: var(--color-12);
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Expanded content */
+.stats-expanded-content {
+    overflow-y: auto;
+    max-height: 90vh;
+}
+
+/* Position-specific styles */
+.system-stats-sidebar.position-left {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+}
+
+.system-stats-sidebar.position-left.expanded {
+    width: 280px;
+}
+
+.system-stats-sidebar.position-right {
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+}
+
+.system-stats-sidebar.position-right.expanded {
+    width: 280px;
+}
+
+.system-stats-sidebar.position-top {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 50px;
+}
+
+.system-stats-sidebar.position-top.expanded {
+    height: 200px;
+}
+
+.system-stats-sidebar.position-top .stats-slim-bar,
+.system-stats-sidebar.position-bottom .stats-slim-bar {
+    display: flex;
+    gap: 12px;
+    padding: 8px 12px;
+}
+
+.system-stats-sidebar.position-top .slim-stat,
+.system-stats-sidebar.position-bottom .slim-stat {
+    flex-direction: column;
+    margin: 0;
+}
+
+.system-stats-sidebar.position-bottom {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50px;
+}
+
+.system-stats-sidebar.position-bottom.expanded {
+    height: 200px;
+}

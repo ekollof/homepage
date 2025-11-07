@@ -29,7 +29,8 @@ def init_assets_blueprint(config, load_colors, load_wallpaper, render_template):
 def styles():
     """Generate and serve the CSS stylesheet."""
     colors = _load_colors()
-    css_content = _render_template("styles.css.j2", colors=colors)
+    # Use modular CSS template that includes all CSS modules
+    css_content = _render_template("styles-modular.css.j2", colors=colors)
 
     response = make_response(css_content)
     response.headers["Content-Type"] = "text/css"

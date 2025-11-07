@@ -266,7 +266,9 @@ def _fetch_openmeteo_forecast(lat: float, lon: float, units: str = "metric") -> 
     return {"hourly": forecast, "units": units}
 
 
-def _fetch_openmeteo_daily_forecast(lat: float, lon: float, units: str = "metric") -> dict[str, Any]:
+def _fetch_openmeteo_daily_forecast(
+    lat: float, lon: float, units: str = "metric"
+) -> dict[str, Any]:
     """Fetch 7-day daily forecast from Open-Meteo (no API key needed)."""
     url = "https://api.open-meteo.com/v1/forecast"
     params: dict[str, str | float] = {

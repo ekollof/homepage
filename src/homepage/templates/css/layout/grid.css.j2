@@ -1,0 +1,65 @@
+/* Main Layout - Grid and Container Styles */
+
+body {
+    background-color: var(--color-background);
+    {% if wallpaper %}
+    background-image: url('/wallpaper');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    {% else %}
+    background-color: #000000;
+    {% endif %}
+    min-height: 100vh;
+    overflow-y: auto;
+}
+
+/* Dark overlay for wallpaper backgrounds */
+.overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Main content container */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header section */
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+/* Links grid layout */
+.links-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    width: 90%;
+    margin: 0 auto;
+}
+
+/* Top buttons positioning */
+.top-buttons-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 999;
+}
+
+/* Widgets container */
+.widgets-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.widget-wrapper {
+    transition: transform 0.2s ease;
+}
