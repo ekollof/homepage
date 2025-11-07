@@ -496,6 +496,58 @@
             background-color: {{ colors.color2 }};
         }
 
+        .widgets-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .widget-wrapper {
+            transition: transform 0.2s ease;
+        }
+
+        .edit-mode .widget-wrapper {
+            cursor: move;
+            border: 2px dashed transparent;
+            border-radius: 8px;
+            padding: 5px;
+            margin: -5px;
+        }
+
+        .edit-mode .widget-wrapper:hover {
+            border-color: {{ colors.color11 }};
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .edit-mode .widget-wrapper.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .edit-mode .widget-wrapper.drag-over {
+            border-color: {{ colors.color14 }};
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .widget-drag-handle {
+            display: none;
+            position: absolute;
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: {{ colors.color8 }};
+            font-size: 1.2rem;
+            cursor: move;
+        }
+
+        .edit-mode .widget-wrapper {
+            position: relative;
+        }
+
+        .edit-mode .widget-drag-handle {
+            display: block;
+        }
+
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -656,17 +708,26 @@
             <div class="header">
                 <div class="clock" id="clock">00:00:00</div>
                 <div class="date" id="date">Loading...</div>
-                {% if config.ENABLE_WEATHER %}
-                <div class="weather" id="weather">
-                    <span class="weather-loading">Loading weather...</span>
-                </div>
-                {% endif %}
+                
+                <div class="widgets-container" id="widgetsContainer">
+                    {% if config.ENABLE_WEATHER %}
+                    <div class="widget-wrapper" data-widget="weather" draggable="false">
+                        <span class="widget-drag-handle">⋮⋮</span>
+                        <div class="weather" id="weather">
+                            <span class="weather-loading">Loading weather...</span>
+                        </div>
+                    </div>
+                    {% endif %}
 
-                {% if config.ENABLE_RSS %}
-                <div class="rss-widget" id="rssWidget">
-                    <div class="rss-loading">Loading RSS feeds...</div>
+                    {% if config.ENABLE_RSS %}
+                    <div class="widget-wrapper" data-widget="rss" draggable="false">
+                        <span class="widget-drag-handle">⋮⋮</span>
+                        <div class="rss-widget" id="rssWidget">
+                            <div class="rss-loading">Loading RSS feeds...</div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
 
                 <div class="search-container">
                     <form class="search-form" onsubmit="handleSearch(event)">
@@ -807,6 +868,14 @@
                 <tr>
                     <td><kbd>e</kbd></td>
                     <td>Toggle edit mode</td>
+                </tr>
+                <tr>
+                    <td><kbd>Ctrl+↑</kbd></td>
+                    <td>Move widget up (in edit mode)</td>
+                </tr>
+                <tr>
+                    <td><kbd>Ctrl+↓</kbd></td>
+                    <td>Move widget down (in edit mode)</td>
                 </tr>
                 {% endif %}
             </table>
@@ -1069,6 +1138,18 @@
                 const provider = document.getElementById('searchProvider');
                 provider.selectedIndex = parseInt(e.key) - 1;
             }
+
+            {% if config.ENABLE_EDITING %}
+            // Ctrl+Arrow keys for widget reordering in edit mode
+            if (editMode && e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                e.preventDefault();
+                if (e.key === 'ArrowUp') {
+                    moveWidgetUp();
+                } else {
+                    moveWidgetDown();
+                }
+            }
+            {% endif %}
         });
 
         // Click outside help to close
@@ -1120,18 +1201,27 @@
         function toggleEditMode() {
             editMode = !editMode;
             const container = document.getElementById('linksContainer');
+            const widgetsContainer = document.getElementById('widgetsContainer');
             const toggle = document.getElementById('editToggle');
             const editIcon = document.getElementById('editIcon');
             const editText = document.getElementById('editText');
 
             if (editMode) {
                 container.classList.add('edit-mode');
+                if (widgetsContainer) {
+                    widgetsContainer.parentElement.classList.add('edit-mode');
+                    enableWidgetDragging();
+                }
                 toggle.classList.add('active');
                 editIcon.textContent = '💾';
                 editText.textContent = 'Save & Exit';
                 loadConfig();
             } else {
                 container.classList.remove('edit-mode');
+                if (widgetsContainer) {
+                    widgetsContainer.parentElement.classList.remove('edit-mode');
+                    disableWidgetDragging();
+                }
                 toggle.classList.remove('active');
                 editIcon.textContent = '✏️';
                 editText.textContent = 'Edit Mode';
@@ -1687,6 +1777,190 @@
                 toggleEditMode();
             }
         });
+
+        // Widget dragging functionality
+        let draggedWidget = null;
+        let widgetOrder = [];
+
+        function enableWidgetDragging() {
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+
+            const widgets = widgetsContainer.querySelectorAll('.widget-wrapper');
+            
+            // Store initial order
+            widgetOrder = Array.from(widgets).map(w => w.dataset.widget);
+            
+            widgets.forEach(widget => {
+                widget.draggable = true;
+                
+                widget.addEventListener('dragstart', handleDragStart);
+                widget.addEventListener('dragover', handleDragOver);
+                widget.addEventListener('drop', handleDrop);
+                widget.addEventListener('dragend', handleDragEnd);
+                widget.addEventListener('dragenter', handleDragEnter);
+                widget.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function disableWidgetDragging() {
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+
+            const widgets = widgetsContainer.querySelectorAll('.widget-wrapper');
+            widgets.forEach(widget => {
+                widget.draggable = false;
+                widget.removeEventListener('dragstart', handleDragStart);
+                widget.removeEventListener('dragover', handleDragOver);
+                widget.removeEventListener('drop', handleDrop);
+                widget.removeEventListener('dragend', handleDragEnd);
+                widget.removeEventListener('dragenter', handleDragEnter);
+                widget.removeEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedWidget = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            if (this !== draggedWidget) {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (draggedWidget !== this) {
+                const container = document.getElementById('widgetsContainer');
+                const widgets = Array.from(container.children);
+                const draggedIndex = widgets.indexOf(draggedWidget);
+                const targetIndex = widgets.indexOf(this);
+                
+                if (draggedIndex < targetIndex) {
+                    this.parentNode.insertBefore(draggedWidget, this.nextSibling);
+                } else {
+                    this.parentNode.insertBefore(draggedWidget, this);
+                }
+                
+                // Update widget order
+                updateWidgetOrder();
+            }
+            
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            
+            const widgets = document.querySelectorAll('.widget-wrapper');
+            widgets.forEach(widget => {
+                widget.classList.remove('drag-over');
+            });
+        }
+
+        function updateWidgetOrder() {
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+            
+            const widgets = widgetsContainer.querySelectorAll('.widget-wrapper');
+            widgetOrder = Array.from(widgets).map(w => w.dataset.widget);
+            
+            // Save to localStorage
+            localStorage.setItem('widgetOrder', JSON.stringify(widgetOrder));
+        }
+
+        function loadWidgetOrder() {
+            const saved = localStorage.getItem('widgetOrder');
+            if (!saved) return;
+            
+            try {
+                const order = JSON.parse(saved);
+                const widgetsContainer = document.getElementById('widgetsContainer');
+                if (!widgetsContainer) return;
+                
+                order.forEach(widgetName => {
+                    const widget = widgetsContainer.querySelector(`[data-widget="${widgetName}"]`);
+                    if (widget) {
+                        widgetsContainer.appendChild(widget);
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to load widget order:', e);
+            }
+        }
+
+        function moveWidgetUp() {
+            if (!editMode) return;
+            
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+            
+            const widgets = Array.from(widgetsContainer.children);
+            const focused = document.querySelector('.widget-wrapper:hover');
+            
+            if (!focused) {
+                // Move first widget
+                if (widgets.length > 1) {
+                    widgetsContainer.insertBefore(widgets[0], null);
+                    updateWidgetOrder();
+                }
+                return;
+            }
+            
+            const index = widgets.indexOf(focused);
+            if (index > 0) {
+                widgetsContainer.insertBefore(focused, widgets[index - 1]);
+                updateWidgetOrder();
+            }
+        }
+
+        function moveWidgetDown() {
+            if (!editMode) return;
+            
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+            
+            const widgets = Array.from(widgetsContainer.children);
+            const focused = document.querySelector('.widget-wrapper:hover');
+            
+            if (!focused) {
+                // Move last widget
+                if (widgets.length > 1) {
+                    widgetsContainer.insertBefore(widgets[widgets.length - 1], widgets[0]);
+                    updateWidgetOrder();
+                }
+                return;
+            }
+            
+            const index = widgets.indexOf(focused);
+            if (index < widgets.length - 1) {
+                widgetsContainer.insertBefore(widgets[index + 1], focused);
+                updateWidgetOrder();
+            }
+        }
+
+        // Load saved widget order on page load
+        loadWidgetOrder();
+
         {% endif %}
     </script>
 </body>
