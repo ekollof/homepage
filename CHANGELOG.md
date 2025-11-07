@@ -8,14 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Weather Forecast Widget**: 12-hour hourly forecast display
-  - Shows next 12 hours of weather predictions
-  - Displays time, weather emoji, temperature, and precipitation probability
-  - Horizontal scrollable layout with terminal aesthetic
+- **Weather Forecast Widget**: 12-hour hourly and 7-day daily forecasts
+  - **Toggle Functionality**: Switch between hourly (12h) and daily (7d) forecasts with button
+  - **Collapsible Design**: Forecast hidden by default to save vertical space
+  - **Expand/Collapse Button**: "📅 Show Forecast" / "📅 Hide Forecast" button
+  - Shows next 12 hours or 7 days of weather predictions
+  - Displays time/day, weather emoji, temperature, and precipitation probability
+  - Horizontal scrollable, centered layout with terminal aesthetic
   - Supports both Open-Meteo (default) and OpenWeatherMap providers
-  - Auto-updates every 10 minutes along with current weather
+  - Auto-updates every 10 minutes when expanded
   - Compact monospace design matching other widgets
-  - API endpoint: `/api/weather/forecast`
+  - API endpoints: `/api/weather/forecast` (hourly), `/api/weather/forecast/daily` (daily)
   
 - **RSS Feed Carousel**: Auto-rotating news widget with terminal-style design
   - Displays RSS feed items in a carousel format (one item at a time)

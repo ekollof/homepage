@@ -32,8 +32,14 @@
                         <div class="weather" id="weather">
                             <span class="weather-loading">Loading weather...</span>
                         </div>
-                        <div class="weather-forecast" id="weatherForecast">
-                            <div class="forecast-loading">Loading forecast...</div>
+                        <button class="forecast-expand-btn" id="forecastExpandBtn">📅 Show Forecast</button>
+                        <div class="forecast-container" id="forecastContainer" style="display: none;">
+                            <div class="forecast-controls">
+                                <button class="forecast-toggle-btn" id="forecastModeToggle">Hourly</button>
+                            </div>
+                            <div class="weather-forecast" id="weatherForecast">
+                                <div class="forecast-loading">Loading forecast...</div>
+                            </div>
                         </div>
                     </div>
                     {% endif %}

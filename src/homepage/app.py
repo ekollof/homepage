@@ -360,6 +360,41 @@ def get_weather_forecast():  # pylint: disable=too-many-return-statements
         return jsonify({"error": "Weather forecast unavailable"}), 503
 
 
+@app.route("/api/weather/forecast/daily")
+def get_daily_forecast():
+    """Get daily weather forecast data."""
+    if not config.ENABLE_WEATHER:
+        return jsonify({"error": "Weather feature not enabled"}), 404
+
+    try:
+        # Get location
+        lat, lon, location_name = _get_location()
+
+        # Get daily forecast data based on provider
+        match config.WEATHER_PROVIDER:
+            case "openmeteo":
+                forecast_data = _fetch_openmeteo_daily_forecast(lat, lon)
+            case "openweathermap":
+                if not config.WEATHER_API_KEY:
+                    return jsonify({"error": "OpenWeatherMap API key required"}), 400
+                forecast_data = _fetch_openweathermap_daily_forecast(lat, lon)
+            case _:
+                return jsonify({"error": "Invalid weather provider"}), 400
+
+        forecast_data["location"] = location_name
+        return jsonify(forecast_data)
+
+    except requests.ConnectionError:
+        logger.warning("Daily forecast: No network connection available")
+        return jsonify({"error": "No network connection"}), 503
+    except requests.Timeout:
+        logger.warning("Daily forecast: Request timed out")
+        return jsonify({"error": "Request timed out"}), 504
+    except (requests.RequestException, KeyError, ValueError) as e:
+        logger.error("Error fetching daily forecast: %s", e)
+        return jsonify({"error": "Daily forecast unavailable"}), 503
+
+
 @app.route("/api/rss")
 def get_rss():
     """Get RSS feed items."""
@@ -642,6 +677,81 @@ def _fetch_openmeteo_forecast(lat: float, lon: float) -> dict[str, Any]:
     return {"hourly": forecast, "units": config.WEATHER_UNITS}
 
 
+def _fetch_openmeteo_daily_forecast(lat: float, lon: float) -> dict[str, Any]:
+    """Fetch 7-day daily forecast from Open-Meteo (no API key needed)."""
+    url = "https://api.open-meteo.com/v1/forecast"
+    params: dict[str, str | float] = {
+        "latitude": lat,
+        "longitude": lon,
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+        "temperature_unit": "celsius" if config.WEATHER_UNITS == "metric" else "fahrenheit",
+        "forecast_days": 7,
+    }
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    daily = data["daily"]
+    dates = daily["time"]
+    max_temps = daily["temperature_2m_max"]
+    min_temps = daily["temperature_2m_min"]
+    codes = daily["weather_code"]
+    precip_probs = daily["precipitation_probability_max"]
+
+    # Map WMO weather codes to emojis (same as hourly)
+    weather_emojis = {
+        0: "☀️",
+        1: "🌤️",
+        2: "⛅",
+        3: "☁️",
+        45: "🌫️",
+        48: "🌫️",
+        51: "🌦️",
+        53: "🌦️",
+        55: "🌧️",
+        61: "🌧️",
+        63: "🌧️",
+        65: "🌧️",
+        71: "🌨️",
+        73: "🌨️",
+        75: "🌨️",
+        77: "🌨️",
+        80: "🌦️",
+        81: "🌧️",
+        82: "🌧️",
+        85: "🌨️",
+        86: "🌨️",
+        95: "⛈️",
+        96: "⛈️",
+        99: "⛈️",
+    }
+
+    # Build daily forecast for 7 days
+    from datetime import datetime  # pylint: disable=import-outside-toplevel
+
+    forecast = []
+    for date_str, max_temp, min_temp, code, precip in zip(
+        dates, max_temps, min_temps, codes, precip_probs, strict=True
+    ):
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        day_name = date_obj.strftime("%a")
+
+        forecast.append(
+            {
+                "day": day_name,
+                "date": date_str,
+                "temperature_max": round(max_temp, 1),
+                "temperature_min": round(min_temp, 1),
+                "weather_code": code,
+                "weather_emoji": weather_emojis.get(code, "❓"),
+                "precipitation_probability": precip if precip else 0,
+            }
+        )
+
+    return {"daily": forecast, "units": config.WEATHER_UNITS}
+
+
 def _fetch_openweathermap_weather(lat: float, lon: float) -> dict[str, Any]:
     """Fetch weather from OpenWeatherMap (requires API key)."""
     url = "https://api.openweathermap.org/data/2.5/weather"
@@ -720,6 +830,94 @@ def _fetch_openweathermap_forecast(lat: float, lon: float) -> dict[str, Any]:
         )
 
     return {"hourly": forecast, "units": config.WEATHER_UNITS}
+
+
+def _fetch_openweathermap_daily_forecast(lat: float, lon: float) -> dict[str, Any]:
+    """Fetch 7-day daily forecast from OpenWeatherMap (requires API key)."""
+    from datetime import datetime  # pylint: disable=import-outside-toplevel
+
+    # Note: OpenWeatherMap deprecated the daily forecast endpoint in their free tier
+    # We'll use the 5-day forecast and group by day
+    url = "https://api.openweathermap.org/data/2.5/forecast"
+    params: dict[str, str | float] = {
+        "lat": lat,
+        "lon": lon,
+        "appid": str(config.WEATHER_API_KEY),
+        "units": config.WEATHER_UNITS,
+    }
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    # Map OpenWeatherMap icons to emojis (same as hourly)
+    icon_to_emoji = {
+        "01d": "☀️",
+        "01n": "🌙",
+        "02d": "🌤️",
+        "02n": "☁️",
+        "03d": "☁️",
+        "03n": "☁️",
+        "04d": "☁️",
+        "04n": "☁️",
+        "09d": "🌧️",
+        "09n": "🌧️",
+        "10d": "🌦️",
+        "10n": "🌧️",
+        "11d": "⛈️",
+        "11n": "⛈️",
+        "13d": "🌨️",
+        "13n": "🌨️",
+        "50d": "🌫️",
+        "50n": "🌫️",
+    }
+
+    # Group forecast by day
+    daily_data = {}
+    for item in data["list"]:
+        dt = datetime.fromtimestamp(item["dt"])
+        date_str = dt.strftime("%Y-%m-%d")
+        day_name = dt.strftime("%a")
+
+        if date_str not in daily_data:
+            daily_data[date_str] = {
+                "day": day_name,
+                "date": date_str,
+                "temps": [],
+                "icons": [],
+                "precip": [],
+                "codes": [],
+            }
+
+        daily_data[date_str]["temps"].append(item["main"]["temp"])
+        daily_data[date_str]["icons"].append(item["weather"][0]["icon"])
+        daily_data[date_str]["precip"].append(item.get("pop", 0))
+        daily_data[date_str]["codes"].append(item["weather"][0]["id"])
+
+    # Build daily forecast
+    forecast = []
+    for date_str in sorted(daily_data.keys())[:7]:  # Take first 7 days
+        day_info = daily_data[date_str]
+        max_temp = max(day_info["temps"])
+        min_temp = min(day_info["temps"])
+        # Use most common icon
+        most_common_icon = max(set(day_info["icons"]), key=day_info["icons"].count)
+        most_common_code = max(set(day_info["codes"]), key=day_info["codes"].count)
+        max_precip = max(day_info["precip"]) if day_info["precip"] else 0
+
+        forecast.append(
+            {
+                "day": day_info["day"],
+                "date": date_str,
+                "temperature_max": round(max_temp, 1),
+                "temperature_min": round(min_temp, 1),
+                "weather_code": most_common_code,
+                "weather_emoji": icon_to_emoji.get(most_common_icon, "❓"),
+                "precipitation_probability": int(max_precip * 100),
+            }
+        )
+
+    return {"daily": forecast, "units": config.WEATHER_UNITS}
 
 
 @app.route("/check_reload")

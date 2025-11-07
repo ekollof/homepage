@@ -90,14 +90,62 @@ body {
     color: {{ colors.color8 }};
 }
 
-.weather-forecast {
+.forecast-expand-btn {
     margin-top: 15px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid {{ colors.color8 }};
+    border-radius: 4px;
+    color: {{ colors.foreground }};
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.forecast-expand-btn:hover {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: {{ colors.color12 }};
+}
+
+.forecast-container {
+    margin-top: 15px;
+    width: 100%;
+}
+
+.forecast-controls {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.forecast-toggle-btn {
+    padding: 6px 20px;
+    background: {{ colors.color8 }};
+    border: 1px solid {{ colors.color12 }};
+    border-radius: 4px;
+    color: {{ colors.background }};
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.forecast-toggle-btn:hover {
+    background: {{ colors.color12 }};
+}
+
+.weather-forecast {
     padding: 10px 0;
     overflow-x: auto;
     overflow-y: hidden;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     scrollbar-width: thin;
     scrollbar-color: {{ colors.color8 }} transparent;
+    display: flex;
+    justify-content: center;
 }
 
 .weather-forecast::-webkit-scrollbar {
@@ -118,6 +166,16 @@ body {
     display: flex;
     gap: 12px;
     min-width: fit-content;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.forecast-days {
+    display: flex;
+    gap: 12px;
+    min-width: fit-content;
+    justify-content: center;
+    margin: 0 auto;
 }
 
 .forecast-item {
@@ -145,7 +203,18 @@ body {
 
 .forecast-temp {
     color: {{ colors.color12 }};
-    font-weight: 500;
+    font-weight: 600;
+}
+
+.forecast-day {
+    color: {{ colors.color14 }};
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.forecast-temp-range {
+    color: {{ colors.foreground }};
+    font-size: 0.75rem;
 }
 
 .forecast-precip {

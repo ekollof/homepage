@@ -35,17 +35,22 @@ This document provides a comprehensive overview of all features included in the 
 - **URL encoding**: Properly handles special characters in queries
 
 ### Weather Forecast
-- **12-hour forecast**: Shows next 12 hours of weather predictions
-- **Hourly data**: Time, temperature, weather emoji, precipitation probability
-- **Horizontal scroll**: Compact scrollable layout for all forecast items
+- **Dual forecast modes**: Hourly (12 hours) and daily (7 days)
+- **Toggle button**: Switch between hourly and daily forecasts with single click
+- **Collapsible widget**: Hidden by default to save vertical space
+- **Expand/collapse control**: "📅 Show Forecast" button toggles visibility
+- **Hourly forecast**: Shows next 12 hours with time, temperature, weather emoji, precipitation
+- **Daily forecast**: Shows next 7 days with day name, high/low temps, weather emoji, precipitation
+- **Centered layout**: Forecast items centered in container with horizontal scroll
 - **Terminal styling**: Monospace font matching other widgets
 - **Weather emojis**: Visual weather condition indicators (☀️, 🌧️, ⛈️, etc.)
 - **Precipitation display**: Only shown when probability > 0%
 - **Temperature units**: Supports both metric (°C) and imperial (°F)
-- **Auto-updates**: Refreshes every 10 minutes along with current weather
+- **Smart loading**: Forecast only loads when first expanded
+- **Auto-updates**: Refreshes every 10 minutes when expanded
 - **Provider support**: Works with both Open-Meteo and OpenWeatherMap
 - **Error handling**: Graceful fallback when forecast unavailable
-- **API endpoint**: `/api/weather/forecast` for external integrations
+- **API endpoints**: `/api/weather/forecast` (hourly), `/api/weather/forecast/daily` (daily)
 
 ### RSS Feed Carousel
 - **Auto-rotating carousel**: Displays one RSS item at a time

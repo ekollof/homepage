@@ -66,11 +66,15 @@
                 });
         }
 
+        let forecastMode = 'hourly';  // 'hourly' or 'daily'
+
         function updateWeatherForecast() {
             const forecastElement = document.getElementById('weatherForecast');
             if (!forecastElement) return;
 
-            fetch('/api/weather/forecast')
+            const endpoint = forecastMode === 'daily' ? '/api/weather/forecast/daily' : '/api/weather/forecast';
+
+            fetch(endpoint)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
@@ -78,28 +82,47 @@
                     return response.json();
                 })
                 .then(data => {
-                    if (data.error || !data.hourly || data.hourly.length === 0) {
+                    const forecastData = forecastMode === 'daily' ? data.daily : data.hourly;
+                    if (data.error || !forecastData || forecastData.length === 0) {
                         forecastElement.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
                         return;
                     }
 
                     const tempUnit = data.units === 'metric' ? '°C' : '°F';
-                    let html = '<div class="forecast-hours">';
+                    const containerClass = forecastMode === 'daily' ? 'forecast-days' : 'forecast-hours';
+                    let html = `<div class="${containerClass}">`;
 
-                    data.hourly.forEach(item => {
-                        const precipDisplay = item.precipitation_probability > 0 
-                            ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
-                            : '';
-                        
-                        html += `
-                            <div class="forecast-item">
-                                <div class="forecast-time">${item.hour}</div>
-                                <div class="forecast-emoji">${item.weather_emoji}</div>
-                                <div class="forecast-temp">${item.temperature}${tempUnit}</div>
-                                ${precipDisplay}
-                            </div>
-                        `;
-                    });
+                    if (forecastMode === 'daily') {
+                        forecastData.forEach(item => {
+                            const precipDisplay = item.precipitation_probability > 0 
+                                ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
+                                : '';
+                            
+                            html += `
+                                <div class="forecast-item">
+                                    <div class="forecast-day">${item.day}</div>
+                                    <div class="forecast-emoji">${item.weather_emoji}</div>
+                                    <div class="forecast-temp-range">${item.temperature_max}/${item.temperature_min}${tempUnit}</div>
+                                    ${precipDisplay}
+                                </div>
+                            `;
+                        });
+                    } else {
+                        forecastData.forEach(item => {
+                            const precipDisplay = item.precipitation_probability > 0 
+                                ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
+                                : '';
+                            
+                            html += `
+                                <div class="forecast-item">
+                                    <div class="forecast-time">${item.hour}</div>
+                                    <div class="forecast-emoji">${item.weather_emoji}</div>
+                                    <div class="forecast-temp">${item.temperature}${tempUnit}</div>
+                                    ${precipDisplay}
+                                </div>
+                            `;
+                        });
+                    }
 
                     html += '</div>';
                     forecastElement.innerHTML = html;
@@ -354,9 +377,45 @@
         updateWeather();
         setInterval(updateWeather, 600000);
         
-        // Update weather forecast on load and every 10 minutes
-        updateWeatherForecast();
-        setInterval(updateWeatherForecast, 600000);
+        // Forecast expand/collapse functionality
+        const forecastExpandBtn = document.getElementById('forecastExpandBtn');
+        const forecastContainer = document.getElementById('forecastContainer');
+        let forecastExpanded = false;
+
+        if (forecastExpandBtn && forecastContainer) {
+            forecastExpandBtn.addEventListener('click', () => {
+                forecastExpanded = !forecastExpanded;
+                if (forecastExpanded) {
+                    forecastContainer.style.display = 'block';
+                    forecastExpandBtn.textContent = '📅 Hide Forecast';
+                    // Load forecast when expanded for the first time
+                    if (forecastContainer.dataset.loaded !== 'true') {
+                        updateWeatherForecast();
+                        forecastContainer.dataset.loaded = 'true';
+                    }
+                } else {
+                    forecastContainer.style.display = 'none';
+                    forecastExpandBtn.textContent = '📅 Show Forecast';
+                }
+            });
+        }
+
+        // Forecast mode toggle functionality
+        const forecastModeToggle = document.getElementById('forecastModeToggle');
+        if (forecastModeToggle) {
+            forecastModeToggle.addEventListener('click', () => {
+                forecastMode = forecastMode === 'hourly' ? 'daily' : 'hourly';
+                forecastModeToggle.textContent = forecastMode === 'hourly' ? 'Hourly' : 'Daily';
+                updateWeatherForecast();
+            });
+        }
+
+        // Update forecast every 10 minutes if expanded
+        setInterval(() => {
+            if (forecastExpanded) {
+                updateWeatherForecast();
+            }
+        }, 600000);
         {% endif %}
 
         {% if config.ENABLE_RSS %}
