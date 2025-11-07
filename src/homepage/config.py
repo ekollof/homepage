@@ -36,6 +36,7 @@ class Config:
     ENABLE_RSS = os.getenv("HOMEPAGE_ENABLE_RSS", "False").lower() == "true"
     ENABLE_EDITING = os.getenv("HOMEPAGE_ENABLE_EDITING", "True").lower() == "true"
     ENABLE_SYSTEM_STATS = os.getenv("HOMEPAGE_ENABLE_SYSTEM_STATS", "True").lower() == "true"
+    ENABLE_WEBSOCKET = os.getenv("HOMEPAGE_ENABLE_WEBSOCKET", "True").lower() == "true"
 
     # System stats settings
     SYSTEM_STATS_REFRESH_INTERVAL = int(
@@ -67,6 +68,11 @@ class Config:
     )
     RSS_MAX_ITEMS = int(os.getenv("HOMEPAGE_RSS_MAX_ITEMS", "5"))  # Max items per feed
     RSS_CACHE_TTL = int(os.getenv("HOMEPAGE_RSS_CACHE_TTL", "300"))  # 5 minutes default
+
+    # WebSocket settings
+    WEBSOCKET_PING_TIMEOUT = int(os.getenv("HOMEPAGE_WEBSOCKET_PING_TIMEOUT", "60"))
+    WEBSOCKET_PING_INTERVAL = int(os.getenv("HOMEPAGE_WEBSOCKET_PING_INTERVAL", "25"))
+    WEBSOCKET_ASYNC_MODE = os.getenv("HOMEPAGE_WEBSOCKET_ASYNC_MODE", "threading")
 
     # Logging
     LOG_LEVEL = os.getenv("HOMEPAGE_LOG_LEVEL", "INFO")

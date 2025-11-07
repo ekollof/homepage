@@ -7,6 +7,7 @@ from .editing import editing_bp, init_editing_blueprint
 from .rss import init_rss_blueprint, rss_bp
 from .system_stats import init_system_stats_blueprint, system_stats_bp
 from .weather import init_weather_blueprint, weather_bp
+from .websocket import init_websocket_blueprint, websocket_bp
 
 __all__ = [
     "core_bp",
@@ -23,4 +24,6 @@ __all__ = [
     "init_editing_blueprint",
     "assets_bp",
     "init_assets_blueprint",
+    "websocket_bp",
+    "init_websocket_blueprint",
 ]

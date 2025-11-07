@@ -49,7 +49,7 @@
                 <span class="slim-value" id="networkSlimValue">--</span>
             </div>
         </div>
-        
+
         <!-- Expanded content -->
         <div class="stats-expanded-content" id="statsExpandedContent" style="display: none;">
             <div class="stats-header">
@@ -62,7 +62,7 @@
                 </div>
                 <button class="stats-close" onclick="toggleSystemStats()" title="Collapse">◀</button>
             </div>
-            
+
             <div class="stats-content">
                 <!-- Iconized Panel -->
                 <div class="stats-icon-panel">
@@ -83,7 +83,7 @@
                     <span class="value" id="networkIconValue">--</span>
                 </div>
             </div>
-            
+
             <!-- Detailed Stats (expandable) -->
             <div class="stats-details" id="statsDetails">
                 <!-- CPU Section -->
@@ -94,7 +94,7 @@
                         <span class="stat-value" id="cpuValue">--</span>
                     </div>
                     <div class="stat-info">
-                        <span id="cpuCores">-- cores</span> • 
+                        <span id="cpuCores">-- cores</span> •
                         <span id="cpuFreq">-- MHz</span>
                     </div>
                     <div class="sparkline-container">
@@ -103,7 +103,7 @@
                         </svg>
                     </div>
                 </div>
-                
+
                 <!-- Memory Section -->
                 <div class="stat-section">
                     <div class="stat-label">Memory Usage</div>
@@ -112,7 +112,7 @@
                         <span class="stat-value" id="memoryValue">--</span>
                     </div>
                     <div class="stat-info">
-                        <span id="memoryUsed">-- MB</span> / 
+                        <span id="memoryUsed">-- MB</span> /
                         <span id="memoryTotal">-- MB</span>
                     </div>
                     <div class="sparkline-container">
@@ -121,7 +121,7 @@
                         </svg>
                     </div>
                 </div>
-                
+
                 <!-- Disk Section -->
                 <div class="stat-section">
                     <div class="stat-label">Disk Usage</div>
@@ -130,20 +130,20 @@
                         <span class="stat-value" id="diskValue">--</span>
                     </div>
                     <div class="stat-info">
-                        <span id="diskUsed">-- GB</span> / 
+                        <span id="diskUsed">-- GB</span> /
                         <span id="diskTotal">-- GB</span>
                     </div>
                 </div>
-                
+
                 <!-- Network Section -->
                 <div class="stat-section">
                     <div class="stat-label">Network I/O</div>
                     <div class="stat-info">
-                        ↓ <span id="networkRecv">-- MB</span> • 
+                        ↓ <span id="networkRecv">-- MB</span> •
                         ↑ <span id="networkSent">-- MB</span>
                     </div>
                 </div>
-                
+
                 <!-- Battery Section (conditional) -->
                 <div class="stat-section" id="batterySection" style="display: none;">
                     <div class="stat-label">Battery</div>
@@ -155,7 +155,7 @@
                         <span id="batteryStatus">--</span>
                     </div>
                 </div>
-                
+
                 <!-- System Info -->
                 <div class="stat-section">
                     <div class="stat-label">System</div>
@@ -176,7 +176,7 @@
             <div class="header">
                 <div class="clock" id="clock">00:00:00</div>
                 <div class="date" id="date">Loading...</div>
-                
+
                 <div class="widgets-container" id="widgetsContainer">
                     {% if config.ENABLE_WEATHER %}
                     <div class="widget-wrapper" data-widget="weather" draggable="false">
@@ -403,6 +403,13 @@
             </div>
         </div>
     </div>
+    {% endif %}
+
+    {% if config.ENABLE_WEBSOCKET %}
+    <!-- Socket.IO client library from CDN -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" integrity="sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HeMKtKePeN3wqL9gh/zU1yOkIvn" crossorigin="anonymous"></script>
+    <!-- WebSocket client -->
+    <script src="{{ url_for('assets.websocket_client') }}"></script>
     {% endif %}
 
     <script src="{{ url_for('assets.scripts') }}"></script>

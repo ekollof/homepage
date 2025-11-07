@@ -6,7 +6,7 @@ A customizable homepage web server that displays links from a TOML configuration
 
 - 🎨 **Dynamic Theming**: Automatically uses colors from `~/.cache/wal/colors.json` with Gruvbox dark as fallback
 - 🖼️ **Custom Background**: Displays wallpaper from `~/.wallpaper` file (served via HTTP)
-- 🔄 **Auto-Reload**: Page automatically reloads when colors or wallpaper changes
+- 🔄 **Real-time Updates**: WebSocket support for instant updates without polling (with automatic fallback)
 - 📱 **Responsive Design**: Works on desktop and mobile devices
 - ⏰ **Digital Clock**: 24-hour format clock with current date
 - 🔍 **Web Search**: Integrated search bar with multiple providers (Brave, Google, DuckDuckGo, Bing)
@@ -25,6 +25,7 @@ A customizable homepage web server that displays links from a TOML configuration
 - **[Quick Start Guide](docs/QUICKSTART.md)** - Get up and running in 5 minutes
 - **[Features](docs/FEATURES.md)** - Comprehensive feature documentation
 - **[Usage Guide](docs/USAGE.md)** - Complete usage instructions
+- **[WebSocket Guide](docs/WEBSOCKET.md)** - Real-time updates configuration and API
 - **[GeoIP Setup](docs/GEOIP_SETUP.md)** - Configure location-based weather (optional)
 - **[Technical Notes](docs/TECHNICAL.md)** - Implementation details for developers
 - **[Changelog](docs/CHANGELOG.md)** - Version history and updates

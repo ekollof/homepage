@@ -14,6 +14,9 @@ load_dotenv()
 
 from .config import get_config  # noqa: E402 # pylint: disable=wrong-import-position
 from .metrics import MetricsCollector  # noqa: E402 # pylint: disable=wrong-import-position
+from .services.websocket_service import (  # noqa: E402 # pylint: disable=wrong-import-position
+    init_websocket_service,
+)
 from .utils import (  # noqa: E402 # pylint: disable=wrong-import-position
     SimpleCache,
     load_json_file,
@@ -32,6 +35,9 @@ app.config.from_object(config)
 # Enable compression if configured
 if config.ENABLE_COMPRESSION:
     Compress(app)
+
+# Initialize WebSocket service if enabled
+websocket_service = init_websocket_service(app, config)
 
 # Initialize metrics collector if enabled
 metrics = MetricsCollector() if config.ENABLE_METRICS else None
@@ -60,12 +66,33 @@ class ConfigFileHandler(FileSystemEventHandler):
         if not event.is_directory:
             file_path = Path(str(event.src_path))
             match file_path.name:
-                case "colors.json" | ".wallpaper" | "links.toml" | "links.override.toml":
+                case "colors.json":
                     logger.info("Configuration file changed: %s", file_path.name)
                     file_watcher_state["reload_needed"] = True
                     # Invalidate cache
                     if cache:
                         cache.clear()
+                    # Emit WebSocket event
+                    if websocket_service and websocket_service.is_enabled():
+                        websocket_service.emit_config_change("colors")
+                case ".wallpaper":
+                    logger.info("Configuration file changed: %s", file_path.name)
+                    file_watcher_state["reload_needed"] = True
+                    # Invalidate cache
+                    if cache:
+                        cache.clear()
+                    # Emit WebSocket event
+                    if websocket_service and websocket_service.is_enabled():
+                        websocket_service.emit_config_change("wallpaper")
+                case "links.toml" | "links.override.toml":
+                    logger.info("Configuration file changed: %s", file_path.name)
+                    file_watcher_state["reload_needed"] = True
+                    # Invalidate cache
+                    if cache:
+                        cache.clear()
+                    # Emit WebSocket event
+                    if websocket_service and websocket_service.is_enabled():
+                        websocket_service.emit_config_change("links")
 
 
 def load_colors():
@@ -147,9 +174,11 @@ from .routes import (  # noqa: E402 # pylint: disable=wrong-import-position
     init_rss_blueprint,
     init_system_stats_blueprint,
     init_weather_blueprint,
+    init_websocket_blueprint,
     rss_bp,
     system_stats_bp,
     weather_bp,
+    websocket_bp,
 )
 
 # Initialize and register blueprints
@@ -173,6 +202,9 @@ app.register_blueprint(editing_bp)
 
 init_assets_blueprint(config, load_colors, load_wallpaper, render_template)
 app.register_blueprint(assets_bp)
+
+init_websocket_blueprint(websocket_service)
+app.register_blueprint(websocket_bp)
 
 
 def start_file_watcher():
@@ -206,17 +238,32 @@ def start_file_watcher():
     return file_observer
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the application."""
     logger.info("Starting Homepage application v2.0.0")
     logger.info("Host: %s, Port: %s", config.HOST, config.PORT)
     logger.info("Debug: %s", config.DEBUG)
     logger.info("Cache enabled: %s", config.ENABLE_CACHE)
     logger.info("Metrics enabled: %s", config.ENABLE_METRICS)
     logger.info("Compression enabled: %s", config.ENABLE_COMPRESSION)
+    logger.info("WebSocket enabled: %s", config.ENABLE_WEBSOCKET)
 
     observer = start_file_watcher()
     try:
-        app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)
+        if websocket_service and websocket_service.socketio:
+            # Use SocketIO's run method when WebSocket is enabled
+            # Note: For production, use a proper WSGI server like gunicorn with gevent-websocket
+            # This is for development/simple deployments
+            websocket_service.socketio.run(
+                app,
+                host=config.HOST,
+                port=config.PORT,
+                debug=config.DEBUG,
+                allow_unsafe_werkzeug=True,
+            )
+        else:
+            # Fall back to standard Flask run
+            app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)
     finally:
         if observer:
             observer.stop()
@@ -226,3 +273,7 @@ if __name__ == "__main__":
             metrics_file = Path("metrics.json")
             metrics.export_to_file(metrics_file)
             logger.info("Metrics exported to %s", metrics_file)
+
+
+if __name__ == "__main__":
+    main()

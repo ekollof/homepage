@@ -105,6 +105,28 @@ def serve_wallpaper():
     return send_file(BytesIO(transparent_png), mimetype="image/png")
 
 
+@assets_bp.route("/websocket-client.js")
+def websocket_client():
+    """Generate and serve the WebSocket client JavaScript file."""
+    assert _render_template is not None
+    assert _config is not None
+    js_content = _render_template(  # type: ignore[misc]
+        "websocket-client.js.j2",
+        config=_config,
+    )
+
+    response = make_response(js_content)
+    response.headers["Content-Type"] = "application/javascript"
+
+    # Cache for 1 hour if not in edit mode
+    if not _config.ENABLE_EDITING:  # type: ignore[union-attr]
+        response.headers["Cache-Control"] = "public, max-age=3600"
+    else:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+
+    return response
+
+
 @assets_bp.route("/favicon")
 def favicon():
     """Serve favicon."""

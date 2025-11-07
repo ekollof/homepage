@@ -8,6 +8,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **WebSocket Support**: Real-time bidirectional communication for instant updates
+  - **Live Updates**: Push notifications instead of polling for configuration changes
+  - **Real-time System Stats**: WebSocket-based system stats updates (optional)
+  - **Real-time Weather**: Push weather updates via WebSocket
+  - **Real-time RSS**: RSS feed updates pushed to connected clients
+  - **Automatic Reconnection**: Exponential backoff reconnection strategy
+  - **Graceful Fallback**: Falls back to polling if WebSocket unavailable
+  - **Socket.IO Integration**: Using flask-socketio for reliable WebSocket support
+  - **Multi-client Support**: Broadcasts updates to all connected clients simultaneously
+  - **Connection Management**: Automatic ping/pong for connection health
+  - **Event System**: Extensible event system for custom notifications
+  - Configuration options:
+    - `HOMEPAGE_ENABLE_WEBSOCKET` - Enable/disable WebSocket (default: `True`)
+    - `HOMEPAGE_WEBSOCKET_ASYNC_MODE` - Async mode: `threading`, `eventlet`, or `gevent`
+    - `HOMEPAGE_WEBSOCKET_PING_TIMEOUT` - Ping timeout in seconds (default: `60`)
+    - `HOMEPAGE_WEBSOCKET_PING_INTERVAL` - Ping interval in seconds (default: `25`)
+  - API endpoints:
+    - `/api/websocket/status` - WebSocket connection status and client count
+    - `/api/websocket/info` - Detailed WebSocket configuration info
+  - WebSocket events:
+    - `config_changed` - Configuration file changes (colors, wallpaper, links)
+    - `system_stats_update` - Real-time system statistics
+    - `weather_update` - Weather data updates
+    - `rss_update` - RSS feed updates
+    - `links_update` - Link configuration updates
+  - Dependencies:
+    - `flask-socketio>=5.3.0` - Flask WebSocket integration
+    - `python-socketio>=5.11.0` - Python Socket.IO implementation
+    - `simple-websocket>=1.0.0` - Simple WebSocket server/client
+  - Client-side:
+    - WebSocket client class with automatic reconnection
+    - Socket.IO 4.7.2 from CDN
+    - Event handlers for all update types
+    - Connection status monitoring
+    - Debug logging and error handling
+
 - **System Stats Sidebar**: Real-time system monitoring with collapsible design
   - **4-Position Toggle**: Left, right, top, or bottom positioning with on-screen controls
   - **Iconized Panel**: Quick-glance CPU, memory, disk, and network stats

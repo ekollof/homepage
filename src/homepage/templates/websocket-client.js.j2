@@ -1,0 +1,255 @@
+/**
+ * WebSocket client for real-time updates
+ * Handles connection, reconnection, and event listeners
+ */
+
+class WebSocketClient {
+    constructor() {
+        this.socket = null;
+        this.connected = false;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 10;
+        this.reconnectDelay = 1000; // Start with 1 second
+        this.maxReconnectDelay = 30000; // Max 30 seconds
+        this.reconnectTimer = null;
+        this.eventHandlers = new Map();
+        this.enabled = {{ 'true' if config.ENABLE_WEBSOCKET else 'false' }};
+
+        if (this.enabled) {
+            this.connect();
+        }
+    }
+
+    connect() {
+        if (!this.enabled) {
+            console.log('WebSocket is disabled');
+            return;
+        }
+
+        if (this.socket && this.connected) {
+            console.log('WebSocket already connected');
+            return;
+        }
+
+        try {
+            // Use Socket.IO client library
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const socketUrl = `${protocol}//${window.location.host}`;
+
+            console.log('Connecting to WebSocket:', socketUrl);
+
+            // Socket.IO will be loaded from CDN
+            if (typeof io === 'undefined') {
+                console.error('Socket.IO client library not loaded');
+                this.enabled = false;
+                return;
+            }
+
+            this.socket = io(socketUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: false, // We'll handle reconnection manually
+                timeout: 10000,
+            });
+
+            this.setupEventHandlers();
+        } catch (error) {
+            console.error('Failed to connect to WebSocket:', error);
+            this.scheduleReconnect();
+        }
+    }
+
+    setupEventHandlers() {
+        if (!this.socket) return;
+
+        this.socket.on('connect', () => {
+            console.log('WebSocket connected');
+            this.connected = true;
+            this.reconnectAttempts = 0;
+            this.reconnectDelay = 1000;
+            this.emit('ws_connected');
+        });
+
+        this.socket.on('disconnect', (reason) => {
+            console.log('WebSocket disconnected:', reason);
+            this.connected = false;
+            this.emit('ws_disconnected', { reason });
+
+            // Reconnect unless it was a deliberate disconnect
+            if (reason !== 'io client disconnect') {
+                this.scheduleReconnect();
+            }
+        });
+
+        this.socket.on('connect_error', (error) => {
+            console.error('WebSocket connection error:', error);
+            this.connected = false;
+            this.scheduleReconnect();
+        });
+
+        this.socket.on('connected', (data) => {
+            console.log('Server confirmed connection:', data.message);
+        });
+
+        this.socket.on('pong', (data) => {
+            // Handle pong response for ping
+            this.emit('pong', data);
+        });
+
+        // Configuration change events
+        this.socket.on('config_changed', (data) => {
+            console.log('Configuration changed:', data.type);
+            this.emit('config_changed', data);
+            this.handleConfigChange(data);
+        });
+
+        // System stats updates
+        this.socket.on('system_stats_update', (data) => {
+            this.emit('system_stats_update', data);
+        });
+
+        // Weather updates
+        this.socket.on('weather_update', (data) => {
+            this.emit('weather_update', data);
+        });
+
+        // RSS feed updates
+        this.socket.on('rss_update', (data) => {
+            this.emit('rss_update', data);
+        });
+
+        // Links updates
+        this.socket.on('links_update', (data) => {
+            this.emit('links_update', data);
+        });
+    }
+
+    handleConfigChange(data) {
+        // Don't reload if in edit mode - user is actively editing
+        if (typeof editMode !== 'undefined' && editMode) {
+            console.log('Skipping reload - edit mode is active');
+            return;
+        }
+
+        // Reload the page for configuration changes
+        switch (data.type) {
+            case 'colors':
+            case 'wallpaper':
+            case 'links':
+                console.log(`Reloading page due to ${data.type} change`);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500); // Small delay to ensure changes are written
+                break;
+        }
+    }
+
+    scheduleReconnect() {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+        }
+
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            console.error('Max reconnection attempts reached. WebSocket disabled.');
+            this.enabled = false;
+            this.emit('ws_failed');
+            return;
+        }
+
+        this.reconnectAttempts++;
+        const delay = Math.min(
+            this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1),
+            this.maxReconnectDelay
+        );
+
+        console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+        this.reconnectTimer = setTimeout(() => {
+            this.connect();
+        }, delay);
+    }
+
+    disconnect() {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
+        if (this.socket) {
+            this.socket.disconnect();
+            this.socket = null;
+        }
+
+        this.connected = false;
+    }
+
+    on(event, handler) {
+        if (!this.eventHandlers.has(event)) {
+            this.eventHandlers.set(event, []);
+        }
+        this.eventHandlers.get(event).push(handler);
+    }
+
+    off(event, handler) {
+        if (!this.eventHandlers.has(event)) return;
+
+        const handlers = this.eventHandlers.get(event);
+        const index = handlers.indexOf(handler);
+        if (index > -1) {
+            handlers.splice(index, 1);
+        }
+    }
+
+    emit(event, data) {
+        if (!this.eventHandlers.has(event)) return;
+
+        const handlers = this.eventHandlers.get(event);
+        handlers.forEach(handler => {
+            try {
+                handler(data);
+            } catch (error) {
+                console.error(`Error in event handler for ${event}:`, error);
+            }
+        });
+    }
+
+    send(event, data) {
+        if (!this.socket || !this.connected) {
+            console.warn('WebSocket not connected, cannot send:', event);
+            return false;
+        }
+
+        this.socket.emit(event, data);
+        return true;
+    }
+
+    ping() {
+        return this.send('ping', { timestamp: Date.now() });
+    }
+
+    isConnected() {
+        return this.connected;
+    }
+
+    isEnabled() {
+        return this.enabled;
+    }
+
+    getReconnectAttempts() {
+        return this.reconnectAttempts;
+    }
+}
+
+// Create global WebSocket client instance
+const wsClient = new WebSocketClient();
+
+// Graceful shutdown on page unload
+window.addEventListener('beforeunload', () => {
+    if (wsClient) {
+        wsClient.disconnect();
+    }
+});
+
+// Expose to global scope for debugging
+window.wsClient = wsClient;
+
+console.log('WebSocket client initialized (enabled: ' + wsClient.isEnabled() + ')');

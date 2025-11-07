@@ -6,7 +6,7 @@
             let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            
+
             if (CLOCK_FORMAT === '12') {
                 const ampm = hours >= 12 ? 'PM' : 'AM';
                 hours = hours % 12 || 12;
@@ -94,10 +94,10 @@
 
                     if (forecastMode === 'daily') {
                         forecastData.forEach(item => {
-                            const precipDisplay = item.precipitation_probability > 0 
+                            const precipDisplay = item.precipitation_probability > 0
                                 ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
                                 : '';
-                            
+
                             html += `
                                 <div class="forecast-item">
                                     <div class="forecast-day">${item.day}</div>
@@ -109,10 +109,10 @@
                         });
                     } else {
                         forecastData.forEach(item => {
-                            const precipDisplay = item.precipitation_probability > 0 
+                            const precipDisplay = item.precipitation_probability > 0
                                 ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
                                 : '';
-                            
+
                             html += `
                                 <div class="forecast-item">
                                     <div class="forecast-time">${item.hour}</div>
@@ -183,7 +183,7 @@
                 <div class="rss-carousel">
                     <div class="rss-items" style="transform: translateX(-${currentRSSIndex * 100}%)">
             `;
-            
+
             rssItems.forEach(item => {
                 const date = item.published ? new Date(item.published).toLocaleDateString() : '';
                 html += `
@@ -199,7 +199,7 @@
                     </div>
                 `;
             });
-            
+
             html += `
                     </div>
                 </div>
@@ -237,7 +237,7 @@
             if (editMode) {
                 return;
             }
-            
+
             fetch('/check_reload')
                 .then(response => response.json())
                 .then(data => {
@@ -273,7 +273,7 @@
             trackEvent('search', { provider: searchProvider.value, query: query });
 
             window.open(searchUrl, '_blank', 'noopener,noreferrer');
-            
+
             // Save to search history
             saveSearchHistory(query, searchProvider.value);
             searchInput.value = '';
@@ -303,7 +303,7 @@
         document.addEventListener('keydown', (e) => {
             const searchInput = document.getElementById('searchInput');
             const helpOverlay = document.getElementById('helpOverlay');
-            
+
             // Ignore if typing in input
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
                 if (e.key === 'Escape') {
@@ -357,9 +357,9 @@
         // Track link clicks
         document.querySelectorAll('.link-item a').forEach(link => {
             link.addEventListener('click', (e) => {
-                trackEvent('link_click', { 
+                trackEvent('link_click', {
                     name: e.currentTarget.dataset.link,
-                    url: e.currentTarget.href 
+                    url: e.currentTarget.href
                 });
             });
         });
@@ -376,7 +376,7 @@
         // Update weather on load and every 10 minutes
         updateWeather();
         setInterval(updateWeather, 600000);
-        
+
         // Forecast expand/collapse functionality
         const forecastExpandBtn = document.getElementById('forecastExpandBtn');
         const forecastContainer = document.getElementById('forecastContainer');
@@ -424,8 +424,10 @@
         setInterval(updateRSSFeeds, 300000);
         {% endif %}
 
-        // Check for file changes
+        // Check for file changes (fallback to polling if WebSocket is disabled)
+        {% if not config.ENABLE_WEBSOCKET %}
         setInterval(checkForReload, RELOAD_INTERVAL);
+        {% endif %}
 
         {% if config.ENABLE_SYSTEM_STATS %}
         // System Stats functionality
@@ -441,7 +443,7 @@
             const sidebar = document.getElementById('systemStatsSidebar');
             const expandedContent = document.getElementById('statsExpandedContent');
             const slimBar = document.getElementById('statsSlimBar');
-            
+
             if (systemStatsVisible) {
                 sidebar.classList.add('expanded');
                 expandedContent.style.display = 'block';
@@ -481,12 +483,12 @@
                     const memoryPercent = `${Math.round(data.memory_percent)}%`;
                     const diskPercent = `${Math.round(data.disk_percent)}%`;
                     const networkTotal = `${(data.network_sent_mb + data.network_recv_mb).toFixed(1)}M`;
-                    
+
                     document.getElementById('cpuIconValue').textContent = cpuPercent;
                     document.getElementById('memoryIconValue').textContent = memoryPercent;
                     document.getElementById('diskIconValue').textContent = diskPercent;
                     document.getElementById('networkIconValue').textContent = networkTotal;
-                    
+
                     document.getElementById('cpuSlimValue').textContent = cpuPercent;
                     document.getElementById('memorySlimValue').textContent = memoryPercent;
                     document.getElementById('diskSlimValue').textContent = diskPercent;
@@ -530,7 +532,7 @@
                         batterySection.style.display = 'block';
                         updateStatBar('batteryBar', data.battery.percent);
                         document.getElementById('batteryValue').textContent = `${Math.round(data.battery.percent)}%`;
-                        
+
                         let statusText = data.battery.plugged ? '🔌 Charging' : '🔋 Discharging';
                         if (data.battery.time_left) {
                             const hours = Math.floor(data.battery.time_left / 3600);
@@ -650,10 +652,10 @@
                 .then(data => {
                     currentConfig = data;
                     console.log('Configuration loaded', currentConfig);
-                    
+
                     // Load widget order from config
                     loadWidgetOrder();
-                    
+
                     // Fetch and cache any missing favicons on load
                     fetchMissingFavicons();
                 })
@@ -663,10 +665,10 @@
         async function fetchMissingFavicons() {
             // Find all links with empty icons and fetch their favicons
             let hasChanges = false;
-            
+
             for (let catIndex = 0; catIndex < currentConfig.category.length; catIndex++) {
                 const category = currentConfig.category[catIndex];
-                
+
                 // Check category links
                 if (category.links) {
                     for (let linkIndex = 0; linkIndex < category.links.length; linkIndex++) {
@@ -683,7 +685,7 @@
                         }
                     }
                 }
-                
+
                 // Check subcategory links
                 if (category.subcategory) {
                     for (let subIndex = 0; subIndex < category.subcategory.length; subIndex++) {
@@ -706,7 +708,7 @@
                     }
                 }
             }
-            
+
             // If we fetched any favicons, update the DOM
             if (hasChanges) {
                 console.log('Favicons fetched, updating display');
@@ -757,11 +759,11 @@
             try {
                 // Use our proxy endpoint to avoid CORS issues
                 const response = await fetch(`/api/favicon?url=${encodeURIComponent(url)}`);
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to fetch favicon');
                 }
-                
+
                 const data = await response.json();
                 return data.favicon;
             } catch (error) {
@@ -792,7 +794,7 @@
                     currentConfig.category[editContext.categoryIndex].links.push(link);
                 }
             }
-            
+
             closeModal();
             updateCategoryDisplay();
         }
@@ -802,11 +804,11 @@
             // Rebuild the links container from currentConfig
             const container = document.getElementById('linksContainer');
             if (!container || !currentConfig) return;
-            
+
             // Simple approach: regenerate the entire container HTML
             // This ensures the DOM matches currentConfig
             let html = '';
-            
+
             currentConfig.category.forEach((category, catIndex) => {
                 html += `<div class="category" data-category-index="${catIndex}" draggable="false">`;
                 html += `<span class="category-drag-handle">⋮⋮</span>`;
@@ -814,7 +816,7 @@
                 html += `<span class="category-icon">${category.icon || '📁'}</span>`;
                 html += `<span>${category.name}</span>`;
                 html += `</div>`;
-                
+
                 // Category links
                 if (category.links && category.links.length > 0) {
                     html += `<ul class="links-list">`;
@@ -846,7 +848,7 @@
                     });
                     html += `</ul>`;
                 }
-                
+
                 // Subcategories
                 if (category.subcategory && category.subcategory.length > 0) {
                     category.subcategory.forEach((subcategory, subIndex) => {
@@ -856,7 +858,7 @@
                         html += `<span class="subcategory-icon">${subcategory.icon || '📂'}</span>`;
                         html += `<span>${subcategory.name}</span>`;
                         html += `</div>`;
-                        
+
                         if (subcategory.links && subcategory.links.length > 0) {
                             html += `<ul class="links-list">`;
                             subcategory.links.forEach((link, linkIndex) => {
@@ -887,7 +889,7 @@
                             });
                             html += `</ul>`;
                         }
-                        
+
                         html += `<div class="edit-controls">`;
                         html += `<button class="edit-btn" onclick="editSubcategory(this)">Edit Subcategory</button>`;
                         html += `<button class="edit-btn add" onclick="addLink(this, true)">+ Link</button>`;
@@ -896,7 +898,7 @@
                         html += `</div>`;
                     });
                 }
-                
+
                 // Category edit controls
                 html += `<div class="edit-controls">`;
                 html += `<button class="edit-btn" onclick="editCategory(this)">Edit Category</button>`;
@@ -906,14 +908,14 @@
                 html += `</div>`;
                 html += `</div>`;
             });
-            
+
             // Add category button
             html += `<div class="edit-controls add-category-container">`;
             html += `<button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>`;
             html += `</div>`;
-            
+
             container.innerHTML = html;
-            
+
             // Re-apply edit mode class if still in edit mode
             if (editMode) {
                 container.classList.add('edit-mode');
@@ -922,7 +924,7 @@
                 enableLinkDragging();
                 enableSubcategoryDragging();
             }
-            
+
             console.log('DOM updated from currentConfig');
         }
 
@@ -1027,15 +1029,15 @@
 
             const linkItem = button.closest('.link-item');
             const linkIndex = parseInt(linkItem.dataset.linkIndex);
-            
+
             if (isSubcategory) {
                 const subcategoryDiv = button.closest('.subcategory');
                 const { categoryIndex } = getCategoryFromElement(button);
                 const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
                 const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[linkIndex];
-                
+
                 editContext = { type: 'link', action: 'edit', categoryIndex, subcategoryIndex, linkIndex };
-                
+
                 document.getElementById('modalTitle').textContent = 'Edit Link';
                 document.getElementById('itemName').value = link.name;
                 document.getElementById('itemUrl').value = link.url;
@@ -1043,9 +1045,9 @@
             } else {
                 const { categoryIndex } = getCategoryFromElement(button);
                 const link = currentConfig.category[categoryIndex].links[linkIndex];
-                
+
                 editContext = { type: 'link', action: 'edit', categoryIndex, linkIndex };
-                
+
                 document.getElementById('modalTitle').textContent = 'Edit Link';
                 document.getElementById('itemName').value = link.name;
                 document.getElementById('itemUrl').value = link.url;
@@ -1159,7 +1161,7 @@
                         alert('URL is required for links');
                         return;
                     }
-                    
+
                     // If icon is empty, fetch favicon and convert to base64
                     if (!icon || icon.trim() === '') {
                         fetchAndCacheFavicon(url).then(faviconData => {
@@ -1173,7 +1175,7 @@
                         });
                         return; // Exit early, will continue in promise
                     }
-                    
+
                     const link = { name, url, icon };
                     saveLinkToConfig(link);
                     break;
@@ -1207,10 +1209,10 @@
         // Widget dragging functionality
         let draggedWidget = null;
         let widgetOrder = [];
-        
+
         // Category dragging functionality
         let draggedCategory = null;
-        
+
         // Link and subcategory dragging
         let draggedLink = null;
         let draggedSubcategory = null;
@@ -1220,13 +1222,13 @@
             if (!widgetsContainer) return;
 
             const widgets = widgetsContainer.querySelectorAll('.widget-wrapper');
-            
+
             // Store initial order
             widgetOrder = Array.from(widgets).map(w => w.dataset.widget);
-            
+
             widgets.forEach(widget => {
                 widget.draggable = true;
-                
+
                 widget.addEventListener('dragstart', handleDragStart);
                 widget.addEventListener('dragover', handleDragOver);
                 widget.addEventListener('drop', handleDrop);
@@ -1281,29 +1283,29 @@
             if (e.stopPropagation) {
                 e.stopPropagation();
             }
-            
+
             if (draggedWidget !== this) {
                 const container = document.getElementById('widgetsContainer');
                 const widgets = Array.from(container.children);
                 const draggedIndex = widgets.indexOf(draggedWidget);
                 const targetIndex = widgets.indexOf(this);
-                
+
                 if (draggedIndex < targetIndex) {
                     this.parentNode.insertBefore(draggedWidget, this.nextSibling);
                 } else {
                     this.parentNode.insertBefore(draggedWidget, this);
                 }
-                
+
                 // Update widget order
                 updateWidgetOrder();
             }
-            
+
             return false;
         }
 
         function handleDragEnd(e) {
             this.classList.remove('dragging');
-            
+
             const widgets = document.querySelectorAll('.widget-wrapper');
             widgets.forEach(widget => {
                 widget.classList.remove('drag-over');
@@ -1313,10 +1315,10 @@
         function updateWidgetOrder() {
             const widgetsContainer = document.getElementById('widgetsContainer');
             if (!widgetsContainer) return;
-            
+
             const widgets = widgetsContainer.querySelectorAll('.widget-wrapper');
             widgetOrder = Array.from(widgets).map(w => w.dataset.widget);
-            
+
             // Save to currentConfig for later saving to TOML
             if (currentConfig) {
                 currentConfig.widget_order = widgetOrder;
@@ -1326,12 +1328,12 @@
         function loadWidgetOrder() {
             // Load from config instead of localStorage
             if (!currentConfig || !currentConfig.widget_order) return;
-            
+
             try {
                 const order = currentConfig.widget_order;
                 const widgetsContainer = document.getElementById('widgetsContainer');
                 if (!widgetsContainer) return;
-                
+
                 order.forEach(widgetName => {
                     const widget = widgetsContainer.querySelector(`[data-widget="${widgetName}"]`);
                     if (widget) {
@@ -1345,13 +1347,13 @@
 
         function moveWidgetUp() {
             if (!editMode) return;
-            
+
             const widgetsContainer = document.getElementById('widgetsContainer');
             if (!widgetsContainer) return;
-            
+
             const widgets = Array.from(widgetsContainer.children);
             const focused = document.querySelector('.widget-wrapper:hover');
-            
+
             if (!focused) {
                 // Move first widget
                 if (widgets.length > 1) {
@@ -1360,7 +1362,7 @@
                 }
                 return;
             }
-            
+
             const index = widgets.indexOf(focused);
             if (index > 0) {
                 widgetsContainer.insertBefore(focused, widgets[index - 1]);
@@ -1370,13 +1372,13 @@
 
         function moveWidgetDown() {
             if (!editMode) return;
-            
+
             const widgetsContainer = document.getElementById('widgetsContainer');
             if (!widgetsContainer) return;
-            
+
             const widgets = Array.from(widgetsContainer.children);
             const focused = document.querySelector('.widget-wrapper:hover');
-            
+
             if (!focused) {
                 // Move last widget
                 if (widgets.length > 1) {
@@ -1385,7 +1387,7 @@
                 }
                 return;
             }
-            
+
             const index = widgets.indexOf(focused);
             if (index < widgets.length - 1) {
                 widgetsContainer.insertBefore(widgets[index + 1], focused);
@@ -1399,10 +1401,10 @@
             if (!container) return;
 
             const categories = container.querySelectorAll('.category');
-            
+
             categories.forEach(category => {
                 category.draggable = true;
-                
+
                 category.addEventListener('dragstart', handleCategoryDragStart);
                 category.addEventListener('dragover', handleCategoryDragOver);
                 category.addEventListener('drop', handleCategoryDrop);
@@ -1457,29 +1459,29 @@
             if (e.stopPropagation) {
                 e.stopPropagation();
             }
-            
+
             if (draggedCategory !== this && this.classList.contains('category')) {
                 const container = document.getElementById('linksContainer');
                 const categories = Array.from(container.querySelectorAll('.category'));
                 const draggedIndex = categories.indexOf(draggedCategory);
                 const targetIndex = categories.indexOf(this);
-                
+
                 if (draggedIndex < targetIndex) {
                     this.parentNode.insertBefore(draggedCategory, this.nextSibling);
                 } else {
                     this.parentNode.insertBefore(draggedCategory, this);
                 }
-                
+
                 // Update config with new category order
                 updateCategoryOrder();
             }
-            
+
             return false;
         }
 
         function handleCategoryDragEnd(e) {
             this.classList.remove('dragging');
-            
+
             const categories = document.querySelectorAll('.category');
             categories.forEach(category => {
                 category.classList.remove('drag-over');
@@ -1488,10 +1490,10 @@
 
         function updateCategoryOrder() {
             if (!currentConfig) return;
-            
+
             const container = document.getElementById('linksContainer');
             const categories = container.querySelectorAll('.category');
-            
+
             // Reorder the config based on DOM order
             const newOrder = [];
             categories.forEach(categoryEl => {
@@ -1500,14 +1502,14 @@
                     newOrder.push(currentConfig.category[index]);
                 }
             });
-            
+
             currentConfig.category = newOrder;
-            
+
             // Update the data-category-index attributes to match new order
             categories.forEach((categoryEl, newIndex) => {
                 categoryEl.dataset.categoryIndex = newIndex;
             });
-            
+
             console.log('Category order updated');
         }
 
@@ -1517,10 +1519,10 @@
             if (!container) return;
 
             const links = container.querySelectorAll('.link-item');
-            
+
             links.forEach(link => {
                 link.draggable = true;
-                
+
                 link.addEventListener('dragstart', handleLinkDragStart);
                 link.addEventListener('dragover', handleLinkDragOver);
                 link.addEventListener('drop', handleLinkDrop);
@@ -1578,57 +1580,57 @@
             if (e.stopPropagation) {
                 e.stopPropagation();
             }
-            
+
             if (draggedLink !== this && this.classList.contains('link-item')) {
                 // Check if both links are in the same parent (same category or subcategory)
                 const draggedParent = draggedLink.closest('.links-list');
                 const targetParent = this.closest('.links-list');
-                
+
                 if (draggedParent === targetParent) {
                     const links = Array.from(draggedParent.children);
                     const draggedIndex = links.indexOf(draggedLink);
                     const targetIndex = links.indexOf(this);
-                    
+
                     if (draggedIndex < targetIndex) {
                         this.parentNode.insertBefore(draggedLink, this.nextSibling);
                     } else {
                         this.parentNode.insertBefore(draggedLink, this);
                     }
-                    
+
                     // Update config with new link order
                     updateLinkOrder(draggedParent);
                 }
             }
-            
+
             return false;
         }
 
         function handleLinkDragEnd(e) {
             this.classList.remove('dragging');
-            
+
             const links = document.querySelectorAll('.link-item');
             links.forEach(link => {
                 link.classList.remove('drag-over');
             });
-            
+
             draggedLink = null;
             e.stopPropagation();
         }
 
         function updateLinkOrder(linksList) {
             if (!currentConfig) return;
-            
+
             // Find which category/subcategory this links-list belongs to
             const subcategoryDiv = linksList.closest('.subcategory');
             const categoryDiv = linksList.closest('.category');
             const categoryIndex = parseInt(categoryDiv.dataset.categoryIndex);
-            
+
             const newLinks = [];
             const linkItems = linksList.querySelectorAll('.link-item');
-            
+
             linkItems.forEach((linkItem, newIndex) => {
                 const oldIndex = parseInt(linkItem.dataset.linkIndex);
-                
+
                 if (subcategoryDiv) {
                     const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
                     const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[oldIndex];
@@ -1644,7 +1646,7 @@
                     }
                 }
             });
-            
+
             // Update config
             if (subcategoryDiv) {
                 const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
@@ -1652,7 +1654,7 @@
             } else {
                 currentConfig.category[categoryIndex].links = newLinks;
             }
-            
+
             console.log('Link order updated');
         }
 
@@ -1662,10 +1664,10 @@
             if (!container) return;
 
             const subcategories = container.querySelectorAll('.subcategory');
-            
+
             subcategories.forEach(subcategory => {
                 subcategory.draggable = true;
-                
+
                 subcategory.addEventListener('dragstart', handleSubcategoryDragStart);
                 subcategory.addEventListener('dragover', handleSubcategoryDragOver);
                 subcategory.addEventListener('drop', handleSubcategoryDrop);
@@ -1723,49 +1725,49 @@
             if (e.stopPropagation) {
                 e.stopPropagation();
             }
-            
+
             if (draggedSubcategory !== this && this.classList.contains('subcategory')) {
                 // Check if both subcategories are in the same category
                 const draggedParent = draggedSubcategory.closest('.category');
                 const targetParent = this.closest('.category');
-                
+
                 if (draggedParent === targetParent) {
                     const subcategories = Array.from(draggedParent.querySelectorAll('.subcategory'));
                     const draggedIndex = subcategories.indexOf(draggedSubcategory);
                     const targetIndex = subcategories.indexOf(this);
-                    
+
                     if (draggedIndex < targetIndex) {
                         this.parentNode.insertBefore(draggedSubcategory, this.nextSibling);
                     } else {
                         this.parentNode.insertBefore(draggedSubcategory, this);
                     }
-                    
+
                     // Update config with new subcategory order
                     updateSubcategoryOrder(draggedParent);
                 }
             }
-            
+
             return false;
         }
 
         function handleSubcategoryDragEnd(e) {
             this.classList.remove('dragging');
-            
+
             const subcategories = document.querySelectorAll('.subcategory');
             subcategories.forEach(subcategory => {
                 subcategory.classList.remove('drag-over');
             });
-            
+
             draggedSubcategory = null;
             e.stopPropagation();
         }
 
         function updateSubcategoryOrder(categoryDiv) {
             if (!currentConfig) return;
-            
+
             const categoryIndex = parseInt(categoryDiv.dataset.categoryIndex);
             const subcategoryDivs = categoryDiv.querySelectorAll('.subcategory');
-            
+
             const newOrder = [];
             subcategoryDivs.forEach((subcategoryDiv, newIndex) => {
                 const oldIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
@@ -1775,10 +1777,149 @@
                     subcategoryDiv.dataset.subcategoryIndex = newIndex;
                 }
             });
-            
+
             currentConfig.category[categoryIndex].subcategory = newOrder;
             console.log('Subcategory order updated');
         }
 
 
+        {% endif %}
+
+        // WebSocket Integration
+        {% if config.ENABLE_WEBSOCKET %}
+        // WebSocket client will be loaded from separate file
+        // Set up event handlers when WebSocket is available
+        if (typeof wsClient !== 'undefined' && wsClient.isEnabled()) {
+            console.log('Setting up WebSocket event handlers');
+
+            // Handle WebSocket connection status
+            wsClient.on('ws_connected', () => {
+                console.log('WebSocket connected - real-time updates enabled');
+            });
+
+            wsClient.on('ws_disconnected', (data) => {
+                console.log('WebSocket disconnected, falling back to polling');
+                // Fallback to polling when WebSocket is disconnected
+                const pollInterval = setInterval(checkForReload, RELOAD_INTERVAL);
+
+                // Clear polling when reconnected
+                wsClient.on('ws_connected', () => {
+                    clearInterval(pollInterval);
+                }, { once: true });
+            });
+
+            wsClient.on('ws_failed', () => {
+                console.warn('WebSocket failed, using polling permanently');
+                setInterval(checkForReload, RELOAD_INTERVAL);
+            });
+
+            // Configuration change events trigger reload
+            // The WebSocket client already handles reload in its handleConfigChange method
+            // But we can add custom handlers here if needed
+            wsClient.on('config_changed', (data) => {
+                console.log('Received config change via WebSocket:', data.type);
+                // Reload is handled automatically by WebSocket client
+            });
+
+            {% if config.ENABLE_SYSTEM_STATS %}
+            // Real-time system stats updates via WebSocket
+            wsClient.on('system_stats_update', (data) => {
+                // Update system stats display without polling
+                if (systemStatsVisible && data) {
+                    // Update CPU
+                    if (data.cpu_percent !== undefined) {
+                        const cpuPercent = `${Math.round(data.cpu_percent)}%`;
+                        const cpuElement = document.getElementById('cpuValue');
+                        if (cpuElement) cpuElement.textContent = cpuPercent;
+                        document.getElementById('cpuIconValue').textContent = cpuPercent;
+                        document.getElementById('cpuSlimValue').textContent = cpuPercent;
+                        updateStatBar('cpuBar', data.cpu_percent);
+
+                        // Update CPU history for sparkline
+                        cpuHistory.push(data.cpu_percent);
+                        if (cpuHistory.length > maxHistoryPoints) cpuHistory.shift();
+                        drawSparkline('cpuSparkline', cpuHistory);
+                    }
+
+                    // Update memory
+                    if (data.memory_percent !== undefined) {
+                        const memoryPercent = `${Math.round(data.memory_percent)}%`;
+                        const memoryElement = document.getElementById('memoryValue');
+                        if (memoryElement) memoryElement.textContent = memoryPercent;
+                        document.getElementById('memoryIconValue').textContent = memoryPercent;
+                        document.getElementById('memorySlimValue').textContent = memoryPercent;
+                        updateStatBar('memoryBar', data.memory_percent);
+
+                        // Update memory history for sparkline
+                        memoryHistory.push(data.memory_percent);
+                        if (memoryHistory.length > maxHistoryPoints) memoryHistory.shift();
+                        drawSparkline('memorySparkline', memoryHistory);
+                    }
+
+                    // Update other stats
+                    if (data.disk_percent !== undefined) {
+                        const diskPercent = `${Math.round(data.disk_percent)}%`;
+                        document.getElementById('diskIconValue').textContent = diskPercent;
+                        document.getElementById('diskSlimValue').textContent = diskPercent;
+                        updateStatBar('diskBar', data.disk_percent);
+                    }
+
+                    if (data.network_sent_mb !== undefined && data.network_recv_mb !== undefined) {
+                        const networkTotal = `${(data.network_sent_mb + data.network_recv_mb).toFixed(1)}M`;
+                        document.getElementById('networkIconValue').textContent = networkTotal;
+                        document.getElementById('networkSlimValue').textContent = networkTotal;
+                    }
+                }
+            });
+            {% endif %}
+
+            {% if config.ENABLE_WEATHER %}
+            // Real-time weather updates via WebSocket
+            wsClient.on('weather_update', (data) => {
+                const weatherElement = document.getElementById('weather');
+                if (weatherElement && data && !data.error) {
+                    const tempUnit = data.units === 'metric' ? '°C' : '°F';
+                    const windUnit = data.units === 'metric' ? 'km/h' : 'mph';
+
+                    weatherElement.innerHTML = `
+                        <span class="weather-location">${data.location}</span>
+                        <span class="weather-temp">${Math.round(data.temperature)}${tempUnit}</span>
+                        <span class="weather-desc">${data.description}</span>
+                        <span class="weather-details">
+                            <span>💧 ${data.humidity}%</span>
+                            <span>💨 ${Math.round(data.wind_speed)} ${windUnit}</span>
+                        </span>
+                    `;
+                }
+            });
+            {% endif %}
+
+            {% if config.ENABLE_RSS %}
+            // Real-time RSS feed updates via WebSocket
+            wsClient.on('rss_update', (data) => {
+                if (data && data.items) {
+                    rssItems = data.items;
+                    currentRSSIndex = 0;
+                    renderRSSCarousel();
+                    resetRSSAutoRotate();
+                }
+            });
+            {% endif %}
+
+            // Links update event (for live editing)
+            wsClient.on('links_update', (data) => {
+                if (data && data.categories && !editMode) {
+                    console.log('Received links update via WebSocket');
+                    // Only update if not in edit mode to avoid conflicts
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                }
+            });
+        } else {
+            console.log('WebSocket not available, using polling');
+            setInterval(checkForReload, RELOAD_INTERVAL);
+        }
+        {% else %}
+        console.log('WebSocket disabled in configuration');
         {% endif %}
