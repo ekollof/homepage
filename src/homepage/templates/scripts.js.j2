@@ -66,6 +66,52 @@
                 });
         }
 
+        function updateWeatherForecast() {
+            const forecastElement = document.getElementById('weatherForecast');
+            if (!forecastElement) return;
+
+            fetch('/api/weather/forecast')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error || !data.hourly || data.hourly.length === 0) {
+                        forecastElement.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
+                        return;
+                    }
+
+                    const tempUnit = data.units === 'metric' ? '°C' : '°F';
+                    let html = '<div class="forecast-hours">';
+
+                    data.hourly.forEach(item => {
+                        const precipDisplay = item.precipitation_probability > 0 
+                            ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
+                            : '';
+                        
+                        html += `
+                            <div class="forecast-item">
+                                <div class="forecast-time">${item.hour}</div>
+                                <div class="forecast-emoji">${item.weather_emoji}</div>
+                                <div class="forecast-temp">${item.temperature}${tempUnit}</div>
+                                ${precipDisplay}
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+                    forecastElement.innerHTML = html;
+                })
+                .catch(error => {
+                    if (!error.message.includes('NetworkError') && !error.message.includes('Failed to fetch')) {
+                        console.warn('Forecast fetch failed:', error.message);
+                    }
+                    forecastElement.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
+                });
+        }
+
         let rssItems = [];
         let currentRSSIndex = 0;
         let rssAutoRotate = null;
@@ -307,6 +353,10 @@
         // Update weather on load and every 10 minutes
         updateWeather();
         setInterval(updateWeather, 600000);
+        
+        // Update weather forecast on load and every 10 minutes
+        updateWeatherForecast();
+        setInterval(updateWeatherForecast, 600000);
         {% endif %}
 
         {% if config.ENABLE_RSS %}

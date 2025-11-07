@@ -347,6 +347,67 @@ class TestWeatherAPI:
         data = json.loads(response.data)
         assert data["status"] == "ok"
 
+    def test_forecast_endpoint_disabled(self, client, monkeypatch):
+        """Test forecast endpoint returns 404 when weather disabled."""
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", False)
+
+        response = client.get("/api/weather/forecast")
+        assert response.status_code == 404
+        data = json.loads(response.data)
+        assert "error" in data
+
+    def test_forecast_with_openmeteo(self, client, monkeypatch):
+        """Test forecast endpoint with Open-Meteo provider."""
+        from unittest.mock import Mock, patch
+
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", True)
+        monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
+        monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
+
+        # Mock Open-Meteo forecast response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "hourly": {
+                "time": [
+                    "2025-11-07T12:00",
+                    "2025-11-07T13:00",
+                    "2025-11-07T14:00",
+                ],
+                "temperature_2m": [14.5, 15.0, 15.5],
+                "weather_code": [0, 1, 2],
+                "precipitation_probability": [0, 10, 20],
+            }
+        }
+
+        with patch("homepage.app.requests.get", return_value=mock_response):
+            response = client.get("/api/weather/forecast")
+            assert response.status_code == 200
+            data = json.loads(response.data)
+            assert "hourly" in data
+            assert len(data["hourly"]) == 3
+            assert data["hourly"][0]["hour"] == "12:00"
+            assert data["hourly"][0]["temperature"] == 14.5
+            assert "weather_emoji" in data["hourly"][0]
+            assert data["units"] == "metric"
+
+    def test_forecast_connection_error(self, client, monkeypatch):
+        """Test forecast endpoint handles connection errors."""
+        import homepage.app as app_module
+
+        monkeypatch.setattr(app_module.config, "ENABLE_WEATHER", True)
+        monkeypatch.setattr(app_module.config, "WEATHER_LOCATION", "52.0,5.0")
+        monkeypatch.setattr(app_module.config, "WEATHER_PROVIDER", "openmeteo")
+
+        with patch("homepage.app.requests.get", side_effect=requests.ConnectionError("No network")):
+            response = client.get("/api/weather/forecast")
+            assert response.status_code == 503
+            data = json.loads(response.data)
+            assert data["error"] == "No network connection"
+
 
 class TestRSSFeeds:
     """Test RSS feed functionality."""

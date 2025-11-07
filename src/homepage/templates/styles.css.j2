@@ -90,6 +90,76 @@ body {
     color: {{ colors.color8 }};
 }
 
+.weather-forecast {
+    margin-top: 15px;
+    padding: 10px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    scrollbar-width: thin;
+    scrollbar-color: {{ colors.color8 }} transparent;
+}
+
+.weather-forecast::-webkit-scrollbar {
+    height: 6px;
+}
+
+.weather-forecast::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.weather-forecast::-webkit-scrollbar-thumb {
+    background: {{ colors.color8 }};
+    border-radius: 3px;
+}
+
+.forecast-hours {
+    display: flex;
+    gap: 12px;
+    min-width: fit-content;
+}
+
+.forecast-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    border: 1px solid {{ colors.color8 }};
+    min-width: 65px;
+    font-size: 0.75rem;
+}
+
+.forecast-time {
+    color: {{ colors.color11 }};
+    font-weight: 500;
+}
+
+.forecast-emoji {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.forecast-temp {
+    color: {{ colors.color12 }};
+    font-weight: 500;
+}
+
+.forecast-precip {
+    color: {{ colors.color14 }};
+    font-size: 0.7rem;
+}
+
+.forecast-loading {
+    text-align: center;
+    color: {{ colors.color8 }};
+    font-size: 0.85rem;
+    padding: 10px;
+}
+
 .rss-widget {
     margin: 15px auto 20px;
     max-width: 800px;

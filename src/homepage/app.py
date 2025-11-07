@@ -325,6 +325,41 @@ def get_weather():  # pylint: disable=too-many-return-statements
         return jsonify({"error": "Weather service unavailable"}), 503
 
 
+@app.route("/api/weather/forecast")
+def get_weather_forecast():  # pylint: disable=too-many-return-statements
+    """Get hourly weather forecast data."""
+    if not config.ENABLE_WEATHER:
+        return jsonify({"error": "Weather feature not enabled"}), 404
+
+    try:
+        # Get location
+        lat, lon, location_name = _get_location()
+
+        # Get forecast data based on provider
+        match config.WEATHER_PROVIDER:
+            case "openmeteo":
+                forecast_data = _fetch_openmeteo_forecast(lat, lon)
+            case "openweathermap":
+                if not config.WEATHER_API_KEY:
+                    return jsonify({"error": "OpenWeatherMap API key required"}), 400
+                forecast_data = _fetch_openweathermap_forecast(lat, lon)
+            case _:
+                return jsonify({"error": "Invalid weather provider"}), 400
+
+        forecast_data["location"] = location_name
+        return jsonify(forecast_data)
+
+    except requests.ConnectionError:
+        logger.warning("Weather forecast: No network connection available")
+        return jsonify({"error": "No network connection"}), 503
+    except requests.Timeout:
+        logger.warning("Weather forecast: Request timed out")
+        return jsonify({"error": "Request timed out"}), 504
+    except (requests.RequestException, KeyError, ValueError) as e:
+        logger.error("Error fetching weather forecast: %s", e)
+        return jsonify({"error": "Weather forecast unavailable"}), 503
+
+
 @app.route("/api/rss")
 def get_rss():
     """Get RSS feed items."""
@@ -533,6 +568,80 @@ def _fetch_openmeteo_weather(lat: float, lon: float) -> dict[str, Any]:
     }
 
 
+def _fetch_openmeteo_forecast(lat: float, lon: float) -> dict[str, Any]:
+    """Fetch hourly weather forecast from Open-Meteo (no API key needed)."""
+    from datetime import datetime  # pylint: disable=import-outside-toplevel
+
+    url = "https://api.open-meteo.com/v1/forecast"
+    params: dict[str, str | float] = {
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": "temperature_2m,weather_code,precipitation_probability",
+        "temperature_unit": "celsius" if config.WEATHER_UNITS == "metric" else "fahrenheit",
+        "forecast_days": 1,  # Today only
+    }
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    hourly = data["hourly"]
+    times = hourly["time"]
+    temps = hourly["temperature_2m"]
+    codes = hourly["weather_code"]
+    precip_probs = hourly["precipitation_probability"]
+
+    # Get current hour
+    now = datetime.now()
+    current_hour = now.hour
+
+    # Map WMO weather codes to emojis
+    weather_emojis = {
+        0: "☀️",
+        1: "🌤️",
+        2: "⛅",
+        3: "☁️",
+        45: "🌫️",
+        48: "🌫️",
+        51: "🌦️",
+        53: "🌦️",
+        55: "🌧️",
+        61: "🌧️",
+        63: "🌧️",
+        65: "🌧️",
+        71: "🌨️",
+        73: "🌨️",
+        75: "🌨️",
+        77: "🌨️",
+        80: "🌦️",
+        81: "🌧️",
+        82: "🌧️",
+        85: "🌨️",
+        86: "🌨️",
+        95: "⛈️",
+        96: "⛈️",
+        99: "⛈️",
+    }
+
+    # Build hourly forecast for next 12 hours
+    forecast = []
+    for time_str, temp, code, precip in zip(times, temps, codes, precip_probs, strict=True):
+        hour = int(time_str.split("T")[1].split(":")[0])
+        # Start from current hour, get next 12 hours
+        if hour >= current_hour and len(forecast) < 12:
+            forecast.append(
+                {
+                    "hour": f"{hour:02d}:00",
+                    "temperature": round(temp, 1),
+                    "weather_code": code,
+                    "weather_emoji": weather_emojis.get(code, "❓"),
+                    "precipitation_probability": precip if precip else 0,
+                }
+            )
+
+    return {"hourly": forecast, "units": config.WEATHER_UNITS}
+
+
 def _fetch_openweathermap_weather(lat: float, lon: float) -> dict[str, Any]:
     """Fetch weather from OpenWeatherMap (requires API key)."""
     url = "https://api.openweathermap.org/data/2.5/weather"
@@ -554,6 +663,63 @@ def _fetch_openweathermap_weather(lat: float, lon: float) -> dict[str, Any]:
         "wind_speed": data["wind"]["speed"],
         "units": config.WEATHER_UNITS,
     }
+
+
+def _fetch_openweathermap_forecast(lat: float, lon: float) -> dict[str, Any]:
+    """Fetch hourly forecast from OpenWeatherMap (requires API key)."""
+    from datetime import datetime  # pylint: disable=import-outside-toplevel
+
+    url = "https://api.openweathermap.org/data/2.5/forecast"
+    params: dict[str, str | float] = {
+        "lat": lat,
+        "lon": lon,
+        "appid": str(config.WEATHER_API_KEY),
+        "units": config.WEATHER_UNITS,
+        "cnt": 12,  # Next 12 periods (3-hour intervals)
+    }
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    # Map OpenWeatherMap icons to emojis
+    icon_to_emoji = {
+        "01d": "☀️",
+        "01n": "🌙",
+        "02d": "🌤️",
+        "02n": "☁️",
+        "03d": "☁️",
+        "03n": "☁️",
+        "04d": "☁️",
+        "04n": "☁️",
+        "09d": "🌧️",
+        "09n": "🌧️",
+        "10d": "🌦️",
+        "10n": "🌧️",
+        "11d": "⛈️",
+        "11n": "⛈️",
+        "13d": "🌨️",
+        "13n": "🌨️",
+        "50d": "🌫️",
+        "50n": "🌫️",
+    }
+
+    forecast = []
+    for item in data["list"][:12]:  # Take first 12 items
+        dt = datetime.fromtimestamp(item["dt"])
+        icon = item["weather"][0]["icon"]
+
+        forecast.append(
+            {
+                "hour": dt.strftime("%H:%M"),
+                "temperature": round(item["main"]["temp"], 1),
+                "weather_code": item["weather"][0]["id"],
+                "weather_emoji": icon_to_emoji.get(icon, "❓"),
+                "precipitation_probability": int(item.get("pop", 0) * 100),
+            }
+        )
+
+    return {"hourly": forecast, "units": config.WEATHER_UNITS}
 
 
 @app.route("/check_reload")
