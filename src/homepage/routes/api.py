@@ -1,6 +1,7 @@
 """API routes (/api/stats, /api/track)."""
 
 import logging
+from typing import Any
 
 from flask import Blueprint, jsonify, request
 
@@ -8,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 api_bp = Blueprint("api", __name__)
 
-_metrics = None
-_config = None
+_metrics: Any | None = None
+_config: Any | None = None
 
 
 def init_api_blueprint(metrics, config):
@@ -22,7 +23,8 @@ def init_api_blueprint(metrics, config):
 @api_bp.route("/api/stats")
 def stats():
     """Get metrics statistics."""
-    if not _config.ENABLE_METRICS or not _metrics:
+    assert _config is not None
+    if not _config.ENABLE_METRICS or not _metrics:  # type: ignore[union-attr]
         return jsonify({"error": "Metrics not enabled"}), 404
 
     return jsonify(_metrics.get_stats())
@@ -31,7 +33,8 @@ def stats():
 @api_bp.route("/api/track", methods=["POST"])
 def track():
     """Track events (searches, link clicks)."""
-    if not _config.ENABLE_METRICS or not _metrics:
+    assert _config is not None
+    if not _config.ENABLE_METRICS or not _metrics:  # type: ignore[union-attr]
         return jsonify({"status": "disabled"}), 200
 
     data = request.get_json()

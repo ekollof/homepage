@@ -2,18 +2,24 @@
 
 import logging
 import os
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional
 
 from flask import Blueprint, jsonify, request
+
+if TYPE_CHECKING:
+    from ..config import Config
+    from ..utils import SimpleCache
 
 logger = logging.getLogger(__name__)
 
 editing_bp = Blueprint("editing", __name__)
 
-_config = None
-_cache = None
-_load_links = None
-_load_toml_file = None
-_file_watcher_state = None
+_config: Optional["Config"] = None
+_cache: Optional["SimpleCache"] = None
+_load_links: Callable[[], list[dict[str, Any]]] | None = None
+_load_toml_file: Callable[[Any, Any], Any] | None = None
+_file_watcher_state: dict[str, Any] | None = None
 
 
 def init_editing_blueprint(config, cache, load_links, load_toml_file, file_watcher_state):
@@ -33,6 +39,10 @@ def get_config_data():
     On first access, copies base to override if override doesn't exist.
     This allows editing without modifying the base file.
     """
+    assert _config is not None
+    assert _load_toml_file is not None
+    assert _load_links is not None
+
     if not _config.ENABLE_EDITING:
         return jsonify({"error": "Editing not enabled"}), 404
 
@@ -58,9 +68,9 @@ def get_config_data():
     categories = _load_links()
 
     # Load widget order from config if exists
-    config_data = _load_toml_file(_config.CONFIG_OVERRIDE_FILE)
+    config_data = _load_toml_file(_config.CONFIG_OVERRIDE_FILE, {})
     if not config_data:
-        config_data = _load_toml_file(_config.CONFIG_FILE)
+        config_data = _load_toml_file(_config.CONFIG_FILE, {})
 
     widget_order = config_data.get("widget_order", [])
 
@@ -70,6 +80,9 @@ def get_config_data():
 @editing_bp.route("/api/config", methods=["POST"])
 def save_config_data():
     """Save links configuration to override file."""
+    assert _config is not None
+    assert _file_watcher_state is not None
+
     if not _config.ENABLE_EDITING:
         return jsonify({"error": "Editing not enabled"}), 404
 
@@ -119,6 +132,8 @@ def save_config_data():
 @editing_bp.route("/api/config/reset", methods=["POST"])
 def reset_config():
     """Reset configuration by removing override file."""
+    assert _config is not None
+
     if not _config.ENABLE_EDITING:
         return jsonify({"error": "Editing not enabled"}), 404
 

@@ -1,6 +1,7 @@
 """Weather-related API routes."""
 
 import logging
+from typing import TYPE_CHECKING, Optional
 
 import requests
 from flask import Blueprint, jsonify, request
@@ -8,12 +9,15 @@ from flask import Blueprint, jsonify, request
 from ..services.geoip_service import GeoIPService
 from ..services.weather_service import WeatherService
 
+if TYPE_CHECKING:
+    from ..config import Config
+
 logger = logging.getLogger(__name__)
 
 weather_bp = Blueprint("weather", __name__)
 
 # Config will be injected
-_config = None
+_config: Optional["Config"] = None
 
 
 def init_weather_blueprint(config):
@@ -25,6 +29,8 @@ def init_weather_blueprint(config):
 @weather_bp.route("/api/weather")
 def get_weather():  # pylint: disable=too-many-return-statements
     """Get weather data using configured provider."""
+    assert _config is not None
+
     if not _config.ENABLE_WEATHER:
         return jsonify({"error": "Weather feature not enabled"}), 404
 
@@ -58,6 +64,8 @@ def get_weather():  # pylint: disable=too-many-return-statements
 @weather_bp.route("/api/weather/forecast")
 def get_weather_forecast():  # pylint: disable=too-many-return-statements
     """Get hourly weather forecast data."""
+    assert _config is not None
+
     if not _config.ENABLE_WEATHER:
         return jsonify({"error": "Weather feature not enabled"}), 404
 
@@ -91,6 +99,8 @@ def get_weather_forecast():  # pylint: disable=too-many-return-statements
 @weather_bp.route("/api/weather/forecast/daily")
 def get_daily_forecast():
     """Get daily weather forecast data."""
+    assert _config is not None
+
     if not _config.ENABLE_WEATHER:
         return jsonify({"error": "Weather feature not enabled"}), 404
 
@@ -123,6 +133,8 @@ def get_daily_forecast():
 
 def _get_location() -> tuple[float, float, str]:
     """Get location from config or GeoIP."""
+    assert _config is not None
+
     # Check if location is provided in config
     if _config.WEATHER_LOCATION:
         # Parse lat,lon format

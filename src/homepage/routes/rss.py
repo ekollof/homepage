@@ -1,17 +1,22 @@
 """RSS feed API routes."""
 
 import logging
+from typing import TYPE_CHECKING, Optional
 
 from flask import Blueprint, jsonify
 
 from ..services.rss_service import RSSService
 
+if TYPE_CHECKING:
+    from ..config import Config
+    from ..utils import SimpleCache
+
 logger = logging.getLogger(__name__)
 
 rss_bp = Blueprint("rss", __name__)
 
-_config = None
-_cache = None
+_config: Optional["Config"] = None
+_cache: Optional["SimpleCache"] = None
 
 
 def init_rss_blueprint(config, cache):
@@ -24,6 +29,8 @@ def init_rss_blueprint(config, cache):
 @rss_bp.route("/api/rss")
 def get_rss():
     """Get RSS feed items."""
+    assert _config is not None
+
     if not _config.ENABLE_RSS:
         return jsonify({"error": "RSS feature not enabled"}), 404
 

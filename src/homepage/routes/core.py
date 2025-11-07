@@ -1,8 +1,13 @@
 """Core routes (/, /health, /check_reload)."""
 
 import logging
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional
 
 from flask import Blueprint, jsonify, make_response, render_template
+
+if TYPE_CHECKING:
+    from ..config import Config
 
 # Import will be done dynamically to avoid circular imports
 # These will be injected when the blueprint is registered
@@ -13,11 +18,11 @@ core_bp = Blueprint("core", __name__)
 
 
 # These will be set when blueprint is registered with app
-_load_colors = None
-_load_wallpaper = None
-_load_links = None
-_file_watcher_state = None
-_config = None
+_load_colors: Callable[[], dict[str, str]] | None = None
+_load_wallpaper: Callable[[], str] | None = None
+_load_links: Callable[[], list[dict[str, Any]]] | None = None
+_file_watcher_state: dict[str, Any] | None = None
+_config: Optional["Config"] = None
 
 
 def init_core_blueprint(load_colors, load_wallpaper, load_links, file_watcher_state, config):
@@ -33,6 +38,11 @@ def init_core_blueprint(load_colors, load_wallpaper, load_links, file_watcher_st
 @core_bp.route("/")
 def index():
     """Render the homepage."""
+    assert _load_colors is not None
+    assert _load_wallpaper is not None
+    assert _load_links is not None
+    assert _config is not None
+
     colors = _load_colors()
     wallpaper = _load_wallpaper()
     categories = _load_links()
@@ -72,6 +82,8 @@ def health():
 @core_bp.route("/check_reload")
 def check_reload():
     """Check if a reload is needed due to file changes."""
+    assert _file_watcher_state is not None
+
     reload = _file_watcher_state["reload_needed"]
     if reload:
         _file_watcher_state["reload_needed"] = False

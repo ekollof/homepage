@@ -4,7 +4,6 @@ import base64
 import logging
 from collections.abc import Callable
 from io import BytesIO
-from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, make_response, send_file
@@ -15,14 +14,14 @@ assets_bp = Blueprint("assets", __name__)
 
 _config: Any | None = None
 _load_colors: Callable[[], dict[str, str]] | None = None
-_load_wallpaper: Callable[[], Path | None] | None = None
+_load_wallpaper: Callable[[], str | None] | None = None
 _render_template: Callable[..., str] | None = None
 
 
 def init_assets_blueprint(
     config: Any,
     load_colors: Callable[[], dict[str, str]],
-    load_wallpaper: Callable[[], Path | None],
+    load_wallpaper: Callable[[], str | None],
     render_template: Callable[..., str],
 ) -> None:
     """Initialize assets blueprint with dependencies."""
@@ -37,11 +36,13 @@ def init_assets_blueprint(
 def styles():
     """Generate and serve the CSS stylesheet."""
     assert _load_colors is not None
+    assert _load_wallpaper is not None
     assert _render_template is not None
     assert _config is not None
     colors = _load_colors()  # type: ignore[misc]
+    wallpaper = _load_wallpaper()  # type: ignore[misc]
     # Use modular CSS template that includes all CSS modules
-    css_content = _render_template("styles-modular.css.j2", colors=colors)  # type: ignore[misc]
+    css_content = _render_template("styles-modular.css.j2", colors=colors, wallpaper=wallpaper)  # type: ignore[misc]
 
     response = make_response(css_content)
     response.headers["Content-Type"] = "text/css"
