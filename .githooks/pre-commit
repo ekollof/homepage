@@ -31,18 +31,11 @@ echo "🔧 Running ruff linter..."
     exit 1
 }
 
-# Run pyright (basic check)
+# Run pyright (critical - same as CI)
 echo "🔍 Running pyright type checker..."
 # shellcheck disable=SC2086
 ./venv/bin/pyright $PY_FILES || {
-    echo "⚠️  Pyright found type issues (continuing anyway)"
-}
-
-# Run mypy
-echo "🔍 Running mypy type checker..."
-# shellcheck disable=SC2086
-./venv/bin/mypy $PY_FILES || {
-    echo "❌ Mypy found type errors"
+    echo "❌ Pyright type checking failed"
     exit 1
 }
 

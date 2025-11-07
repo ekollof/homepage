@@ -19,7 +19,7 @@ help:
 	@echo "  run              - Run the application locally"
 	@echo "  clean            - Remove virtual environment and cache files"
 	@echo "  format           - Format code with black"
-	@echo "  lint             - Run all linters (ruff, pylint, pyright)"
+	@echo "  lint             - Run all linters (ruff, pyright)"
 	@echo "  check            - Run format and lint checks"
 	@echo "  test             - Run tests with pytest"
 	@echo "  test-cov         - Run tests with coverage report"
@@ -57,7 +57,8 @@ setup-hooks:
 	@cp -f .githooks/pre-commit .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "✅ Pre-commit hook installed!"
-	@echo "   Hooks will run: black, ruff, pyright"
+	@echo "   Hooks will run: black, ruff (with --fix), pyright"
+	@echo "   Same checks as CI pipeline"
 	@echo "   To skip hooks: git commit --no-verify"
 
 run:
@@ -80,12 +81,8 @@ format:
 lint:
 	@echo "Running ruff..."
 	$(RUFF) check src/homepage/ tests/
-	@echo "Running pylint..."
-	-$(PYLINT) src/homepage/*.py tests/*.py
 	@echo "Running pyright..."
 	$(PYRIGHT) src/homepage/ tests/
-	@echo "Running mypy..."
-	$(PYTHON) -m mypy src/homepage/
 	@echo "Linting complete!"
 
 check: format lint
