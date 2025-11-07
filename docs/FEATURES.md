@@ -34,6 +34,21 @@ This document provides a comprehensive overview of all features included in the 
 - **Auto-clear**: Input clears after search
 - **URL encoding**: Properly handles special characters in queries
 
+### RSS Feed Carousel
+- **Auto-rotating carousel**: Displays one RSS item at a time
+- **30-second rotation**: Automatically cycles through feed items
+- **Manual navigation**: Previous and next buttons (‹ and ›)
+- **Item counter**: Shows current position and total count
+- **Terminal styling**: Compact, monospace design for clean aesthetics
+- **Multiple feeds**: Supports multiple RSS feeds (pipe-separated)
+- **Smart caching**: Configurable cache TTL (default 5 minutes)
+- **Feed attribution**: Shows source feed name and publication date
+- **Description preview**: Displays article summary when available
+- **External links**: Opens articles in new tabs
+- **Auto-reset timer**: Manual navigation resets the 30-second auto-rotation
+- **Configurable items**: Set max items per feed (default 5)
+- **Error handling**: Graceful fallback when feeds are unavailable
+
 ## Theming & Appearance
 
 ### Dynamic Color Scheme

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **RSS Feed Carousel**: Auto-rotating news widget with terminal-style design
+  - Displays RSS feed items in a carousel format (one item at a time)
+  - Auto-rotates every 30 seconds with manual prev/next navigation
+  - Compact, monospace terminal-like aesthetic
+  - Configurable feeds via `HOMEPAGE_RSS_FEEDS` (pipe-separated URLs)
+  - Shows feed title, publication date, and description
+  - Item counter showing position (e.g., "3 / 10")
+  - Configurable cache TTL and max items per feed
+  - Example feeds included: Hacker News, BBC News
+
 ### Changed
 - **Project Structure**: Reorganized to follow modern Python packaging standards
   - Source code moved to `src/homepage/` (proper package structure)

@@ -10,6 +10,7 @@ A customizable homepage web server that displays links from a TOML configuration
 - 📱 **Responsive Design**: Works on desktop and mobile devices
 - ⏰ **Digital Clock**: 24-hour format clock with current date
 - 🔍 **Web Search**: Integrated search bar with multiple providers (Brave, Google, DuckDuckGo, Bing)
+- 📰 **RSS Feed Carousel**: Auto-rotating news carousel with customizable feeds
 - 🔗 **Hierarchical Links**: Organize links in categories and subcategories
 - 🎯 **Icon Support**: Use emojis or other icons for visual organization
 - ✏️ **In-Browser Editing**: Add, edit, and delete links directly from the web interface
@@ -118,6 +119,36 @@ echo "/path/to/your/wallpaper.jpg" > ~/.wallpaper
 ```
 
 The wallpaper is served through Flask at the `/wallpaper` endpoint to avoid browser CORS restrictions with local `file://` URLs.
+
+### RSS Feed Carousel
+
+The application includes an auto-rotating RSS feed carousel with a terminal-style design.
+
+#### Enabling RSS Feeds
+
+1. **Enable the feature** in `.env`:
+```bash
+HOMEPAGE_ENABLE_RSS=True
+```
+
+2. **Configure RSS feeds** (separate multiple feeds with `|`):
+```bash
+HOMEPAGE_RSS_FEEDS=https://news.ycombinator.com/rss|https://feeds.bbci.co.uk/news/rss.xml
+```
+
+3. **Optional settings**:
+```bash
+HOMEPAGE_RSS_MAX_ITEMS=5        # Items per feed (default: 5)
+HOMEPAGE_RSS_CACHE_TTL=300      # Cache duration in seconds (default: 300)
+```
+
+#### Using the RSS Carousel
+
+- **Auto-rotation**: Items cycle automatically every 30 seconds
+- **Manual navigation**: Use ‹ and › buttons to browse items
+- **Item counter**: Shows current position (e.g., "3 / 10")
+- **Terminal styling**: Compact, monospace design for a clean look
+- **Feed attribution**: Each item shows source feed and publication date
 
 ### In-Browser Link Editing
 
