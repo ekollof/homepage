@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Homepage</title>
     <link rel="icon" href="{{ url_for('favicon') }}" type="image/png">
-    <style>
-{% include 'styles.css.j2' %}
-    </style>
+    <link rel="stylesheet" href="{{ url_for('serve_styles') }}">
 </head>
 <body>
     <div class="overlay">
@@ -243,8 +241,6 @@
     </div>
     {% endif %}
 
-    <script>
-{% include 'scripts.js.j2' %}
-    </script>
+    <script src="{{ url_for('serve_scripts') }}"></script>
 </body>
 </html>

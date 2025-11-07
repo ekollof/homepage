@@ -565,6 +565,52 @@ def check_reload():
     return jsonify({"reload": reload})
 
 
+@app.route("/styles.css")
+def serve_styles():
+    """Serve dynamically generated CSS with color replacements."""
+    colors = load_colors()
+    wallpaper = load_wallpaper()
+
+    css_content = render_template(
+        "styles.css.j2",
+        colors=colors,
+        wallpaper=wallpaper,
+    )
+
+    response = make_response(css_content)
+    response.headers["Content-Type"] = "text/css"
+
+    # Cache for 1 hour if not in edit mode
+    if not config.ENABLE_EDITING:
+        response.headers["Cache-Control"] = "public, max-age=3600"
+    else:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+
+    return response
+
+
+@app.route("/scripts.js")
+def serve_scripts():
+    """Serve dynamically generated JavaScript."""
+    js_content = render_template(
+        "scripts.js.j2",
+        clock_format=config.CLOCK_FORMAT,
+        reload_interval=config.RELOAD_CHECK_INTERVAL,
+        config=config,
+    )
+
+    response = make_response(js_content)
+    response.headers["Content-Type"] = "application/javascript"
+
+    # Cache for 1 hour if not in edit mode
+    if not config.ENABLE_EDITING:
+        response.headers["Cache-Control"] = "public, max-age=3600"
+    else:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+
+    return response
+
+
 @app.route("/api/config")
 def get_config_data():
     """Get current links configuration.
