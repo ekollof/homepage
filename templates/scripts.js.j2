@@ -1,0 +1,1039 @@
+        const CLOCK_FORMAT = '{{ clock_format }}';
+        const RELOAD_INTERVAL = {{ reload_interval }};
+
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            if (CLOCK_FORMAT === '12') {
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
+            } else {
+                hours = String(hours).padStart(2, '0');
+                document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+            }
+        }
+
+        function updateDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateString = now.toLocaleDateString('en-US', options);
+            document.getElementById('date').textContent = dateString;
+        }
+
+        function updateWeather() {
+            const weatherElement = document.getElementById('weather');
+            if (!weatherElement) return;
+
+            fetch('/api/weather')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        weatherElement.innerHTML = `<span class="weather-loading">Weather unavailable</span>`;
+                        console.warn('Weather API error:', data.error);
+                        return;
+                    }
+
+                    const tempUnit = data.units === 'metric' ? '°C' : '°F';
+                    const windUnit = data.units === 'metric' ? 'km/h' : 'mph';
+
+                    weatherElement.innerHTML = `
+                        <span class="weather-location">${data.location}</span>
+                        <span class="weather-temp">${Math.round(data.temperature)}${tempUnit}</span>
+                        <span class="weather-desc">${data.description}</span>
+                        <span class="weather-details">
+                            <span>💧 ${data.humidity}%</span>
+                            <span>💨 ${Math.round(data.wind_speed)} ${windUnit}</span>
+                        </span>
+                    `;
+                })
+                .catch(error => {
+                    // Silently fail for network errors (don't spam console)
+                    if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                        weatherElement.innerHTML = `<span class="weather-loading">No network</span>`;
+                    } else {
+                        weatherElement.innerHTML = `<span class="weather-loading">Weather unavailable</span>`;
+                        console.warn('Weather fetch failed:', error.message);
+                    }
+                });
+        }
+
+        function updateRSSFeeds() {
+            const rssElement = document.getElementById('rssWidget');
+            if (!rssElement) return;
+
+            fetch('/api/rss')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error || !data.items || data.items.length === 0) {
+                        rssElement.innerHTML = `<div class="rss-error">No RSS items available</div>`;
+                        return;
+                    }
+
+                    let html = '<div class="rss-title">📰 Latest News</div><div class="rss-items">';
+                    
+                    data.items.forEach(item => {
+                        const date = item.published ? new Date(item.published).toLocaleDateString() : '';
+                        html += `
+                            <div class="rss-item">
+                                <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="rss-item-link">
+                                    ${item.title}
+                                </a>
+                                <div class="rss-item-meta">
+                                    <span class="rss-item-feed">${item.feed_title}</span>
+                                    ${date ? `<span class="rss-item-date">${date}</span>` : ''}
+                                </div>
+                                ${item.description ? `<div class="rss-item-description">${item.description}...</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    rssElement.innerHTML = html;
+                })
+                .catch(error => {
+                    rssElement.innerHTML = `<div class="rss-error">RSS feeds unavailable</div>`;
+                    console.warn('RSS fetch failed:', error.message);
+                });
+        }
+
+        function checkForReload() {
+            // Don't reload if in edit mode - user is actively editing
+            if (editMode) {
+                return;
+            }
+            
+            fetch('/check_reload')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.reload) {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => console.error('Error checking for reload:', error));
+        }
+
+        function handleSearch(event) {
+            event.preventDefault();
+
+            const searchInput = document.getElementById('searchInput');
+            const searchProvider = document.getElementById('searchProvider');
+            const query = searchInput.value.trim();
+
+            if (!query) {
+                return;
+            }
+
+            const searchUrls = {
+                'brave': 'https://search.brave.com/search?q=',
+                'google': 'https://www.google.com/search?q=',
+                'duckduckgo': 'https://duckduckgo.com/?q=',
+                'bing': 'https://www.bing.com/search?q='
+            };
+
+            const baseUrl = searchUrls[searchProvider.value] || searchUrls['brave'];
+            const searchUrl = baseUrl + encodeURIComponent(query);
+
+            // Track search
+            trackEvent('search', { provider: searchProvider.value, query: query });
+
+            window.open(searchUrl, '_blank', 'noopener,noreferrer');
+            
+            // Save to search history
+            saveSearchHistory(query, searchProvider.value);
+            searchInput.value = '';
+        }
+
+        function saveSearchHistory(query, provider) {
+            try {
+                let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+                history.unshift({ query, provider, timestamp: Date.now() });
+                history = history.slice(0, 50); // Keep last 50 searches
+                localStorage.setItem('searchHistory', JSON.stringify(history));
+            } catch (e) {
+                console.error('Failed to save search history:', e);
+            }
+        }
+
+        function trackEvent(eventType, data) {
+            // Send tracking data to server
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event: eventType, data: data, timestamp: Date.now() })
+            }).catch(() => {}); // Silently fail
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            const searchInput = document.getElementById('searchInput');
+            const helpOverlay = document.getElementById('helpOverlay');
+            
+            // Ignore if typing in input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    searchInput.blur();
+                }
+                return;
+            }
+
+            switch(e.key) {
+                case '/':
+                    e.preventDefault();
+                    searchInput.focus();
+                    break;
+                case '?':
+                    e.preventDefault();
+                    helpOverlay.classList.toggle('show');
+                    break;
+                case 'Escape':
+                    helpOverlay.classList.remove('show');
+                    break;
+            }
+
+            // Ctrl+Number for search provider selection
+            if (e.ctrlKey && e.key >= '1' && e.key <= '4') {
+                e.preventDefault();
+                const provider = document.getElementById('searchProvider');
+                provider.selectedIndex = parseInt(e.key) - 1;
+            }
+
+            {% if config.ENABLE_EDITING %}
+            // Ctrl+Arrow keys for widget reordering in edit mode
+            if (editMode && e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                e.preventDefault();
+                if (e.key === 'ArrowUp') {
+                    moveWidgetUp();
+                } else {
+                    moveWidgetDown();
+                }
+            }
+            {% endif %}
+        });
+
+        // Click outside help to close
+        document.getElementById('helpOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'helpOverlay') {
+                e.target.classList.remove('show');
+            }
+        });
+
+        // Track link clicks
+        document.querySelectorAll('.link-item a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                trackEvent('link_click', { 
+                    name: e.currentTarget.dataset.link,
+                    url: e.currentTarget.href 
+                });
+            });
+        });
+
+        // Update clock every second
+        updateClock();
+        updateDate();
+        setInterval(updateClock, 1000);
+
+        // Update date at midnight
+        setInterval(updateDate, 60000);
+
+        {% if config.ENABLE_WEATHER %}
+        // Update weather on load and every 10 minutes
+        updateWeather();
+        setInterval(updateWeather, 600000);
+        {% endif %}
+
+        {% if config.ENABLE_RSS %}
+        // Update RSS feeds on load and every 5 minutes
+        updateRSSFeeds();
+        setInterval(updateRSSFeeds, 300000);
+        {% endif %}
+
+        // Check for file changes
+        setInterval(checkForReload, RELOAD_INTERVAL);
+
+        {% if config.ENABLE_EDITING %}
+        // Edit mode functionality
+        let editMode = false;
+        let currentConfig = null;
+        let editContext = null;
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            const container = document.getElementById('linksContainer');
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            const toggle = document.getElementById('editToggle');
+            const editIcon = document.getElementById('editIcon');
+            const editText = document.getElementById('editText');
+
+            if (editMode) {
+                container.classList.add('edit-mode');
+                if (widgetsContainer) {
+                    widgetsContainer.parentElement.classList.add('edit-mode');
+                    enableWidgetDragging();
+                }
+                toggle.classList.add('active');
+                editIcon.textContent = '💾';
+                editText.textContent = 'Save & Exit';
+                loadConfig();
+            } else {
+                container.classList.remove('edit-mode');
+                if (widgetsContainer) {
+                    widgetsContainer.parentElement.classList.remove('edit-mode');
+                    disableWidgetDragging();
+                }
+                toggle.classList.remove('active');
+                editIcon.textContent = '✏️';
+                editText.textContent = 'Edit Mode';
+                saveAndExit();
+            }
+        }
+
+        function loadConfig() {
+            fetch('/api/config')
+                .then(response => response.json())
+                .then(data => {
+                    currentConfig = data;
+                    console.log('Configuration loaded', currentConfig);
+                    
+                    // Load widget order from config
+                    loadWidgetOrder();
+                    
+                    // Fetch and cache any missing favicons on load
+                    fetchMissingFavicons();
+                })
+                .catch(error => console.error('Failed to load config:', error));
+        }
+
+        async function fetchMissingFavicons() {
+            // Find all links with empty icons and fetch their favicons
+            let hasChanges = false;
+            
+            for (let catIndex = 0; catIndex < currentConfig.category.length; catIndex++) {
+                const category = currentConfig.category[catIndex];
+                
+                // Check category links
+                if (category.links) {
+                    for (let linkIndex = 0; linkIndex < category.links.length; linkIndex++) {
+                        const link = category.links[linkIndex];
+                        if (link.icon === '' || !link.icon) {
+                            console.log('Fetching favicon for:', link.name);
+                            try {
+                                const faviconData = await fetchAndCacheFavicon(link.url);
+                                link.icon = faviconData;
+                                hasChanges = true;
+                            } catch (error) {
+                                console.error('Failed to fetch favicon for', link.name, error);
+                            }
+                        }
+                    }
+                }
+                
+                // Check subcategory links
+                if (category.subcategory) {
+                    for (let subIndex = 0; subIndex < category.subcategory.length; subIndex++) {
+                        const subcategory = category.subcategory[subIndex];
+                        if (subcategory.links) {
+                            for (let linkIndex = 0; linkIndex < subcategory.links.length; linkIndex++) {
+                                const link = subcategory.links[linkIndex];
+                                if (link.icon === '' || !link.icon) {
+                                    console.log('Fetching favicon for:', link.name);
+                                    try {
+                                        const faviconData = await fetchAndCacheFavicon(link.url);
+                                        link.icon = faviconData;
+                                        hasChanges = true;
+                                    } catch (error) {
+                                        console.error('Failed to fetch favicon for', link.name, error);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If we fetched any favicons, update the DOM
+            if (hasChanges) {
+                console.log('Favicons fetched, updating display');
+                updateCategoryDisplay();
+            }
+        }
+
+        function saveAndExit() {
+            if (!currentConfig) return;
+
+            // Show saving indicator
+            const toggle = document.getElementById('editToggle');
+            const originalText = toggle.innerHTML;
+            toggle.innerHTML = '<span>💾</span><span>Saving...</span>';
+            toggle.style.pointerEvents = 'none';
+
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentConfig)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Save failed');
+                return response.json();
+            })
+            .then(() => {
+                console.log('Configuration saved');
+                // Add cache-busting parameter to force reload
+                setTimeout(() => {
+                    window.location.href = window.location.pathname + '?t=' + Date.now();
+                }, 500);
+            })
+            .catch(error => {
+                console.error('Failed to save config:', error);
+                alert('Failed to save configuration. Please try again.');
+                toggle.innerHTML = originalText;
+                toggle.style.pointerEvents = 'auto';
+            });
+        }
+
+        function getCategoryFromElement(element) {
+            const categoryDiv = element.closest('.category');
+            const categoryIndex = parseInt(categoryDiv.dataset.categoryIndex);
+            return { categoryDiv, categoryIndex };
+        }
+
+        async function fetchAndCacheFavicon(url) {
+            try {
+                // Use our proxy endpoint to avoid CORS issues
+                const response = await fetch(`/api/favicon?url=${encodeURIComponent(url)}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch favicon');
+                }
+                
+                const data = await response.json();
+                return data.favicon;
+            } catch (error) {
+                console.error('Error fetching favicon:', error);
+                throw error;
+            }
+        }
+
+        function saveLinkToConfig(link) {
+            if (editContext.action === 'edit') {
+                // Edit existing link
+                if (editContext.subcategoryIndex !== undefined) {
+                    currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links[editContext.linkIndex] = link;
+                } else {
+                    currentConfig.category[editContext.categoryIndex].links[editContext.linkIndex] = link;
+                }
+            } else {
+                // Add new link
+                if (editContext.subcategoryIndex !== undefined) {
+                    if (!currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links) {
+                        currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links = [];
+                    }
+                    currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links.push(link);
+                } else {
+                    if (!currentConfig.category[editContext.categoryIndex].links) {
+                        currentConfig.category[editContext.categoryIndex].links = [];
+                    }
+                    currentConfig.category[editContext.categoryIndex].links.push(link);
+                }
+            }
+            
+            closeModal();
+            updateCategoryDisplay();
+        }
+
+        function updateCategoryDisplay() {
+            // Changes are stored in currentConfig and will be saved when exiting edit mode
+            // Rebuild the links container from currentConfig
+            const container = document.getElementById('linksContainer');
+            if (!container || !currentConfig) return;
+            
+            // Simple approach: regenerate the entire container HTML
+            // This ensures the DOM matches currentConfig
+            let html = '';
+            
+            currentConfig.category.forEach((category, catIndex) => {
+                html += `<div class="category" data-category-index="${catIndex}">`;
+                html += `<div class="category-title">`;
+                html += `<span class="category-icon">${category.icon || '📁'}</span>`;
+                html += `<span>${category.name}</span>`;
+                html += `</div>`;
+                
+                // Category links
+                if (category.links && category.links.length > 0) {
+                    html += `<ul class="links-list">`;
+                    category.links.forEach((link, linkIndex) => {
+                        let iconHtml;
+                        if (link.icon) {
+                            // Check if it's a base64 data URI
+                            if (link.icon.startsWith('data:image/')) {
+                                iconHtml = `<img src="${link.icon}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                            } else {
+                                // It's an emoji or text
+                                iconHtml = link.icon;
+                            }
+                        } else {
+                            // Fallback to Google favicon service
+                            iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                        }
+                        html += `<li class="link-item" data-link-index="${linkIndex}">`;
+                        html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">`;
+                        html += `<span class="link-icon">${iconHtml}</span>`;
+                        html += `<span>${link.name}</span>`;
+                        html += `</a>`;
+                        html += `<div class="edit-controls link-controls">`;
+                        html += `<button class="edit-btn edit-btn-small" onclick="editLink(this, false, event)">Edit</button>`;
+                        html += `<button class="edit-btn edit-btn-small danger" onclick="deleteLink(this, false, event)">×</button>`;
+                        html += `</div>`;
+                        html += `</li>`;
+                    });
+                    html += `</ul>`;
+                }
+                
+                // Subcategories
+                if (category.subcategory && category.subcategory.length > 0) {
+                    category.subcategory.forEach((subcategory, subIndex) => {
+                        html += `<div class="subcategory" data-subcategory-index="${subIndex}">`;
+                        html += `<div class="subcategory-title">`;
+                        html += `<span class="subcategory-icon">${subcategory.icon || '📂'}</span>`;
+                        html += `<span>${subcategory.name}</span>`;
+                        html += `</div>`;
+                        
+                        if (subcategory.links && subcategory.links.length > 0) {
+                            html += `<ul class="links-list">`;
+                            subcategory.links.forEach((link, linkIndex) => {
+                                let iconHtml;
+                                if (link.icon) {
+                                    // Check if it's a base64 data URI
+                                    if (link.icon.startsWith('data:image/')) {
+                                        iconHtml = `<img src="${link.icon}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                                    } else {
+                                        // It's an emoji or text
+                                        iconHtml = link.icon;
+                                    }
+                                } else {
+                                    // Fallback to Google favicon service
+                                    iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                                }
+                                html += `<li class="link-item" data-link-index="${linkIndex}">`;
+                                html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">`;
+                                html += `<span class="link-icon">${iconHtml}</span>`;
+                                html += `<span>${link.name}</span>`;
+                                html += `</a>`;
+                                html += `<div class="edit-controls link-controls">`;
+                                html += `<button class="edit-btn edit-btn-small" onclick="editLink(this, true, event)">Edit</button>`;
+                                html += `<button class="edit-btn edit-btn-small danger" onclick="deleteLink(this, true, event)">×</button>`;
+                                html += `</div>`;
+                                html += `</li>`;
+                            });
+                            html += `</ul>`;
+                        }
+                        
+                        html += `<div class="edit-controls">`;
+                        html += `<button class="edit-btn" onclick="editSubcategory(this)">Edit Subcategory</button>`;
+                        html += `<button class="edit-btn add" onclick="addLink(this, true)">+ Link</button>`;
+                        html += `<button class="edit-btn danger" onclick="deleteSubcategory(this)">Delete</button>`;
+                        html += `</div>`;
+                        html += `</div>`;
+                    });
+                }
+                
+                // Category edit controls
+                html += `<div class="edit-controls">`;
+                html += `<button class="edit-btn" onclick="editCategory(this)">Edit Category</button>`;
+                html += `<button class="edit-btn add" onclick="addLink(this, false)">+ Link</button>`;
+                html += `<button class="edit-btn add" onclick="addSubcategory(this)">+ Subcategory</button>`;
+                html += `<button class="edit-btn danger" onclick="deleteCategory(this)">Delete</button>`;
+                html += `</div>`;
+                html += `</div>`;
+            });
+            
+            // Add category button
+            html += `<div class="edit-controls add-category-container">`;
+            html += `<button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>`;
+            html += `</div>`;
+            
+            container.innerHTML = html;
+            
+            // Re-apply edit mode class if still in edit mode
+            if (editMode) {
+                container.classList.add('edit-mode');
+            }
+            
+            console.log('DOM updated from currentConfig');
+        }
+
+        function addCategory() {
+            if (!currentConfig) return;
+
+            editContext = { type: 'category', action: 'add' };
+            document.getElementById('modalTitle').textContent = 'Add Category';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemIcon').value = '📁';
+            document.getElementById('urlGroup').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function editCategory(button) {
+            const { categoryDiv, categoryIndex } = getCategoryFromElement(button);
+            const category = currentConfig.category[categoryIndex];
+
+            editContext = { type: 'category', action: 'edit', index: categoryIndex };
+            document.getElementById('modalTitle').textContent = 'Edit Category';
+            document.getElementById('itemName').value = category.name;
+            document.getElementById('itemIcon').value = category.icon || '📁';
+            document.getElementById('urlGroup').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteCategory(button) {
+            const { categoryIndex } = getCategoryFromElement(button);
+            const category = currentConfig.category[categoryIndex];
+
+            showConfirmDialog(
+                `Delete category "${category.name}" and all its contents?`,
+                () => {
+                    currentConfig.category.splice(categoryIndex, 1);
+                    updateCategoryDisplay();
+                }
+            );
+        }
+
+        function addSubcategory(button) {
+            const { categoryIndex } = getCategoryFromElement(button);
+
+            editContext = { type: 'subcategory', action: 'add', categoryIndex };
+            document.getElementById('modalTitle').textContent = 'Add Subcategory';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemIcon').value = '📂';
+            document.getElementById('urlGroup').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function editSubcategory(button) {
+            const subcategoryDiv = button.closest('.subcategory');
+            const { categoryIndex } = getCategoryFromElement(button);
+            const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+            const subcategory = currentConfig.category[categoryIndex].subcategory[subcategoryIndex];
+
+            editContext = { type: 'subcategory', action: 'edit', categoryIndex, subcategoryIndex };
+            document.getElementById('modalTitle').textContent = 'Edit Subcategory';
+            document.getElementById('itemName').value = subcategory.name;
+            document.getElementById('itemIcon').value = subcategory.icon || '📂';
+            document.getElementById('urlGroup').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteSubcategory(button) {
+            const subcategoryDiv = button.closest('.subcategory');
+            const { categoryIndex } = getCategoryFromElement(button);
+            const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+            const subcategory = currentConfig.category[categoryIndex].subcategory[subcategoryIndex];
+
+            showConfirmDialog(
+                `Delete subcategory "${subcategory.name}" and all its links?`,
+                () => {
+                    currentConfig.category[categoryIndex].subcategory.splice(subcategoryIndex, 1);
+                    updateCategoryDisplay();
+                }
+            );
+        }
+
+        function addLink(button, isSubcategory) {
+            if (isSubcategory) {
+                const subcategoryDiv = button.closest('.subcategory');
+                const { categoryIndex } = getCategoryFromElement(button);
+                const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                editContext = { type: 'link', action: 'add', categoryIndex, subcategoryIndex };
+            } else {
+                const { categoryIndex } = getCategoryFromElement(button);
+                editContext = { type: 'link', action: 'add', categoryIndex };
+            }
+
+            document.getElementById('modalTitle').textContent = 'Add Link';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemUrl').value = '';
+            document.getElementById('itemIcon').value = '';
+            document.getElementById('urlGroup').style.display = 'block';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function editLink(button, isSubcategory, event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const linkItem = button.closest('.link-item');
+            const linkIndex = parseInt(linkItem.dataset.linkIndex);
+            
+            if (isSubcategory) {
+                const subcategoryDiv = button.closest('.subcategory');
+                const { categoryIndex } = getCategoryFromElement(button);
+                const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[linkIndex];
+                
+                editContext = { type: 'link', action: 'edit', categoryIndex, subcategoryIndex, linkIndex };
+                
+                document.getElementById('modalTitle').textContent = 'Edit Link';
+                document.getElementById('itemName').value = link.name;
+                document.getElementById('itemUrl').value = link.url;
+                document.getElementById('itemIcon').value = link.icon || '🔗';
+            } else {
+                const { categoryIndex } = getCategoryFromElement(button);
+                const link = currentConfig.category[categoryIndex].links[linkIndex];
+                
+                editContext = { type: 'link', action: 'edit', categoryIndex, linkIndex };
+                
+                document.getElementById('modalTitle').textContent = 'Edit Link';
+                document.getElementById('itemName').value = link.name;
+                document.getElementById('itemUrl').value = link.url;
+                document.getElementById('itemIcon').value = link.icon || '🔗';
+            }
+
+            document.getElementById('urlGroup').style.display = 'block';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteLink(button, isSubcategory, event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const linkItem = button.closest('.link-item');
+            const linkIndex = parseInt(linkItem.dataset.linkIndex);
+
+            if (isSubcategory) {
+                const subcategoryDiv = button.closest('.subcategory');
+                const { categoryIndex } = getCategoryFromElement(button);
+                const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+                const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[linkIndex];
+
+                showConfirmDialog(
+                    `Delete link "${link.name}"?`,
+                    () => {
+                        currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links.splice(linkIndex, 1);
+                        updateCategoryDisplay();
+                    }
+                );
+            } else {
+                const { categoryIndex } = getCategoryFromElement(button);
+                const link = currentConfig.category[categoryIndex].links[linkIndex];
+
+                showConfirmDialog(
+                    `Delete link "${link.name}"?`,
+                    () => {
+                        currentConfig.category[categoryIndex].links.splice(linkIndex, 1);
+                        updateCategoryDisplay();
+                    }
+                );
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
+            editContext = null;
+        }
+
+        function showConfirmDialog(message, onConfirm) {
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmButton').onclick = () => {
+                onConfirm();
+                closeConfirmModal();
+            };
+            document.getElementById('confirmModal').classList.add('show');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('show');
+        }
+
+        document.getElementById('editForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('itemName').value.trim();
+            const url = document.getElementById('itemUrl').value.trim();
+            const icon = document.getElementById('itemIcon').value.trim();
+
+            if (!name) {
+                alert('Name is required');
+                return;
+            }
+
+            if (!editContext || !currentConfig) return;
+
+            switch (editContext.type) {
+                case 'category':
+                    if (editContext.action === 'add') {
+                        currentConfig.category.push({
+                            name,
+                            icon: icon || '📁',
+                            links: [],
+                            subcategory: []
+                        });
+                    } else {
+                        currentConfig.category[editContext.index].name = name;
+                        currentConfig.category[editContext.index].icon = icon || '📁';
+                    }
+                    break;
+
+                case 'subcategory':
+                    if (editContext.action === 'add') {
+                        if (!currentConfig.category[editContext.categoryIndex].subcategory) {
+                            currentConfig.category[editContext.categoryIndex].subcategory = [];
+                        }
+                        currentConfig.category[editContext.categoryIndex].subcategory.push({
+                            name,
+                            icon: icon || '📂',
+                            links: []
+                        });
+                    } else {
+                        const subcat = currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex];
+                        subcat.name = name;
+                        subcat.icon = icon || '📂';
+                    }
+                    break;
+
+                case 'link':
+                    if (!url) {
+                        alert('URL is required for links');
+                        return;
+                    }
+                    
+                    // If icon is empty, fetch favicon and convert to base64
+                    if (!icon || icon.trim() === '') {
+                        fetchAndCacheFavicon(url).then(faviconData => {
+                            const link = { name, url, icon: faviconData };
+                            saveLinkToConfig(link);
+                        }).catch(error => {
+                            console.error('Failed to fetch favicon:', error);
+                            // Save with empty icon if fetch fails
+                            const link = { name, url, icon: '' };
+                            saveLinkToConfig(link);
+                        });
+                        return; // Exit early, will continue in promise
+                    }
+                    
+                    const link = { name, url, icon };
+                    saveLinkToConfig(link);
+                    break;
+            }
+
+            // For non-link items (category, subcategory), close and update immediately
+            if (editContext.type !== 'link') {
+                closeModal();
+                updateCategoryDisplay();
+            }
+        });
+
+        // Close modals on click outside
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') closeModal();
+        });
+
+        document.getElementById('confirmModal').addEventListener('click', (e) => {
+            if (e.target.id === 'confirmModal') closeConfirmModal();
+        });
+
+        // Add 'e' keyboard shortcut for edit mode
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'e' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                toggleEditMode();
+            }
+        });
+
+        // Widget dragging functionality
+        let draggedWidget = null;
+        let widgetOrder = [];
+
+        function enableWidgetDragging() {
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+
+            const widgets = widgetsContainer.querySelectorAll('.widget-wrapper');
+            
+            // Store initial order
+            widgetOrder = Array.from(widgets).map(w => w.dataset.widget);
+            
+            widgets.forEach(widget => {
+                widget.draggable = true;
+                
+                widget.addEventListener('dragstart', handleDragStart);
+                widget.addEventListener('dragover', handleDragOver);
+                widget.addEventListener('drop', handleDrop);
+                widget.addEventListener('dragend', handleDragEnd);
+                widget.addEventListener('dragenter', handleDragEnter);
+                widget.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function disableWidgetDragging() {
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+
+            const widgets = widgetsContainer.querySelectorAll('.widget-wrapper');
+            widgets.forEach(widget => {
+                widget.draggable = false;
+                widget.removeEventListener('dragstart', handleDragStart);
+                widget.removeEventListener('dragover', handleDragOver);
+                widget.removeEventListener('drop', handleDrop);
+                widget.removeEventListener('dragend', handleDragEnd);
+                widget.removeEventListener('dragenter', handleDragEnter);
+                widget.removeEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedWidget = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            if (this !== draggedWidget) {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (draggedWidget !== this) {
+                const container = document.getElementById('widgetsContainer');
+                const widgets = Array.from(container.children);
+                const draggedIndex = widgets.indexOf(draggedWidget);
+                const targetIndex = widgets.indexOf(this);
+                
+                if (draggedIndex < targetIndex) {
+                    this.parentNode.insertBefore(draggedWidget, this.nextSibling);
+                } else {
+                    this.parentNode.insertBefore(draggedWidget, this);
+                }
+                
+                // Update widget order
+                updateWidgetOrder();
+            }
+            
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            
+            const widgets = document.querySelectorAll('.widget-wrapper');
+            widgets.forEach(widget => {
+                widget.classList.remove('drag-over');
+            });
+        }
+
+        function updateWidgetOrder() {
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+            
+            const widgets = widgetsContainer.querySelectorAll('.widget-wrapper');
+            widgetOrder = Array.from(widgets).map(w => w.dataset.widget);
+            
+            // Save to currentConfig for later saving to TOML
+            if (currentConfig) {
+                currentConfig.widget_order = widgetOrder;
+            }
+        }
+
+        function loadWidgetOrder() {
+            // Load from config instead of localStorage
+            if (!currentConfig || !currentConfig.widget_order) return;
+            
+            try {
+                const order = currentConfig.widget_order;
+                const widgetsContainer = document.getElementById('widgetsContainer');
+                if (!widgetsContainer) return;
+                
+                order.forEach(widgetName => {
+                    const widget = widgetsContainer.querySelector(`[data-widget="${widgetName}"]`);
+                    if (widget) {
+                        widgetsContainer.appendChild(widget);
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to load widget order:', e);
+            }
+        }
+
+        function moveWidgetUp() {
+            if (!editMode) return;
+            
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+            
+            const widgets = Array.from(widgetsContainer.children);
+            const focused = document.querySelector('.widget-wrapper:hover');
+            
+            if (!focused) {
+                // Move first widget
+                if (widgets.length > 1) {
+                    widgetsContainer.insertBefore(widgets[0], null);
+                    updateWidgetOrder();
+                }
+                return;
+            }
+            
+            const index = widgets.indexOf(focused);
+            if (index > 0) {
+                widgetsContainer.insertBefore(focused, widgets[index - 1]);
+                updateWidgetOrder();
+            }
+        }
+
+        function moveWidgetDown() {
+            if (!editMode) return;
+            
+            const widgetsContainer = document.getElementById('widgetsContainer');
+            if (!widgetsContainer) return;
+            
+            const widgets = Array.from(widgetsContainer.children);
+            const focused = document.querySelector('.widget-wrapper:hover');
+            
+            if (!focused) {
+                // Move last widget
+                if (widgets.length > 1) {
+                    widgetsContainer.insertBefore(widgets[widgets.length - 1], widgets[0]);
+                    updateWidgetOrder();
+                }
+                return;
+            }
+            
+            const index = widgets.indexOf(focused);
+            if (index < widgets.length - 1) {
+                widgetsContainer.insertBefore(widgets[index + 1], focused);
+                updateWidgetOrder();
+            }
+        }
+
+        {% endif %}

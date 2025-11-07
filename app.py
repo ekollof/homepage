@@ -593,7 +593,15 @@ def get_config_data():
                 return jsonify({"error": "Failed to initialize override file"}), 500
 
     categories = load_links()
-    return jsonify({"category": categories})
+
+    # Load widget order from config if exists
+    config_data = load_toml_file(config.CONFIG_OVERRIDE_FILE)
+    if not config_data:
+        config_data = load_toml_file(config.CONFIG_FILE)
+
+    widget_order = config_data.get("widget_order", [])
+
+    return jsonify({"category": categories, "widget_order": widget_order})
 
 
 @app.route("/api/config", methods=["POST"])
@@ -614,10 +622,17 @@ def save_config_data():
         if not valid:
             return jsonify({"error": "Invalid configuration", "details": errors}), 400
 
-        # Write to override file using tomli_w (already imported at top)
+        # Extract widget_order if present (optional field)
+        widget_order = data.pop("widget_order", [])
 
+        # Prepare final config with widget_order at top level
+        final_config = data.copy()
+        if widget_order:
+            final_config["widget_order"] = widget_order
+
+        # Write to override file using tomli_w (already imported at top)
         with open(config.CONFIG_OVERRIDE_FILE, "wb") as f:
-            tomli_w.dump(data, f)
+            tomli_w.dump(final_config, f)
             f.flush()  # Ensure data is written to disk
             os.fsync(f.fileno())  # Force OS to write to disk
 
