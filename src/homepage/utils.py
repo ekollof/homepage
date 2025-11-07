@@ -239,8 +239,8 @@ def extract_favicon_from_page(url: str, timeout: int = 5) -> str | None:
         # Strategy 1: Look for explicit dark mode favicon
         dark_mode_link = soup.find(
             "link",
-            rel=lambda r: r and "icon" in str(r).lower(),
-            attrs={"media": lambda m: m and "dark" in str(m).lower()},
+            rel=lambda r: r and "icon" in str(r).lower(),  # type: ignore[arg-type]
+            attrs={"media": lambda m: m and "dark" in str(m).lower()},  # type: ignore[arg-type]
         )
         if dark_mode_link and dark_mode_link.get("href"):
             favicon_url = dark_mode_link["href"]
@@ -250,19 +250,19 @@ def extract_favicon_from_page(url: str, timeout: int = 5) -> str | None:
         # Strategy 2: Prefer SVG icons (they're resolution-independent and often dark-friendly)
         if not favicon_url:
             svg_icon = soup.find(
-                "link", rel=lambda r: r and "icon" in str(r).lower(), type="image/svg+xml"
+                "link", rel=lambda r: r and "icon" in str(r).lower(), type="image/svg+xml"  # type: ignore[arg-type]
             )
             # Also check href for .svg extension
             if not svg_icon:
                 svg_icon = soup.find(
                     "link",
-                    rel=lambda r: r and "icon" in str(r).lower(),
-                    href=lambda h: h and ".svg" in str(h).lower(),
+                    rel=lambda r: r and "icon" in str(r).lower(),  # type: ignore[arg-type]
+                    href=lambda h: h and ".svg" in str(h).lower(),  # type: ignore[arg-type]
                 )
 
             if svg_icon and svg_icon.get("href"):
                 # Skip mask-icon (used for Safari pinned tabs, not suitable for general use)
-                if "mask-icon" not in str(svg_icon.get("rel", [])).lower():
+                if "mask-icon" not in str(svg_icon.get("rel", [])).lower():  # type: ignore[arg-type]
                     favicon_url = svg_icon["href"]
                     favicon_type = "svg"
                     logger.debug("Found SVG favicon for %s", url)
@@ -282,7 +282,7 @@ def extract_favicon_from_page(url: str, timeout: int = 5) -> str | None:
 
         # If found in HTML, make it absolute
         if favicon_url:
-            favicon_url = urljoin(base_url, favicon_url)
+            favicon_url = urljoin(base_url, favicon_url)  # type: ignore[arg-type]
         else:
             # Fallback to /favicon.ico
             favicon_url = f"{base_url}/favicon.ico"
