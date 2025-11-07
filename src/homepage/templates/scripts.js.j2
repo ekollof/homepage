@@ -439,13 +439,19 @@
         function toggleSystemStats() {
             systemStatsVisible = !systemStatsVisible;
             const sidebar = document.getElementById('systemStatsSidebar');
+            const expandedContent = document.getElementById('statsExpandedContent');
+            const slimBar = document.getElementById('statsSlimBar');
             
             if (systemStatsVisible) {
-                sidebar.classList.add('visible');
+                sidebar.classList.add('expanded');
+                expandedContent.style.display = 'block';
+                slimBar.style.display = 'none';
                 updateSystemStats();
                 systemStatsInterval = setInterval(updateSystemStats, {{ config.SYSTEM_STATS_REFRESH_INTERVAL * 1000 }});
             } else {
-                sidebar.classList.remove('visible');
+                sidebar.classList.remove('expanded');
+                expandedContent.style.display = 'none';
+                slimBar.style.display = 'block';
                 if (systemStatsInterval) {
                     clearInterval(systemStatsInterval);
                     systemStatsInterval = null;
@@ -470,11 +476,21 @@
                         return;
                     }
 
-                    // Update icon panel
-                    document.getElementById('cpuIconValue').textContent = `${Math.round(data.cpu_percent)}%`;
-                    document.getElementById('memoryIconValue').textContent = `${Math.round(data.memory_percent)}%`;
-                    document.getElementById('diskIconValue').textContent = `${Math.round(data.disk_percent)}%`;
-                    document.getElementById('networkIconValue').textContent = `${(data.network_sent_mb + data.network_recv_mb).toFixed(1)}M`;
+                    // Update icon panel and slim bar
+                    const cpuPercent = `${Math.round(data.cpu_percent)}%`;
+                    const memoryPercent = `${Math.round(data.memory_percent)}%`;
+                    const diskPercent = `${Math.round(data.disk_percent)}%`;
+                    const networkTotal = `${(data.network_sent_mb + data.network_recv_mb).toFixed(1)}M`;
+                    
+                    document.getElementById('cpuIconValue').textContent = cpuPercent;
+                    document.getElementById('memoryIconValue').textContent = memoryPercent;
+                    document.getElementById('diskIconValue').textContent = diskPercent;
+                    document.getElementById('networkIconValue').textContent = networkTotal;
+                    
+                    document.getElementById('cpuSlimValue').textContent = cpuPercent;
+                    document.getElementById('memorySlimValue').textContent = memoryPercent;
+                    document.getElementById('diskSlimValue').textContent = diskPercent;
+                    document.getElementById('networkSlimValue').textContent = networkTotal;
 
                     // Update CPU section
                     updateStatBar('cpuBar', data.cpu_percent);
@@ -570,6 +586,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('systemStatsSidebar');
             setStatsPosition(systemStatsPosition);
+            // Start updating slim bar immediately
+            updateSystemStats();
+            setInterval(updateSystemStats, {{ config.SYSTEM_STATS_REFRESH_INTERVAL * 1000 }});
         });
 
         // Add keyboard shortcut for system stats (s key)

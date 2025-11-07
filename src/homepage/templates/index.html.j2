@@ -12,34 +12,60 @@
     </style>
 </head>
 <body>
-    {% if config.ENABLE_EDITING %}
-    <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()">
-        <span id="editIcon">✏️</span>
-        <span id="editText">Edit Mode</span>
-    </button>
-    {% endif %}
+    <!-- Top-right button container -->
+    <div class="top-buttons-container">
+        {% if config.ENABLE_SYSTEM_STATS %}
+        <button class="stats-toggle" id="statsToggle" onclick="toggleSystemStats()">
+            <span>📊</span>
+        </button>
+        {% endif %}
+        {% if config.ENABLE_EDITING %}
+        <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()">
+            <span id="editIcon">✏️</span>
+            <span id="editText">Edit Mode</span>
+        </button>
+        {% endif %}
+    </div>
 
     {% if config.ENABLE_SYSTEM_STATS %}
     <!-- System Stats Sidebar -->
-    <button class="stats-toggle" id="statsToggle" onclick="toggleSystemStats()">
-        <span>📊</span>
-    </button>
-    
-    <div class="system-stats-sidebar" id="systemStatsSidebar">
-        <div class="stats-header">
-            <span class="stats-title">System Stats</span>
-            <div class="stats-position-controls">
-                <button class="position-btn" onclick="setStatsPosition('left')" title="Left">⬅️</button>
-                <button class="position-btn" onclick="setStatsPosition('right')" title="Right">➡️</button>
-                <button class="position-btn" onclick="setStatsPosition('top')" title="Top">⬆️</button>
-                <button class="position-btn" onclick="setStatsPosition('bottom')" title="Bottom">⬇️</button>
+    <div class="system-stats-sidebar position-left" id="systemStatsSidebar">
+        <!-- Slim iconized bar (always visible when sidebar is not expanded) -->
+        <div class="stats-slim-bar" id="statsSlimBar" onclick="toggleSystemStats()">
+            <div class="slim-stat" title="CPU">
+                <span class="slim-icon">💻</span>
+                <span class="slim-value" id="cpuSlimValue">--</span>
             </div>
-            <button class="stats-close" onclick="toggleSystemStats()">✕</button>
+            <div class="slim-stat" title="Memory">
+                <span class="slim-icon">🧠</span>
+                <span class="slim-value" id="memorySlimValue">--</span>
+            </div>
+            <div class="slim-stat" title="Disk">
+                <span class="slim-icon">💾</span>
+                <span class="slim-value" id="diskSlimValue">--</span>
+            </div>
+            <div class="slim-stat" title="Network">
+                <span class="slim-icon">🌐</span>
+                <span class="slim-value" id="networkSlimValue">--</span>
+            </div>
         </div>
         
-        <div class="stats-content">
-            <!-- Iconized Panel (always visible) -->
-            <div class="stats-icon-panel">
+        <!-- Expanded content -->
+        <div class="stats-expanded-content" id="statsExpandedContent" style="display: none;">
+            <div class="stats-header">
+                <span class="stats-title">System Stats</span>
+                <div class="stats-position-controls">
+                    <button class="position-btn" onclick="setStatsPosition('left')" title="Left">⬅️</button>
+                    <button class="position-btn" onclick="setStatsPosition('right')" title="Right">➡️</button>
+                    <button class="position-btn" onclick="setStatsPosition('top')" title="Top">⬆️</button>
+                    <button class="position-btn" onclick="setStatsPosition('bottom')" title="Bottom">⬇️</button>
+                </div>
+                <button class="stats-close" onclick="toggleSystemStats()" title="Collapse">◀</button>
+            </div>
+            
+            <div class="stats-content">
+                <!-- Iconized Panel -->
+                <div class="stats-icon-panel">
                 <div class="stat-icon" title="CPU">
                     <span class="icon">💻</span>
                     <span class="value" id="cpuIconValue">--</span>
@@ -140,6 +166,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
     {% endif %}
