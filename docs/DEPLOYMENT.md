@@ -78,17 +78,17 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/path/to/homepage
-ExecStart=/path/to/homepage/venv/bin/python app.py
+EnvironmentFile=/path/to/homepage/.env
+ExecStart=/path/to/homepage/venv/bin/python -m homepage.app
 Restart=on-failure
 RestartSec=10
 Environment="PATH=/path/to/homepage/venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="HOMEPAGE_ENV=production"
-Environment="HOMEPAGE_HOST=127.0.0.1"
-Environment="HOMEPAGE_PORT=5000"
 
 [Install]
 WantedBy=default.target
 ```
+
+**Note:** The `EnvironmentFile` directive loads environment variables from `.env`. Individual environment variables can still be set in the service file and will override values from the `.env` file.
 
 2. Reload and start:
 

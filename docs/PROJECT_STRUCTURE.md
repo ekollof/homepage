@@ -13,8 +13,17 @@ homepage/
 │   ├── config.py         # Configuration management
 │   ├── metrics.py        # Metrics collection
 │   ├── utils.py          # Utility functions
+│   ├── routes/           # Route blueprints (API, assets, etc.)
+│   ├── services/         # Service layer (weather, RSS, etc.)
 │   ├── templates/        # Jinja2 templates
-│   └── static/           # Static assets (if any)
+│   │   ├── *.html.j2    # HTML templates
+│   │   ├── *.js.j2      # JavaScript templates (generated)
+│   │   ├── *.css.j2     # CSS templates (combined)
+│   │   └── css/         # Modular CSS source files
+│   └── static/           # Static assets
+│       └── js/
+│           ├── socket.io.min.js  # Socket.IO library
+│           └── modules/  # Modular JavaScript source files
 │
 ├── data/                  # Configuration and data files
 │   ├── links.toml        # Link configuration (user-editable)
@@ -132,6 +141,35 @@ make test-cov   # Run tests with coverage
 make format     # Format code with black
 make lint       # Run linters
 make check      # Format and lint
+make build-js   # Build JavaScript from modules
+```
+
+### JavaScript Development
+
+JavaScript is organized in modular files that get combined into a single template:
+
+```bash
+# Edit source modules
+vim src/homepage/static/js/modules/04-rss.js.j2
+
+# Build combined JavaScript
+make build-js
+
+# This generates src/homepage/templates/scripts.js.j2
+```
+
+### CSS Development
+
+CSS is organized in modular files that get included via Jinja2:
+
+```
+src/homepage/templates/css/
+├── base/         # Reset, typography, variables
+├── components/   # Clock, search, weather, etc.
+├── features/     # Editing, animations, responsive
+└── layout/       # Grid, sidebar
+
+Combined in: styles-modular.css.j2
 ```
 
 ## Docker
