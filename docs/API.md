@@ -198,6 +198,285 @@ curl "http://localhost:5000/api/favicon?url=https://github.com"
 
 ---
 
+### GET /api/rss
+
+**Description:** Get RSS feed items from configured feeds.
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "title": "Article Title",
+      "link": "https://example.com/article",
+      "description": "Article summary...",
+      "published": "Mon, 10 Nov 2025 16:05:46 +0000",
+      "feed_title": "Feed Name"
+    }
+  ],
+  "count": 10
+}
+```
+
+**Status Codes:**
+- 200: Success
+- 404: RSS feature not enabled
+- 500: Error fetching feeds
+
+**Configuration:**
+- `HOMEPAGE_ENABLE_RSS=True` - Enable RSS feature
+- `HOMEPAGE_RSS_FEEDS` - Pipe-separated feed URLs
+- `HOMEPAGE_RSS_MAX_ITEMS` - Max items per feed (default: 5)
+- `HOMEPAGE_RSS_CACHE_TTL` - Cache duration in seconds (default: 300)
+
+**Example:**
+```bash
+curl http://localhost:5000/api/rss
+```
+
+---
+
+### GET /api/weather
+
+**Description:** Get current weather data for configured location.
+
+**Response:**
+```json
+{
+  "temperature": 15.5,
+  "feels_like": 13.2,
+  "description": "Partly cloudy",
+  "icon": "⛅",
+  "humidity": 65,
+  "wind_speed": 12.5,
+  "location": "Amsterdam, NL"
+}
+```
+
+**Status Codes:**
+- 200: Success
+- 404: Weather feature not enabled
+- 500: Error fetching weather data
+
+**Configuration:**
+- `HOMEPAGE_ENABLE_WEATHER=True` - Enable weather feature
+- `HOMEPAGE_WEATHER_PROVIDER` - `openmeteo` or `openweathermap`
+- `HOMEPAGE_WEATHER_LOCATION` - Optional `lat,lon` (auto-detects if empty)
+- `HOMEPAGE_WEATHER_UNITS` - `metric` or `imperial`
+
+**Example:**
+```bash
+curl http://localhost:5000/api/weather
+```
+
+---
+
+### GET /api/weather/forecast
+
+**Description:** Get hourly weather forecast.
+
+**Response:**
+```json
+{
+  "forecast": [
+    {
+      "time": "14:00",
+      "temperature": 16,
+      "icon": "☀️",
+      "description": "Clear"
+    }
+  ]
+}
+```
+
+**Status Codes:**
+- 200: Success
+- 404: Weather feature not enabled
+
+---
+
+### GET /api/weather/forecast/daily
+
+**Description:** Get daily weather forecast.
+
+**Response:**
+```json
+{
+  "forecast": [
+    {
+      "day": "Monday",
+      "temp_high": 18,
+      "temp_low": 12,
+      "icon": "⛅",
+      "description": "Partly cloudy"
+    }
+  ]
+}
+```
+
+**Status Codes:**
+- 200: Success
+- 404: Weather feature not enabled
+
+---
+
+### GET /api/system-stats
+
+**Description:** Get real-time system statistics.
+
+**Response:**
+```json
+{
+  "cpu_percent": 25.5,
+  "cpu_count": 8,
+  "cpu_freq_current": 2400,
+  "memory_percent": 45.2,
+  "memory_used_gb": 7.2,
+  "memory_total_gb": 16.0,
+  "disk_percent": 60.5,
+  "disk_used_gb": 120.5,
+  "disk_total_gb": 200.0,
+  "network_sent_mb": 1024.5,
+  "network_recv_mb": 2048.3,
+  "uptime_seconds": 86400
+}
+```
+
+**Status Codes:**
+- 200: Success
+- 404: System stats feature not enabled
+- 500: Error collecting stats
+
+**Configuration:**
+- `HOMEPAGE_ENABLE_SYSTEM_STATS=True` - Enable system stats
+- `HOMEPAGE_SYSTEM_STATS_REFRESH_INTERVAL` - Update interval in seconds (default: 5)
+
+**Example:**
+```bash
+curl http://localhost:5000/api/system-stats
+```
+
+---
+
+### GET /api/config
+
+**Description:** Get current links configuration (requires editing enabled).
+
+**Response:**
+```json
+{
+  "categories": [
+    {
+      "name": "Development",
+      "icon": "💻",
+      "links": [...],
+      "subcategory": [...]
+    }
+  ]
+}
+```
+
+**Status Codes:**
+- 200: Success
+- 404: Editing feature not enabled
+
+**Example:**
+```bash
+curl http://localhost:5000/api/config
+```
+
+---
+
+### POST /api/config
+
+**Description:** Save links configuration (requires editing enabled).
+
+**Request Body:**
+```json
+{
+  "categories": [...]
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success"
+}
+```
+
+**Status Codes:**
+- 200: Configuration saved
+- 400: Invalid configuration
+- 404: Editing feature not enabled
+- 500: Error saving configuration
+
+**Example:**
+```bash
+curl -X POST http://localhost:5000/api/config \
+  -H "Content-Type: application/json" \
+  -d '{"categories":[...]}'
+```
+
+---
+
+### POST /api/config/reset
+
+**Description:** Reset configuration to base (delete override file).
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Configuration reset to base"
+}
+```
+
+**Status Codes:**
+- 200: Configuration reset
+- 404: Editing feature not enabled
+
+---
+
+### GET /api/websocket/status
+
+**Description:** Get WebSocket connection status and statistics.
+
+**Response:**
+```json
+{
+  "enabled": true,
+  "connected_clients": 3,
+  "async_mode": "threading"
+}
+```
+
+**Status Codes:**
+- 200: Success
+- 404: WebSocket not enabled
+
+---
+
+### GET /api/websocket/info
+
+**Description:** Get detailed WebSocket configuration.
+
+**Response:**
+```json
+{
+  "enabled": true,
+  "async_mode": "threading",
+  "ping_timeout": 60,
+  "ping_interval": 25,
+  "url": "ws://localhost:5000/socket.io/"
+}
+```
+
+**Status Codes:**
+- 200: Success
+
+---
+
 ### GET /wallpaper
 
 **Description:** Serve the configured wallpaper image.
@@ -226,19 +505,142 @@ curl "http://localhost:5000/api/favicon?url=https://github.com"
 
 ---
 
+## WebSocket Events
+
+WebSocket support is available when `HOMEPAGE_ENABLE_WEBSOCKET=True`.
+
+### Connection
+
+**Endpoint:** `ws://localhost:5000/socket.io/`
+
+**Events from Server:**
+
+#### `ws_connected`
+Emitted when client successfully connects.
+
+#### `config_changed`
+Emitted when configuration files change.
+```json
+{
+  "type": "colors|wallpaper|links",
+  "message": "Configuration changed"
+}
+```
+
+#### `system_stats_update`
+Real-time system statistics (if enabled).
+```json
+{
+  "cpu_percent": 25.5,
+  "memory_percent": 45.2,
+  ...
+}
+```
+
+#### `weather_update`
+Weather data updates (if enabled).
+```json
+{
+  "temperature": 15.5,
+  "description": "Partly cloudy",
+  ...
+}
+```
+
+#### `rss_update`
+RSS feed updates (if enabled).
+```json
+{
+  "items": [...],
+  "count": 10
+}
+```
+
+**Client Events:**
+
+#### `connect`
+Client initiates connection.
+
+#### `disconnect`
+Client disconnects.
+
+**Configuration:**
+- `HOMEPAGE_ENABLE_WEBSOCKET` - Enable WebSocket (default: True)
+- `HOMEPAGE_WEBSOCKET_ASYNC_MODE` - `threading`, `eventlet`, or `gevent`
+- `HOMEPAGE_WEBSOCKET_PING_TIMEOUT` - Ping timeout in seconds (default: 60)
+- `HOMEPAGE_WEBSOCKET_PING_INTERVAL` - Ping interval in seconds (default: 25)
+
+**Example (JavaScript):**
+```javascript
+const socket = io();
+
+socket.on('connect', () => {
+  console.log('Connected');
+});
+
+socket.on('config_changed', (data) => {
+  console.log('Config changed:', data.type);
+  location.reload();
+});
+
+socket.on('system_stats_update', (data) => {
+  updateStatsDisplay(data);
+});
+```
+
+---
+
 ## Configuration
 
 ### Environment Variables
 
-Control API behavior using environment variables:
+Control API behavior using environment variables (set in `.env` file or systemd service):
 
+**Core Settings:**
 - `HOMEPAGE_HOST`: Host to bind to (default: `127.0.0.1`)
 - `HOMEPAGE_PORT`: Port to listen on (default: `5000`)
+- `HOMEPAGE_ENV`: `development` or `production`
+- `HOMEPAGE_SECRET_KEY`: Flask secret key (auto-generated in production)
+- `HOMEPAGE_DEBUG`: Enable debug mode (default: `False`)
+
+**Feature Flags:**
 - `HOMEPAGE_ENABLE_METRICS`: Enable metrics collection (default: `True`)
+- `HOMEPAGE_ENABLE_WEATHER`: Enable weather widget (default: `False`)
+- `HOMEPAGE_ENABLE_RSS`: Enable RSS feeds (default: `False`)
+- `HOMEPAGE_ENABLE_SYSTEM_STATS`: Enable system stats (default: `True`)
+- `HOMEPAGE_ENABLE_EDITING`: Enable in-browser editing (default: `True`)
+- `HOMEPAGE_ENABLE_WEBSOCKET`: Enable WebSocket (default: `True`)
+
+**Performance:**
 - `HOMEPAGE_ENABLE_CACHE`: Enable response caching (default: `True`)
 - `HOMEPAGE_ENABLE_COMPRESSION`: Enable gzip compression (default: `True`)
 - `HOMEPAGE_CACHE_TTL`: Cache time-to-live in seconds (default: `5`)
+
+**Weather Settings:**
+- `HOMEPAGE_WEATHER_PROVIDER`: `openmeteo` or `openweathermap`
+- `HOMEPAGE_WEATHER_API_KEY`: API key for OpenWeatherMap (if used)
+- `HOMEPAGE_WEATHER_LOCATION`: Optional `lat,lon` (auto-detects if empty)
+- `HOMEPAGE_WEATHER_UNITS`: `metric` or `imperial`
+- `HOMEPAGE_GEOIP_PROVIDER`: `maxmind`, `ipapi`, or `ip-api`
+
+**RSS Settings:**
+- `HOMEPAGE_RSS_FEEDS`: Pipe-separated feed URLs
+- `HOMEPAGE_RSS_MAX_ITEMS`: Max items per feed (default: `5`)
+- `HOMEPAGE_RSS_CACHE_TTL`: Cache duration in seconds (default: `300`)
+
+**System Stats:**
+- `HOMEPAGE_SYSTEM_STATS_REFRESH_INTERVAL`: Update interval in seconds (default: `5`)
+- `HOMEPAGE_SYSTEM_STATS_POSITION`: `left`, `right`, `top`, or `bottom`
+
+**WebSocket:**
+- `HOMEPAGE_WEBSOCKET_ASYNC_MODE`: `threading`, `eventlet`, or `gevent`
+- `HOMEPAGE_WEBSOCKET_PING_TIMEOUT`: Ping timeout in seconds (default: `60`)
+- `HOMEPAGE_WEBSOCKET_PING_INTERVAL`: Ping interval in seconds (default: `25`)
+
+**UI Settings:**
+- `HOMEPAGE_CLOCK_FORMAT`: `24` or `12`
 - `HOMEPAGE_RELOAD_INTERVAL`: Reload check interval in ms (default: `2000`)
+- `HOMEPAGE_WATCH_FILES`: Enable file watching (default: `True`)
 
 ### Example
 
@@ -253,17 +655,6 @@ python app.py
 ## Rate Limiting
 
 Currently, no rate limiting is implemented. Consider adding rate limiting for production use with libraries like `Flask-Limiter`.
-
----
-
-## CORS
-
-CORS is not enabled by default. For cross-origin requests, configure Flask-CORS:
-
-```python
-from flask_cors import CORS
-CORS(app)
-```
 
 ---
 
@@ -327,7 +718,18 @@ PrometheusMetrics(app)
 
 ## WebSocket Support
 
-WebSocket support is not currently implemented. For real-time updates, the application uses polling via `/check_reload`.
+**Status:** ✅ Implemented
+
+WebSocket support is enabled by default for real-time updates. See the WebSocket Events section above for details.
+
+**Features:**
+- Real-time configuration change notifications
+- Live system stats updates (if enabled)
+- Weather and RSS updates via push
+- Automatic reconnection with exponential backoff
+- Graceful fallback to polling if WebSocket unavailable
+
+**Documentation:** See `docs/WEBSOCKET.md` for detailed WebSocket documentation.
 
 ---
 

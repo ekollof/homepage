@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- RSS feed carousel widget with auto-rotation and navigation
+- Real-time system statistics sidebar with CPU, memory, disk, and network metrics
+- WebSocket support for real-time configuration updates
+- In-browser link editing with drag-and-drop reordering
+- Weather widget with current conditions and forecast (hourly/daily)
+- GeoIP-based location detection for weather
+- Modular JavaScript build system (`modules/*.js.j2` → `scripts.js.j2`)
+- Modular CSS organization with Jinja2 includes
+- Configuration override system (`links.override.toml`)
+- Favicon fetching service with dark mode optimization
+- Service blueprints for better code organization (routes/, services/)
+- Comprehensive WebSocket documentation
+- System stats positioning (left/right/top/bottom)
+- Widget reordering with drag-and-drop
+- Category and link reordering in edit mode
+- Multiple weather providers (Open-Meteo, OpenWeatherMap)
+- Multiple GeoIP providers (MaxMind, ipapi, ip-api)
+
+### Changed
+- Reorganized into modern Python package structure (`src/homepage/`)
+- Moved configuration files to `data/` directory
+- Systemd service now loads `.env` file via `EnvironmentFile` directive
+- Improved error handling and fallback mechanisms
+- Enhanced caching for better performance
+- Updated all documentation to reflect current architecture
+
+### Fixed
+- RSS feed not loading when service runs via systemd (missing `.env` file loading)
+- Environment variables not being loaded in systemd service
+
+### Removed
+- Unused ES6 module JavaScript files (`static/js/{widgets,core,features,editing}/`)
+- Duplicate CSS files in `static/css/` (now only in `templates/css/`)
+- Obsolete restructure documentation
+
 ## [0.1.0] - 2025-01-XX
 
 ### Added
