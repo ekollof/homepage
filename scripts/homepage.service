@@ -19,6 +19,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=INSTALL_DIR_PLACEHOLDER
+EnvironmentFile=INSTALL_DIR_PLACEHOLDER/.env
 ExecStart=INSTALL_DIR_PLACEHOLDER/venv/bin/python -m homepage.app
 Restart=on-failure
 RestartSec=5
