@@ -1,0 +1,271 @@
+/**
+ * Module: Initialization and WebSocket
+ * Page initialization, event listeners, and WebSocket event handlers
+ */
+
+// Initialize DOM cache on page load
+initDOMCache();
+
+// Set up event listeners for top buttons
+{% if config.ENABLE_SYSTEM_STATS %}
+if (DOM.statsToggle) {
+    DOM.statsToggle.addEventListener('click', toggleSystemStats);
+}
+if (DOM.statsSlimBar) {
+    DOM.statsSlimBar.addEventListener('click', toggleSystemStats);
+}
+// Set up position buttons using event delegation
+document.addEventListener('click', (e) => {
+    const target = e.target.closest('[data-action="set-stats-position"]');
+    if (target) {
+        const position = target.dataset.position;
+        setStatsPosition(position);
+    }
+    if (e.target.closest('[data-action="toggle-stats"]')) {
+        toggleSystemStats();
+    }
+});
+{% endif %}
+
+{% if config.ENABLE_EDITING %}
+if (DOM.editToggle) {
+    DOM.editToggle.addEventListener('click', toggleEditMode);
+}
+{% endif %}
+
+// Update clock every second
+updateClock();
+updateDate();
+setInterval(updateClock, 1000);
+
+// Update date at midnight
+setInterval(updateDate, 60000);
+
+{% if config.ENABLE_WEATHER %}
+// Update weather on load and every 10 minutes
+updateWeather();
+setInterval(updateWeather, 600000);
+
+// Forecast expand/collapse functionality
+const forecastExpandBtn = document.getElementById('forecastExpandBtn');
+const forecastContainer = document.getElementById('forecastContainer');
+let forecastExpanded = false;
+
+if (forecastExpandBtn && forecastContainer) {
+    forecastExpandBtn.addEventListener('click', () => {
+        forecastExpanded = !forecastExpanded;
+        if (forecastExpanded) {
+            forecastContainer.style.display = 'block';
+            forecastExpandBtn.textContent = '📅 Hide Forecast';
+            // Load forecast when expanded for the first time
+            if (forecastContainer.dataset.loaded !== 'true') {
+                updateWeatherForecast();
+                forecastContainer.dataset.loaded = 'true';
+            }
+        } else {
+            forecastContainer.style.display = 'none';
+            forecastExpandBtn.textContent = '📅 Show Forecast';
+        }
+    });
+}
+
+// Forecast mode toggle functionality
+const forecastModeToggle = document.getElementById('forecastModeToggle');
+if (forecastModeToggle) {
+    forecastModeToggle.addEventListener('click', () => {
+        forecastMode = forecastMode === 'hourly' ? 'daily' : 'hourly';
+        forecastModeToggle.textContent = forecastMode === 'hourly' ? 'Hourly' : 'Daily';
+        updateWeatherForecast();
+    });
+}
+
+// Update forecast every 10 minutes if expanded
+setInterval(() => {
+    if (forecastExpanded) {
+        updateWeatherForecast();
+    }
+}, 600000);
+{% endif %}
+
+{% if config.ENABLE_RSS %}
+// Update RSS feeds on load and every 5 minutes
+updateRSSFeeds();
+setInterval(updateRSSFeeds, 300000);
+{% endif %}
+
+// Check for file changes (fallback to polling if WebSocket is disabled)
+{% if not config.ENABLE_WEBSOCKET %}
+setInterval(checkForReload, RELOAD_INTERVAL);
+{% endif %}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    const searchInput = document.getElementById('searchInput');
+    const helpOverlay = document.getElementById('helpOverlay');
+
+    // Ignore if typing in input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            searchInput.blur();
+        }
+        return;
+    }
+
+    switch(e.key) {
+        case '/':
+            e.preventDefault();
+            searchInput.focus();
+            break;
+        case '?':
+            e.preventDefault();
+            helpOverlay.classList.toggle('show');
+            break;
+        case 'Escape':
+            helpOverlay.classList.remove('show');
+            break;
+    }
+});
+
+// Search form submission
+document.addEventListener('DOMContentLoaded', () => {
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        searchForm.addEventListener('submit', handleSearch);
+    }
+});
+
+{% if config.ENABLE_WEBSOCKET %}
+// WebSocket client will be loaded from separate file
+// Set up event handlers when WebSocket is available
+if (typeof wsClient !== 'undefined' && wsClient.isEnabled()) {
+    console.log('Setting up WebSocket event handlers');
+
+    // Handle WebSocket connection status
+    wsClient.on('ws_connected', () => {
+        console.log('WebSocket connected - real-time updates enabled');
+    });
+
+    wsClient.on('ws_disconnected', (data) => {
+        console.log('WebSocket disconnected, falling back to polling');
+        // Fallback to polling when WebSocket is disconnected
+        const pollInterval = setInterval(checkForReload, RELOAD_INTERVAL);
+
+        // Clear polling when reconnected
+        wsClient.on('ws_connected', () => {
+            clearInterval(pollInterval);
+        }, { once: true });
+    });
+
+    wsClient.on('ws_failed', () => {
+        console.warn('WebSocket failed, using polling permanently');
+        setInterval(checkForReload, RELOAD_INTERVAL);
+    });
+
+    // Configuration change events trigger reload
+    wsClient.on('config_changed', (data) => {
+        console.log('Received config change via WebSocket:', data.type);
+    });
+
+    {% if config.ENABLE_SYSTEM_STATS %}
+    // Real-time system stats updates via WebSocket
+    wsClient.on('system_stats_update', (data) => {
+        // Update system stats display without polling
+        if (systemStatsVisible && data) {
+            // Update CPU
+            if (data.cpu_percent !== undefined) {
+                const cpuPercent = `${Math.round(data.cpu_percent)}%`;
+                const cpuElement = document.getElementById('cpuValue');
+                if (cpuElement) cpuElement.textContent = cpuPercent;
+                document.getElementById('cpuIconValue').textContent = cpuPercent;
+                document.getElementById('cpuSlimValue').textContent = cpuPercent;
+                updateStatBar('cpuBar', data.cpu_percent);
+
+                // Update CPU history for sparkline
+                cpuHistory.push(data.cpu_percent);
+                if (cpuHistory.length > maxHistoryPoints) cpuHistory.shift();
+                drawSparkline('cpuSparkline', cpuHistory);
+            }
+
+            // Update memory
+            if (data.memory_percent !== undefined) {
+                const memoryPercent = `${Math.round(data.memory_percent)}%`;
+                const memoryElement = document.getElementById('memoryValue');
+                if (memoryElement) memoryElement.textContent = memoryPercent;
+                document.getElementById('memoryIconValue').textContent = memoryPercent;
+                document.getElementById('memorySlimValue').textContent = memoryPercent;
+                updateStatBar('memoryBar', data.memory_percent);
+
+                // Update memory history for sparkline
+                memoryHistory.push(data.memory_percent);
+                if (memoryHistory.length > maxHistoryPoints) memoryHistory.shift();
+                drawSparkline('memorySparkline', memoryHistory);
+            }
+
+            // Update other stats
+            if (data.disk_percent !== undefined) {
+                const diskPercent = `${Math.round(data.disk_percent)}%`;
+                document.getElementById('diskIconValue').textContent = diskPercent;
+                document.getElementById('diskSlimValue').textContent = diskPercent;
+                updateStatBar('diskBar', data.disk_percent);
+            }
+
+            if (data.network_sent_mb !== undefined && data.network_recv_mb !== undefined) {
+                const networkTotal = `${(data.network_sent_mb + data.network_recv_mb).toFixed(1)}M`;
+                document.getElementById('networkIconValue').textContent = networkTotal;
+                document.getElementById('networkSlimValue').textContent = networkTotal;
+            }
+        }
+    });
+    {% endif %}
+
+    {% if config.ENABLE_WEATHER %}
+    // Real-time weather updates via WebSocket
+    wsClient.on('weather_update', (data) => {
+        const weatherElement = document.getElementById('weather');
+        if (weatherElement && data && !data.error) {
+            const tempUnit = data.units === 'metric' ? '°C' : '°F';
+            const windUnit = data.units === 'metric' ? 'km/h' : 'mph';
+
+            weatherElement.innerHTML = `
+                <span class="weather-location">${data.location}</span>
+                <span class="weather-temp">${Math.round(data.temperature)}${tempUnit}</span>
+                <span class="weather-desc">${data.description}</span>
+                <span class="weather-details">
+                    <span>💧 ${data.humidity}%</span>
+                    <span>💨 ${Math.round(data.wind_speed)} ${windUnit}</span>
+                </span>
+            `;
+        }
+    });
+    {% endif %}
+
+    {% if config.ENABLE_RSS %}
+    // Real-time RSS feed updates via WebSocket
+    wsClient.on('rss_update', (data) => {
+        if (data && data.items) {
+            rssItems = data.items;
+            currentRSSIndex = 0;
+            renderRSSCarousel();
+            resetRSSAutoRotate();
+        }
+    });
+    {% endif %}
+
+    // Links update event (for live editing)
+    wsClient.on('links_update', (data) => {
+        if (data && data.categories && !editMode) {
+            console.log('Received links update via WebSocket');
+            // Only update if not in edit mode to avoid conflicts
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+    });
+} else {
+    console.log('WebSocket not available, using polling');
+    setInterval(checkForReload, RELOAD_INTERVAL);
+}
+{% else %}
+console.log('WebSocket disabled in configuration');
+{% endif %}

@@ -1,0 +1,127 @@
+/**
+ * Module: Weather and Forecast
+ * Handles weather data fetching and display
+ */
+
+{% if config.ENABLE_WEATHER %}
+/**
+ * Fetch and display current weather
+ */
+function updateWeather() {
+    if (!DOM.weather) return;
+
+    fetch('/api/weather')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                DOM.weather.innerHTML = `<span class="weather-loading">Weather unavailable</span>`;
+                console.warn('Weather API error:', data.error);
+                return;
+            }
+
+            const tempUnit = data.units === 'metric' ? '°C' : '°F';
+            const windUnit = data.units === 'metric' ? 'km/h' : 'mph';
+
+            DOM.weather.innerHTML = `
+                <span class="weather-location">${data.location}</span>
+                <span class="weather-temp">${Math.round(data.temperature)}${tempUnit}</span>
+                <span class="weather-desc">${data.description}</span>
+                <span class="weather-details">
+                    <span>💧 ${data.humidity}%</span>
+                    <span>💨 ${Math.round(data.wind_speed)} ${windUnit}</span>
+                </span>
+            `;
+        })
+        .catch(error => {
+            // Silently fail for network errors (don't spam console)
+            if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                DOM.weather.innerHTML = `<span class="weather-loading">No network</span>`;
+            } else {
+                DOM.weather.innerHTML = `<span class="weather-loading">Weather unavailable</span>`;
+                console.warn('Weather fetch failed:', error.message);
+            }
+        });
+}
+
+let forecastMode = 'daily';
+
+/**
+ * Template for forecast item (daily)
+ */
+function createDailyForecastItem(item, tempUnit) {
+    const precipDisplay = item.precipitation_probability > 0
+        ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
+        : '';
+
+    return `
+        <div class="forecast-item">
+            <div class="forecast-day">${item.day}</div>
+            <div class="forecast-emoji">${item.weather_emoji}</div>
+            <div class="forecast-temp-range">${item.temperature_max}/${item.temperature_min}${tempUnit}</div>
+            ${precipDisplay}
+        </div>
+    `;
+}
+
+/**
+ * Template for forecast item (hourly)
+ */
+function createHourlyForecastItem(item, tempUnit) {
+    const precipDisplay = item.precipitation_probability > 0
+        ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
+        : '';
+
+    return `
+        <div class="forecast-item">
+            <div class="forecast-time">${item.hour}</div>
+            <div class="forecast-emoji">${item.weather_emoji}</div>
+            <div class="forecast-temp">${item.temperature}${tempUnit}</div>
+            ${precipDisplay}
+        </div>
+    `;
+}
+
+/**
+ * Fetch and display weather forecast (hourly or daily)
+ */
+function updateWeatherForecast() {
+    if (!DOM.weatherForecast) return;
+
+    const endpoint = forecastMode === 'daily' ? '/api/weather/forecast/daily' : '/api/weather/forecast';
+
+    fetch(endpoint)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const forecastData = forecastMode === 'daily' ? data.daily : data.hourly;
+            if (data.error || !forecastData || forecastData.length === 0) {
+                DOM.weatherForecast.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
+                return;
+            }
+
+            const tempUnit = data.units === 'metric' ? '°C' : '°F';
+            const containerClass = forecastMode === 'daily' ? 'forecast-days' : 'forecast-hours';
+            
+            const itemsHtml = forecastMode === 'daily'
+                ? forecastData.map(item => createDailyForecastItem(item, tempUnit)).join('')
+                : forecastData.map(item => createHourlyForecastItem(item, tempUnit)).join('');
+
+            DOM.weatherForecast.innerHTML = `<div class="${containerClass}">${itemsHtml}</div>`;
+        })
+        .catch(error => {
+            if (!error.message.includes('NetworkError') && !error.message.includes('Failed to fetch')) {
+                console.warn('Forecast fetch failed:', error.message);
+            }
+            DOM.weatherForecast.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
+        });
+}
+{% endif %}

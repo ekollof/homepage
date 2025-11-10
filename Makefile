@@ -1,4 +1,4 @@
-.PHONY: help install install-dev run clean lint format check test test-cov setup-hooks service-install service-start service-stop service-restart service-status service-enable service-disable logs docker-build docker-run docker-stop validate-config stats health export-metrics
+.PHONY: help install install-dev run clean lint format check test test-cov setup-hooks service-install service-start service-stop service-restart service-status service-enable service-disable logs docker-build docker-run docker-stop validate-config stats health export-metrics lint-js render-js check-all build-js
 
 VENV = venv
 PYTHON = $(VENV)/bin/python
@@ -8,6 +8,9 @@ RUFF = $(VENV)/bin/ruff
 PYLINT = $(VENV)/bin/pylint
 PYRIGHT = $(VENV)/bin/pyright
 PYTEST = $(VENV)/bin/pytest
+RENDER_SCRIPT = scripts/render_template.py
+BUILD_JS_SCRIPT = scripts/build_js.py
+RENDERED_JS = scripts_rendered.js
 
 help:
 	@echo "Homepage Development Makefile"
@@ -20,7 +23,11 @@ help:
 	@echo "  clean            - Remove virtual environment and cache files"
 	@echo "  format           - Format code with black"
 	@echo "  lint             - Run all linters (ruff, pyright)"
-	@echo "  check            - Run format and lint checks"
+	@echo "  lint-js          - Lint JavaScript code with ESLint"
+	@echo "  build-js         - Build JavaScript from modules"
+	@echo "  render-js        - Render Jinja2 JavaScript template"
+	@echo "  check            - Run format and lint checks (Python only)"
+	@echo "  check-all        - Run all checks (Python + JavaScript)"
 	@echo "  test             - Run tests with pytest"
 	@echo "  test-cov         - Run tests with coverage report"
 	@echo "  validate-config  - Validate links.toml configuration"
@@ -87,6 +94,26 @@ lint:
 
 check: format lint
 	@echo "All checks passed!"
+
+check-all: format lint lint-js
+	@echo "All checks passed (Python + JavaScript)!"
+
+build-js:
+	@echo "Building JavaScript from modules..."
+	@$(PYTHON) $(BUILD_JS_SCRIPT)
+	@echo "JavaScript build complete!"
+
+render-js:
+	@echo "Rendering Jinja2 JavaScript template..."
+	@$(PYTHON) $(RENDER_SCRIPT) > $(RENDERED_JS)
+	@echo "Rendered JavaScript to $(RENDERED_JS)"
+
+lint-js: render-js
+	@echo "Linting JavaScript with ESLint..."
+	@npx eslint $(RENDERED_JS) --max-warnings 11
+	@echo "JavaScript linting complete!"
+	@rm -f $(RENDERED_JS)
+	@echo "Cleaned up rendered file"
 
 test:
 	@echo "Running tests..."

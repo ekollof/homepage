@@ -1,0 +1,155 @@
+/**
+ * Module: Edit Mode Templates
+ * HTML generation for edit mode
+ */
+
+{% if config.ENABLE_EDITING %}
+async function fetchAndCacheFavicon(url) {
+    try {
+        // Use our proxy endpoint to avoid CORS issues
+        const response = await fetch(`/api/favicon?url=${encodeURIComponent(url)}`);
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch favicon');
+        }
+
+        const data = await response.json();
+        return data.favicon;
+    } catch (error) {
+        console.error('Error fetching favicon:', error);
+        throw error;
+    }
+}
+
+/**
+ * Save link to configuration
+ */
+function saveLinkToConfig(link) {
+    if (editContext.action === 'edit') {
+        // Edit existing link
+        if (editContext.subcategoryIndex !== undefined) {
+            currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links[editContext.linkIndex] = link;
+        } else {
+            currentConfig.category[editContext.categoryIndex].links[editContext.linkIndex] = link;
+        }
+    } else {
+        // Add new link
+        if (editContext.subcategoryIndex !== undefined) {
+            if (!currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links) {
+                currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links = [];
+            }
+            currentConfig.category[editContext.categoryIndex].subcategory[editContext.subcategoryIndex].links.push(link);
+        } else {
+            if (!currentConfig.category[editContext.categoryIndex].links) {
+                currentConfig.category[editContext.categoryIndex].links = [];
+            }
+            currentConfig.category[editContext.categoryIndex].links.push(link);
+        }
+    }
+
+    closeModal();
+    updateCategoryDisplay();
+}
+
+/**
+ * Generate HTML for link icon (favicon or emoji)
+ */
+function createLinkIconHTML(link) {
+    if (link.icon) {
+        // Check if it's a base64 data URI
+        if (link.icon.startsWith('data:image/')) {
+            return `<img src="${link.icon}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+        }
+        // It's an emoji or text
+        return link.icon;
+    }
+    // Fallback to Google favicon service
+    return `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+}
+
+/**
+ * Generate HTML for a single link item
+ */
+function createLinkItemHTML(link, linkIndex, isSubcategory) {
+    const iconHtml = createLinkIconHTML(link);
+    const editAction = isSubcategory ? 'editLink(this, true, event)' : 'editLink(this, false, event)';
+    const deleteAction = isSubcategory ? 'deleteLink(this, true, event)' : 'deleteLink(this, false, event)';
+
+    return `
+        <li class="link-item" data-link-index="${linkIndex}" draggable="false">
+            <span class="link-drag-handle">⋮⋮</span>
+            <a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">
+                <span class="link-icon">${iconHtml}</span>
+                <span>${link.name}</span>
+            </a>
+            <div class="edit-controls link-controls">
+                <button class="edit-btn edit-btn-small" onclick="${editAction}">Edit</button>
+                <button class="edit-btn edit-btn-small danger" onclick="${deleteAction}">×</button>
+            </div>
+        </li>
+    `;
+}
+
+/**
+ * Generate HTML for links list
+ */
+function createLinksListHTML(links, isSubcategory) {
+    if (!links || links.length === 0) return '';
+
+    const linksHtml = links.map((link, index) => createLinkItemHTML(link, index, isSubcategory)).join('');
+    return `<ul class="links-list">${linksHtml}</ul>`;
+}
+
+/**
+ * Generate HTML for a subcategory
+ */
+function createSubcategoryHTML(subcategory, subIndex) {
+    return `
+        <div class="subcategory" data-subcategory-index="${subIndex}" draggable="false">
+            <div class="subcategory-title">
+                <span class="subcategory-drag-handle">⋮⋮</span>
+                <span class="subcategory-icon">${subcategory.icon || '📂'}</span>
+                <span>${subcategory.name}</span>
+            </div>
+            ${createLinksListHTML(subcategory.links, true)}
+            <div class="edit-controls">
+                <button class="edit-btn" onclick="editSubcategory(this)">Edit Subcategory</button>
+                <button class="edit-btn add" onclick="addLink(this, true)">+ Link</button>
+                <button class="edit-btn danger" onclick="deleteSubcategory(this)">Delete</button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Generate HTML for a category
+ */
+function createCategoryHTML(category, catIndex) {
+    const subcategoriesHtml = category.subcategory
+        ? category.subcategory.map((sub, i) => createSubcategoryHTML(sub, i)).join('')
+        : '';
+
+    return `
+        <div class="category" data-category-index="${catIndex}" draggable="false">
+            <span class="category-drag-handle">⋮⋮</span>
+            <div class="category-title">
+                <span class="category-icon">${category.icon || '📁'}</span>
+                <span>${category.name}</span>
+            </div>
+            ${createLinksListHTML(category.links, false)}
+            ${subcategoriesHtml}
+            <div class="edit-controls">
+                <button class="edit-btn" onclick="editCategory(this)">Edit Category</button>
+                <button class="edit-btn add" onclick="addLink(this, false)">+ Link</button>
+                <button class="edit-btn add" onclick="addSubcategory(this)">+ Subcategory</button>
+                <button class="edit-btn danger" onclick="deleteCategory(this)">Delete</button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Update category display from currentConfig
+ * Rebuilds the entire links container to match configuration
+ */
+{% endif %}

@@ -1,0 +1,258 @@
+/**
+ * Module: Edit Mode Modals
+ * Add/Edit/Delete operations for categories, subcategories, links
+ */
+
+{% if config.ENABLE_EDITING %}
+function updateCategoryDisplay() {
+    if (!DOM.linksContainer || !currentConfig) return;
+
+    const categoriesHtml = currentConfig.category
+        .map((category, index) => createCategoryHTML(category, index))
+        .join('');
+
+    const addButtonHtml = `
+        <div class="edit-controls add-category-container">
+            <button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>
+        </div>
+    `;
+
+    DOM.linksContainer.innerHTML = categoriesHtml + addButtonHtml;
+
+    // Re-apply edit mode class if still in edit mode
+    if (editMode) {
+        DOM.linksContainer.classList.add(CSS_CLASSES.EDIT_MODE);
+        // Re-enable dragging for newly created elements
+        enableCategoryDragging();
+        enableLinkDragging();
+        enableSubcategoryDragging();
+    }
+
+    console.log('DOM updated from currentConfig');
+}
+
+/**
+ * Add new category
+ */
+function addCategory() {
+    if (!currentConfig) return;
+
+    editContext = { type: 'category', action: 'add' };
+    DOM.modalTitle.textContent = 'Add Category';
+    DOM.itemName.value = '';
+    DOM.itemIcon.value = '📁';
+    DOM.urlGroup.style.display = 'none';
+    DOM.editModal.classList.add(CSS_CLASSES.SHOW);
+}
+
+/**
+ * Edit existing category
+ */
+function editCategory(button) {
+    const { categoryDiv, categoryIndex } = getCategoryFromElement(button);
+    const category = currentConfig.category[categoryIndex];
+
+    editContext = { type: 'category', action: 'edit', index: categoryIndex };
+    DOM.modalTitle.textContent = 'Edit Category';
+    DOM.itemName.value = category.name;
+    DOM.itemIcon.value = category.icon || '📁';
+    DOM.urlGroup.style.display = 'none';
+    DOM.editModal.classList.add(CSS_CLASSES.SHOW);
+}
+
+/**
+ * Delete category with confirmation
+ */
+function deleteCategory(button) {
+    const { categoryIndex } = getCategoryFromElement(button);
+    const category = currentConfig.category[categoryIndex];
+
+    showConfirmDialog(
+        `Delete category "${category.name}" and all its contents?`,
+        () => {
+            currentConfig.category.splice(categoryIndex, 1);
+            updateCategoryDisplay();
+        }
+    );
+}
+
+/**
+ * Add new subcategory
+ */
+function addSubcategory(button) {
+    const { categoryIndex } = getCategoryFromElement(button);
+
+    editContext = { type: 'subcategory', action: 'add', categoryIndex };
+    DOM.modalTitle.textContent = 'Add Subcategory';
+    DOM.itemName.value = '';
+    DOM.itemIcon.value = '📂';
+    DOM.urlGroup.style.display = 'none';
+    DOM.editModal.classList.add(CSS_CLASSES.SHOW);
+}
+
+/**
+ * Edit existing subcategory
+ */
+function editSubcategory(button) {
+    const subcategoryDiv = button.closest('.subcategory');
+    const { categoryIndex } = getCategoryFromElement(button);
+    const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+    const subcategory = currentConfig.category[categoryIndex].subcategory[subcategoryIndex];
+
+    editContext = { type: 'subcategory', action: 'edit', categoryIndex, subcategoryIndex };
+    DOM.modalTitle.textContent = 'Edit Subcategory';
+    DOM.itemName.value = subcategory.name;
+    DOM.itemIcon.value = subcategory.icon || '📂';
+    DOM.urlGroup.style.display = 'none';
+    DOM.editModal.classList.add(CSS_CLASSES.SHOW);
+}
+
+/**
+ * Delete subcategory with confirmation
+ */
+function deleteSubcategory(button) {
+    const subcategoryDiv = button.closest('.subcategory');
+    const { categoryIndex } = getCategoryFromElement(button);
+    const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+    const subcategory = currentConfig.category[categoryIndex].subcategory[subcategoryIndex];
+
+    showConfirmDialog(
+        `Delete subcategory "${subcategory.name}" and all its links?`,
+        () => {
+            currentConfig.category[categoryIndex].subcategory.splice(subcategoryIndex, 1);
+            updateCategoryDisplay();
+        }
+    );
+}
+
+/**
+ * Add new link
+ */
+function addLink(button, isSubcategory) {
+    if (isSubcategory) {
+        const subcategoryDiv = button.closest('.subcategory');
+        const { categoryIndex } = getCategoryFromElement(button);
+        const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+        editContext = { type: 'link', action: 'add', categoryIndex, subcategoryIndex };
+    } else {
+        const { categoryIndex } = getCategoryFromElement(button);
+        editContext = { type: 'link', action: 'add', categoryIndex };
+    }
+
+    DOM.modalTitle.textContent = 'Add Link';
+    DOM.itemName.value = '';
+    DOM.itemUrl.value = '';
+    DOM.itemIcon.value = '';
+    DOM.urlGroup.style.display = 'block';
+    DOM.editModal.classList.add(CSS_CLASSES.SHOW);
+}
+
+/**
+ * Edit existing link
+ */
+function editLink(button, isSubcategory, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const linkItem = button.closest('.link-item');
+    const linkIndex = parseInt(linkItem.dataset.linkIndex);
+
+    if (isSubcategory) {
+        const subcategoryDiv = button.closest('.subcategory');
+        const { categoryIndex } = getCategoryFromElement(button);
+        const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+        const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[linkIndex];
+
+        editContext = { type: 'link', action: 'edit', categoryIndex, subcategoryIndex, linkIndex };
+
+        DOM.modalTitle.textContent = 'Edit Link';
+        DOM.itemName.value = link.name;
+        DOM.itemUrl.value = link.url;
+        DOM.itemIcon.value = link.icon || '🔗';
+    } else {
+        const { categoryIndex } = getCategoryFromElement(button);
+        const link = currentConfig.category[categoryIndex].links[linkIndex];
+
+        editContext = { type: 'link', action: 'edit', categoryIndex, linkIndex };
+
+        DOM.modalTitle.textContent = 'Edit Link';
+        DOM.itemName.value = link.name;
+        DOM.itemUrl.value = link.url;
+        DOM.itemIcon.value = link.icon || '🔗';
+    }
+
+    DOM.urlGroup.style.display = 'block';
+    DOM.editModal.classList.add(CSS_CLASSES.SHOW);
+}
+
+/**
+ * Delete link with confirmation
+ */
+function deleteLink(button, isSubcategory, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const linkItem = button.closest('.link-item');
+    const linkIndex = parseInt(linkItem.dataset.linkIndex);
+
+    if (isSubcategory) {
+        const subcategoryDiv = button.closest('.subcategory');
+        const { categoryIndex } = getCategoryFromElement(button);
+        const subcategoryIndex = parseInt(subcategoryDiv.dataset.subcategoryIndex);
+        const link = currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links[linkIndex];
+
+        showConfirmDialog(
+            `Delete link "${link.name}"?`,
+            () => {
+                currentConfig.category[categoryIndex].subcategory[subcategoryIndex].links.splice(linkIndex, 1);
+                updateCategoryDisplay();
+            }
+        );
+    } else {
+        const { categoryIndex } = getCategoryFromElement(button);
+        const link = currentConfig.category[categoryIndex].links[linkIndex];
+
+        showConfirmDialog(
+            `Delete link "${link.name}"?`,
+            () => {
+                currentConfig.category[categoryIndex].links.splice(linkIndex, 1);
+                updateCategoryDisplay();
+            }
+        );
+    }
+}
+
+/**
+ * Close edit modal
+ */
+function closeModal() {
+    if (DOM.editModal) {
+        DOM.editModal.classList.remove(CSS_CLASSES.SHOW);
+    }
+    editContext = null;
+}
+
+/**
+ * Show confirmation dialog
+ */
+function showConfirmDialog(message, onConfirm) {
+    if (!DOM.confirmModal || !DOM.confirmMessage) return;
+
+    DOM.confirmMessage.textContent = message;
+    DOM.confirmModal.classList.add(CSS_CLASSES.SHOW);
+
+    // Store callback for confirmation
+    window._confirmCallback = onConfirm;
+}
+
+/**
+ * Close confirmation modal
+ */
+function closeConfirmModal() {
+    if (DOM.confirmModal) {
+        DOM.confirmModal.classList.remove(CSS_CLASSES.SHOW);
+    }
+    window._confirmCallback = null;
+}
+
+{% endif %}

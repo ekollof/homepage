@@ -1,0 +1,82 @@
+/**
+ * Module: Constants and DOM Cache
+ * Defines configuration constants, DOM element cache, and CSS class names
+ */
+
+const CLOCK_FORMAT = '{{ clock_format }}';
+const RELOAD_INTERVAL = {{ reload_interval }};
+
+/**
+ * Cached DOM elements for performance
+ * Initialized on DOMContentLoaded to avoid repeated queries
+ */
+const DOM = {
+    clock: null,
+    date: null,
+    weather: null,
+    weatherForecast: null,
+    rssWidget: null,
+    searchInput: null,
+    searchProvider: null,
+    linksContainer: null,
+    widgetsContainer: null,
+    editToggle: null,
+    editIcon: null,
+    editText: null,
+    editModal: null,
+    modalTitle: null,
+    itemName: null,
+    itemIcon: null,
+    itemUrl: null,
+    urlGroup: null,
+    confirmModal: null,
+    confirmMessage: null,
+    statsToggle: null,
+    systemStatsSidebar: null,
+    statsSlimBar: null,
+    statsExpandedContent: null
+};
+
+/**
+ * Initialize DOM cache
+ * Call this once on DOMContentLoaded
+ */
+function initDOMCache() {
+    DOM.clock = document.getElementById('clock');
+    DOM.date = document.getElementById('date');
+    DOM.weather = document.getElementById('weather');
+    DOM.weatherForecast = document.getElementById('weatherForecast');
+    DOM.rssWidget = document.getElementById('rssWidget');
+    DOM.searchInput = document.getElementById('searchInput');
+    DOM.searchProvider = document.getElementById('searchProvider');
+    DOM.linksContainer = document.getElementById('linksContainer');
+    DOM.widgetsContainer = document.getElementById('widgetsContainer');
+    DOM.editToggle = document.getElementById('editToggle');
+    DOM.editIcon = document.getElementById('editIcon');
+    DOM.editText = document.getElementById('editText');
+    DOM.editModal = document.getElementById('editModal');
+    DOM.modalTitle = document.getElementById('modalTitle');
+    DOM.itemName = document.getElementById('itemName');
+    DOM.itemIcon = document.getElementById('itemIcon');
+    DOM.itemUrl = document.getElementById('itemUrl');
+    DOM.urlGroup = document.getElementById('urlGroup');
+    DOM.confirmModal = document.getElementById('confirmModal');
+    DOM.confirmMessage = document.getElementById('confirmMessage');
+    DOM.statsToggle = document.getElementById('statsToggle');
+    DOM.systemStatsSidebar = document.getElementById('systemStatsSidebar');
+    DOM.statsSlimBar = document.getElementById('statsSlimBar');
+    DOM.statsExpandedContent = document.getElementById('statsExpandedContent');
+}
+
+/**
+ * CSS class names as constants to avoid typos
+ */
+const CSS_CLASSES = {
+    EDIT_MODE: 'edit-mode',
+    ACTIVE: 'active',
+    SHOW: 'show',
+    POSITION_LEFT: 'position-left',
+    POSITION_RIGHT: 'position-right',
+    POSITION_TOP: 'position-top',
+    POSITION_BOTTOM: 'position-bottom'
+};

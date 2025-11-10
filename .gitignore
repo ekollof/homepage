@@ -148,3 +148,6 @@ data/.env
 /links.toml
 /links.override.toml
 /.env.example
+
+# Rendered JavaScript for linting
+scripts_rendered.js

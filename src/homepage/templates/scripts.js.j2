@@ -1,7 +1,104 @@
+        /* ============================================= */
+        /* Homepage JavaScript - Generated from modules */
+        /* ============================================= */
+
+        /* Module: 01-constants-and-cache.js */
+        /**
+         * Module: Constants and DOM Cache
+         * Defines configuration constants, DOM element cache, and CSS class names
+         */
+
         const CLOCK_FORMAT = '{{ clock_format }}';
         const RELOAD_INTERVAL = {{ reload_interval }};
 
+        /**
+         * Cached DOM elements for performance
+         * Initialized on DOMContentLoaded to avoid repeated queries
+         */
+        const DOM = {
+            clock: null,
+            date: null,
+            weather: null,
+            weatherForecast: null,
+            rssWidget: null,
+            searchInput: null,
+            searchProvider: null,
+            linksContainer: null,
+            widgetsContainer: null,
+            editToggle: null,
+            editIcon: null,
+            editText: null,
+            editModal: null,
+            modalTitle: null,
+            itemName: null,
+            itemIcon: null,
+            itemUrl: null,
+            urlGroup: null,
+            confirmModal: null,
+            confirmMessage: null,
+            statsToggle: null,
+            systemStatsSidebar: null,
+            statsSlimBar: null,
+            statsExpandedContent: null
+        };
+
+        /**
+         * Initialize DOM cache
+         * Call this once on DOMContentLoaded
+         */
+        function initDOMCache() {
+            DOM.clock = document.getElementById('clock');
+            DOM.date = document.getElementById('date');
+            DOM.weather = document.getElementById('weather');
+            DOM.weatherForecast = document.getElementById('weatherForecast');
+            DOM.rssWidget = document.getElementById('rssWidget');
+            DOM.searchInput = document.getElementById('searchInput');
+            DOM.searchProvider = document.getElementById('searchProvider');
+            DOM.linksContainer = document.getElementById('linksContainer');
+            DOM.widgetsContainer = document.getElementById('widgetsContainer');
+            DOM.editToggle = document.getElementById('editToggle');
+            DOM.editIcon = document.getElementById('editIcon');
+            DOM.editText = document.getElementById('editText');
+            DOM.editModal = document.getElementById('editModal');
+            DOM.modalTitle = document.getElementById('modalTitle');
+            DOM.itemName = document.getElementById('itemName');
+            DOM.itemIcon = document.getElementById('itemIcon');
+            DOM.itemUrl = document.getElementById('itemUrl');
+            DOM.urlGroup = document.getElementById('urlGroup');
+            DOM.confirmModal = document.getElementById('confirmModal');
+            DOM.confirmMessage = document.getElementById('confirmMessage');
+            DOM.statsToggle = document.getElementById('statsToggle');
+            DOM.systemStatsSidebar = document.getElementById('systemStatsSidebar');
+            DOM.statsSlimBar = document.getElementById('statsSlimBar');
+            DOM.statsExpandedContent = document.getElementById('statsExpandedContent');
+        }
+
+        /**
+         * CSS class names as constants to avoid typos
+         */
+        const CSS_CLASSES = {
+            EDIT_MODE: 'edit-mode',
+            ACTIVE: 'active',
+            SHOW: 'show',
+            POSITION_LEFT: 'position-left',
+            POSITION_RIGHT: 'position-right',
+            POSITION_TOP: 'position-top',
+            POSITION_BOTTOM: 'position-bottom'
+        };
+
+        /* Module: 02-clock.js */
+        /**
+         * Module: Clock and Date
+         * Handles clock and date display updates
+         */
+
+        /**
+         * Update the clock display
+         * Uses 12h or 24h format based on CLOCK_FORMAT constant
+         */
         function updateClock() {
+            if (!DOM.clock) return;
+
             const now = new Date();
             let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -10,23 +107,37 @@
             if (CLOCK_FORMAT === '12') {
                 const ampm = hours >= 12 ? 'PM' : 'AM';
                 hours = hours % 12 || 12;
-                document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
+                DOM.clock.textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
             } else {
                 hours = String(hours).padStart(2, '0');
-                document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+                DOM.clock.textContent = `${hours}:${minutes}:${seconds}`;
             }
         }
 
+        /**
+         * Update the date display
+         */
         function updateDate() {
+            if (!DOM.date) return;
+
             const now = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             const dateString = now.toLocaleDateString('en-US', options);
-            document.getElementById('date').textContent = dateString;
+            DOM.date.textContent = dateString;
         }
 
+        /* Module: 03-weather.js */
+        /**
+         * Module: Weather and Forecast
+         * Handles weather data fetching and display
+         */
+
+        {% if config.ENABLE_WEATHER %}
+        /**
+         * Fetch and display current weather
+         */
         function updateWeather() {
-            const weatherElement = document.getElementById('weather');
-            if (!weatherElement) return;
+            if (!DOM.weather) return;
 
             fetch('/api/weather')
                 .then(response => {
@@ -37,7 +148,7 @@
                 })
                 .then(data => {
                     if (data.error) {
-                        weatherElement.innerHTML = `<span class="weather-loading">Weather unavailable</span>`;
+                        DOM.weather.innerHTML = `<span class="weather-loading">Weather unavailable</span>`;
                         console.warn('Weather API error:', data.error);
                         return;
                     }
@@ -45,7 +156,7 @@
                     const tempUnit = data.units === 'metric' ? '°C' : '°F';
                     const windUnit = data.units === 'metric' ? 'km/h' : 'mph';
 
-                    weatherElement.innerHTML = `
+                    DOM.weather.innerHTML = `
                         <span class="weather-location">${data.location}</span>
                         <span class="weather-temp">${Math.round(data.temperature)}${tempUnit}</span>
                         <span class="weather-desc">${data.description}</span>
@@ -58,19 +169,57 @@
                 .catch(error => {
                     // Silently fail for network errors (don't spam console)
                     if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-                        weatherElement.innerHTML = `<span class="weather-loading">No network</span>`;
+                        DOM.weather.innerHTML = `<span class="weather-loading">No network</span>`;
                     } else {
-                        weatherElement.innerHTML = `<span class="weather-loading">Weather unavailable</span>`;
+                        DOM.weather.innerHTML = `<span class="weather-loading">Weather unavailable</span>`;
                         console.warn('Weather fetch failed:', error.message);
                     }
                 });
         }
 
-        let forecastMode = 'daily';  // 'hourly' or 'daily'
+        let forecastMode = 'daily';
 
+        /**
+         * Template for forecast item (daily)
+         */
+        function createDailyForecastItem(item, tempUnit) {
+            const precipDisplay = item.precipitation_probability > 0
+                ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
+                : '';
+
+            return `
+                <div class="forecast-item">
+                    <div class="forecast-day">${item.day}</div>
+                    <div class="forecast-emoji">${item.weather_emoji}</div>
+                    <div class="forecast-temp-range">${item.temperature_max}/${item.temperature_min}${tempUnit}</div>
+                    ${precipDisplay}
+                </div>
+            `;
+        }
+
+        /**
+         * Template for forecast item (hourly)
+         */
+        function createHourlyForecastItem(item, tempUnit) {
+            const precipDisplay = item.precipitation_probability > 0
+                ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
+                : '';
+
+            return `
+                <div class="forecast-item">
+                    <div class="forecast-time">${item.hour}</div>
+                    <div class="forecast-emoji">${item.weather_emoji}</div>
+                    <div class="forecast-temp">${item.temperature}${tempUnit}</div>
+                    ${precipDisplay}
+                </div>
+            `;
+        }
+
+        /**
+         * Fetch and display weather forecast (hourly or daily)
+         */
         function updateWeatherForecast() {
-            const forecastElement = document.getElementById('weatherForecast');
-            if (!forecastElement) return;
+            if (!DOM.weatherForecast) return;
 
             const endpoint = forecastMode === 'daily' ? '/api/weather/forecast/daily' : '/api/weather/forecast';
 
@@ -84,64 +233,44 @@
                 .then(data => {
                     const forecastData = forecastMode === 'daily' ? data.daily : data.hourly;
                     if (data.error || !forecastData || forecastData.length === 0) {
-                        forecastElement.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
+                        DOM.weatherForecast.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
                         return;
                     }
 
                     const tempUnit = data.units === 'metric' ? '°C' : '°F';
                     const containerClass = forecastMode === 'daily' ? 'forecast-days' : 'forecast-hours';
-                    let html = `<div class="${containerClass}">`;
 
-                    if (forecastMode === 'daily') {
-                        forecastData.forEach(item => {
-                            const precipDisplay = item.precipitation_probability > 0
-                                ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
-                                : '';
+                    const itemsHtml = forecastMode === 'daily'
+                        ? forecastData.map(item => createDailyForecastItem(item, tempUnit)).join('')
+                        : forecastData.map(item => createHourlyForecastItem(item, tempUnit)).join('');
 
-                            html += `
-                                <div class="forecast-item">
-                                    <div class="forecast-day">${item.day}</div>
-                                    <div class="forecast-emoji">${item.weather_emoji}</div>
-                                    <div class="forecast-temp-range">${item.temperature_max}/${item.temperature_min}${tempUnit}</div>
-                                    ${precipDisplay}
-                                </div>
-                            `;
-                        });
-                    } else {
-                        forecastData.forEach(item => {
-                            const precipDisplay = item.precipitation_probability > 0
-                                ? `<div class="forecast-precip">${item.precipitation_probability}%</div>`
-                                : '';
-
-                            html += `
-                                <div class="forecast-item">
-                                    <div class="forecast-time">${item.hour}</div>
-                                    <div class="forecast-emoji">${item.weather_emoji}</div>
-                                    <div class="forecast-temp">${item.temperature}${tempUnit}</div>
-                                    ${precipDisplay}
-                                </div>
-                            `;
-                        });
-                    }
-
-                    html += '</div>';
-                    forecastElement.innerHTML = html;
+                    DOM.weatherForecast.innerHTML = `<div class="${containerClass}">${itemsHtml}</div>`;
                 })
                 .catch(error => {
                     if (!error.message.includes('NetworkError') && !error.message.includes('Failed to fetch')) {
                         console.warn('Forecast fetch failed:', error.message);
                     }
-                    forecastElement.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
+                    DOM.weatherForecast.innerHTML = `<div class="forecast-loading">Forecast unavailable</div>`;
                 });
         }
+        {% endif %}
 
+        /* Module: 04-rss.js */
+        /**
+         * Module: RSS Feed Carousel
+         * Handles RSS feed display and navigation
+         */
+
+        {% if config.ENABLE_RSS %}
         let rssItems = [];
         let currentRSSIndex = 0;
         let rssAutoRotate = null;
 
+        /**
+         * Fetch RSS feeds from server
+         */
         function updateRSSFeeds() {
-            const rssElement = document.getElementById('rssWidget');
-            if (!rssElement) return;
+            if (!DOM.rssWidget) return;
 
             fetch('/api/rss')
                 .then(response => {
@@ -152,7 +281,7 @@
                 })
                 .then(data => {
                     if (data.error || !data.items || data.items.length === 0) {
-                        rssElement.innerHTML = `<div class="rss-error">No RSS items available</div>`;
+                        DOM.rssWidget.innerHTML = `<div class="rss-error">No RSS items available</div>`;
                         return;
                     }
 
@@ -162,31 +291,22 @@
                     startRSSAutoRotate();
                 })
                 .catch(error => {
-                    rssElement.innerHTML = `<div class="rss-error">RSS feeds unavailable</div>`;
+                    DOM.rssWidget.innerHTML = `<div class="rss-error">RSS feeds unavailable</div>`;
                     console.warn('RSS fetch failed:', error.message);
                 });
         }
 
+        /**
+         * Render RSS carousel with navigation
+         */
         function renderRSSCarousel() {
-            const rssElement = document.getElementById('rssWidget');
-            if (!rssElement || rssItems.length === 0) return;
+            if (!DOM.rssWidget || rssItems.length === 0) return;
 
-            let html = `
-                <div class="rss-title">
-                    <span>📰 Latest News</span>
-                    <div class="rss-nav">
-                        <button class="rss-nav-btn" onclick="prevRSSItem()" aria-label="Previous">‹</button>
-                        <span class="rss-counter">${currentRSSIndex + 1} / ${rssItems.length}</span>
-                        <button class="rss-nav-btn" onclick="nextRSSItem()" aria-label="Next">›</button>
-                    </div>
-                </div>
-                <div class="rss-carousel">
-                    <div class="rss-items" style="transform: translateX(-${currentRSSIndex * 100}%)">
-            `;
-
-            rssItems.forEach(item => {
+            const itemsHtml = rssItems.map(item => {
                 const date = item.published ? new Date(item.published).toLocaleDateString() : '';
-                html += `
+                const description = item.description ? `<div class="rss-item-description">${item.description}</div>` : '';
+
+                return `
                     <div class="rss-item">
                         <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="rss-item-link">
                             ${item.title}
@@ -195,18 +315,35 @@
                             <span class="rss-item-feed">${item.feed_title}</span>
                             ${date ? `<span class="rss-item-date">${date}</span>` : ''}
                         </div>
-                        ${item.description ? `<div class="rss-item-description">${item.description}</div>` : ''}
+                        ${description}
                     </div>
                 `;
-            });
+            }).join('');
 
-            html += `
+            DOM.rssWidget.innerHTML = `
+                <div class="rss-title">
+                    <span>📰 Latest News</span>
+                    <div class="rss-nav">
+                        <button class="rss-nav-btn" data-action="rss-prev" aria-label="Previous">‹</button>
+                        <span class="rss-counter">${currentRSSIndex + 1} / ${rssItems.length}</span>
+                        <button class="rss-nav-btn" data-action="rss-next" aria-label="Next">›</button>
+                    </div>
+                </div>
+                <div class="rss-carousel">
+                    <div class="rss-items" style="transform: translateX(-${currentRSSIndex * 100}%)">
+                        ${itemsHtml}
                     </div>
                 </div>
             `;
-            rssElement.innerHTML = html;
+
+            // Attach event listeners to navigation buttons
+            DOM.rssWidget.querySelector('[data-action="rss-prev"]').addEventListener('click', prevRSSItem);
+            DOM.rssWidget.querySelector('[data-action="rss-next"]').addEventListener('click', nextRSSItem);
         }
 
+        /**
+         * Navigate to next RSS item
+         */
         function nextRSSItem() {
             if (rssItems.length === 0) return;
             currentRSSIndex = (currentRSSIndex + 1) % rssItems.length;
@@ -214,6 +351,9 @@
             resetRSSAutoRotate();
         }
 
+        /**
+         * Navigate to previous RSS item
+         */
         function prevRSSItem() {
             if (rssItems.length === 0) return;
             currentRSSIndex = (currentRSSIndex - 1 + rssItems.length) % rssItems.length;
@@ -221,6 +361,9 @@
             resetRSSAutoRotate();
         }
 
+        /**
+         * Start auto-rotation timer for RSS feed
+         */
         function startRSSAutoRotate() {
             if (rssAutoRotate) clearInterval(rssAutoRotate);
             rssAutoRotate = setInterval(() => {
@@ -228,10 +371,23 @@
             }, 30000); // 30 seconds
         }
 
+        /**
+         * Reset auto-rotation timer
+         */
         function resetRSSAutoRotate() {
             startRSSAutoRotate();
         }
+        {% endif %}
 
+        /* Module: 05-search.js */
+        /**
+         * Module: Search and Tracking
+         * Handles search functionality and event tracking
+         */
+
+        /**
+         * Check if page reload is needed (config changes)
+         */
         function checkForReload() {
             // Don't reload if in edit mode - user is actively editing
             if (editMode) {
@@ -248,12 +404,15 @@
                 .catch(error => console.error('Error checking for reload:', error));
         }
 
+        /**
+         * Handle search form submission
+         */
         function handleSearch(event) {
             event.preventDefault();
 
-            const searchInput = document.getElementById('searchInput');
-            const searchProvider = document.getElementById('searchProvider');
-            const query = searchInput.value.trim();
+            if (!DOM.searchInput || !DOM.searchProvider) return;
+
+            const query = DOM.searchInput.value.trim();
 
             if (!query) {
                 return;
@@ -266,19 +425,22 @@
                 'bing': 'https://www.bing.com/search?q='
             };
 
-            const baseUrl = searchUrls[searchProvider.value] || searchUrls['brave'];
+            const baseUrl = searchUrls[DOM.searchProvider.value] || searchUrls['brave'];
             const searchUrl = baseUrl + encodeURIComponent(query);
 
             // Track search
-            trackEvent('search', { provider: searchProvider.value, query: query });
+            trackEvent('search', { provider: DOM.searchProvider.value, query: query });
 
             window.open(searchUrl, '_blank', 'noopener,noreferrer');
 
             // Save to search history
-            saveSearchHistory(query, searchProvider.value);
-            searchInput.value = '';
+            saveSearchHistory(query, DOM.searchProvider.value);
+            DOM.searchInput.value = '';
         }
 
+        /**
+         * Save search query to local storage
+         */
         function saveSearchHistory(query, provider) {
             try {
                 let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
@@ -290,6 +452,9 @@
             }
         }
 
+        /**
+         * Track events to server (analytics)
+         */
         function trackEvent(eventType, data) {
             // Send tracking data to server
             fetch('/api/track', {
@@ -299,144 +464,20 @@
             }).catch(() => {}); // Silently fail
         }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            const searchInput = document.getElementById('searchInput');
-            const helpOverlay = document.getElementById('helpOverlay');
-
-            // Ignore if typing in input
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
-                if (e.key === 'Escape') {
-                    searchInput.value = '';
-                    searchInput.blur();
-                }
-                return;
-            }
-
-            switch(e.key) {
-                case '/':
-                    e.preventDefault();
-                    searchInput.focus();
-                    break;
-                case '?':
-                    e.preventDefault();
-                    helpOverlay.classList.toggle('show');
-                    break;
-                case 'Escape':
-                    helpOverlay.classList.remove('show');
-                    break;
-            }
-
-            // Ctrl+Number for search provider selection
-            if (e.ctrlKey && e.key >= '1' && e.key <= '4') {
-                e.preventDefault();
-                const provider = document.getElementById('searchProvider');
-                provider.selectedIndex = parseInt(e.key) - 1;
-            }
-
-            {% if config.ENABLE_EDITING %}
-            // Ctrl+Arrow keys for widget reordering in edit mode
-            if (editMode && e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-                e.preventDefault();
-                if (e.key === 'ArrowUp') {
-                    moveWidgetUp();
-                } else {
-                    moveWidgetDown();
-                }
-            }
-            {% endif %}
-        });
-
-        // Click outside help to close
-        document.getElementById('helpOverlay').addEventListener('click', (e) => {
-            if (e.target.id === 'helpOverlay') {
-                e.target.classList.remove('show');
-            }
-        });
-
-        // Track link clicks
-        document.querySelectorAll('.link-item a').forEach(link => {
-            link.addEventListener('click', (e) => {
-                trackEvent('link_click', {
-                    name: e.currentTarget.dataset.link,
-                    url: e.currentTarget.href
-                });
-            });
-        });
-
-        // Update clock every second
-        updateClock();
-        updateDate();
-        setInterval(updateClock, 1000);
-
-        // Update date at midnight
-        setInterval(updateDate, 60000);
-
-        {% if config.ENABLE_WEATHER %}
-        // Update weather on load and every 10 minutes
-        updateWeather();
-        setInterval(updateWeather, 600000);
-
-        // Forecast expand/collapse functionality
-        const forecastExpandBtn = document.getElementById('forecastExpandBtn');
-        const forecastContainer = document.getElementById('forecastContainer');
-        let forecastExpanded = false;
-
-        if (forecastExpandBtn && forecastContainer) {
-            forecastExpandBtn.addEventListener('click', () => {
-                forecastExpanded = !forecastExpanded;
-                if (forecastExpanded) {
-                    forecastContainer.style.display = 'block';
-                    forecastExpandBtn.textContent = '📅 Hide Forecast';
-                    // Load forecast when expanded for the first time
-                    if (forecastContainer.dataset.loaded !== 'true') {
-                        updateWeatherForecast();
-                        forecastContainer.dataset.loaded = 'true';
-                    }
-                } else {
-                    forecastContainer.style.display = 'none';
-                    forecastExpandBtn.textContent = '📅 Show Forecast';
-                }
-            });
-        }
-
-        // Forecast mode toggle functionality
-        const forecastModeToggle = document.getElementById('forecastModeToggle');
-        if (forecastModeToggle) {
-            forecastModeToggle.addEventListener('click', () => {
-                forecastMode = forecastMode === 'hourly' ? 'daily' : 'hourly';
-                forecastModeToggle.textContent = forecastMode === 'hourly' ? 'Hourly' : 'Daily';
-                updateWeatherForecast();
-            });
-        }
-
-        // Update forecast every 10 minutes if expanded
-        setInterval(() => {
-            if (forecastExpanded) {
-                updateWeatherForecast();
-            }
-        }, 600000);
-        {% endif %}
-
-        {% if config.ENABLE_RSS %}
-        // Update RSS feeds on load and every 5 minutes
-        updateRSSFeeds();
-        setInterval(updateRSSFeeds, 300000);
-        {% endif %}
-
-        // Check for file changes (fallback to polling if WebSocket is disabled)
-        {% if not config.ENABLE_WEBSOCKET %}
-        setInterval(checkForReload, RELOAD_INTERVAL);
-        {% endif %}
+        /* Module: 06-system-stats.js */
+        /**
+         * Module: System Stats Sidebar
+         * Handles real-time system statistics display
+         */
 
         {% if config.ENABLE_SYSTEM_STATS %}
-        // System Stats functionality
+        // System stats state
         let systemStatsVisible = false;
-        let systemStatsPosition = localStorage.getItem('statsPosition') || '{{ config.SYSTEM_STATS_POSITION }}';
         let systemStatsInterval = null;
+        let systemStatsPosition = 'left';
         let cpuHistory = [];
         let memoryHistory = [];
-        const maxHistoryPoints = 30;
+        const maxHistoryPoints = 20;
 
         function toggleSystemStats() {
             systemStatsVisible = !systemStatsVisible;
@@ -449,7 +490,7 @@
                 expandedContent.style.display = 'block';
                 slimBar.style.display = 'none';
                 updateSystemStats();
-                systemStatsInterval = setInterval(updateSystemStats, {{ config.SYSTEM_STATS_REFRESH_INTERVAL * 1000 }});
+                systemStatsInterval = setInterval(updateSystemStats, 5000);
             } else {
                 sidebar.classList.remove('expanded');
                 expandedContent.style.display = 'none';
@@ -590,7 +631,7 @@
             setStatsPosition(systemStatsPosition);
             // Start updating slim bar immediately
             updateSystemStats();
-            setInterval(updateSystemStats, {{ config.SYSTEM_STATS_REFRESH_INTERVAL * 1000 }});
+            setInterval(updateSystemStats, 5000);
         });
 
         // Add keyboard shortcut for system stats (s key)
@@ -601,7 +642,21 @@
                 toggleSystemStats();
             }
         });
+
+
+
+        // Edit mode functionality
+
+        /**
+         * Toggle between view and edit mode
+         */
         {% endif %}
+
+        /* Module: 07-edit-mode-core.js */
+        /**
+         * Module: Edit Mode Core
+         * Core edit mode functionality
+         */
 
         {% if config.ENABLE_EDITING %}
         // Edit mode functionality
@@ -611,41 +666,39 @@
 
         function toggleEditMode() {
             editMode = !editMode;
-            const container = document.getElementById('linksContainer');
-            const widgetsContainer = document.getElementById('widgetsContainer');
-            const toggle = document.getElementById('editToggle');
-            const editIcon = document.getElementById('editIcon');
-            const editText = document.getElementById('editText');
 
             if (editMode) {
-                container.classList.add('edit-mode');
-                if (widgetsContainer) {
-                    widgetsContainer.parentElement.classList.add('edit-mode');
+                DOM.linksContainer.classList.add(CSS_CLASSES.EDIT_MODE);
+                if (DOM.widgetsContainer) {
+                    DOM.widgetsContainer.parentElement.classList.add(CSS_CLASSES.EDIT_MODE);
                     enableWidgetDragging();
                 }
                 enableCategoryDragging();
                 enableLinkDragging();
                 enableSubcategoryDragging();
-                toggle.classList.add('active');
-                editIcon.textContent = '💾';
-                editText.textContent = 'Save & Exit';
+                DOM.editToggle.classList.add(CSS_CLASSES.ACTIVE);
+                DOM.editIcon.textContent = '💾';
+                DOM.editText.textContent = 'Save & Exit';
                 loadConfig();
             } else {
-                container.classList.remove('edit-mode');
-                if (widgetsContainer) {
-                    widgetsContainer.parentElement.classList.remove('edit-mode');
+                DOM.linksContainer.classList.remove(CSS_CLASSES.EDIT_MODE);
+                if (DOM.widgetsContainer) {
+                    DOM.widgetsContainer.parentElement.classList.remove(CSS_CLASSES.EDIT_MODE);
                     disableWidgetDragging();
                 }
                 disableCategoryDragging();
                 disableLinkDragging();
                 disableSubcategoryDragging();
-                toggle.classList.remove('active');
-                editIcon.textContent = '✏️';
-                editText.textContent = 'Edit Mode';
+                DOM.editToggle.classList.remove(CSS_CLASSES.ACTIVE);
+                DOM.editIcon.textContent = '✏️';
+                DOM.editText.textContent = 'Edit Mode';
                 saveAndExit();
             }
         }
 
+        /**
+         * Load configuration from server
+         */
         function loadConfig() {
             fetch('/api/config')
                 .then(response => response.json())
@@ -716,14 +769,16 @@
             }
         }
 
+        /**
+         * Save configuration and exit edit mode
+         */
         function saveAndExit() {
-            if (!currentConfig) return;
+            if (!currentConfig || !DOM.editToggle) return;
 
             // Show saving indicator
-            const toggle = document.getElementById('editToggle');
-            const originalText = toggle.innerHTML;
-            toggle.innerHTML = '<span>💾</span><span>Saving...</span>';
-            toggle.style.pointerEvents = 'none';
+            const originalText = DOM.editToggle.innerHTML;
+            DOM.editToggle.innerHTML = '<span>💾</span><span>Saving...</span>';
+            DOM.editToggle.style.pointerEvents = 'none';
 
             fetch('/api/config', {
                 method: 'POST',
@@ -744,17 +799,32 @@
             .catch(error => {
                 console.error('Failed to save config:', error);
                 alert('Failed to save configuration. Please try again.');
-                toggle.innerHTML = originalText;
-                toggle.style.pointerEvents = 'auto';
+                DOM.editToggle.innerHTML = originalText;
+                DOM.editToggle.style.pointerEvents = 'auto';
             });
         }
 
+        /**
+         * Get category element and index from a child element
+         */
         function getCategoryFromElement(element) {
             const categoryDiv = element.closest('.category');
             const categoryIndex = parseInt(categoryDiv.dataset.categoryIndex);
             return { categoryDiv, categoryIndex };
         }
 
+        /**
+         * Fetch favicon for a URL via proxy endpoint
+         */
+        {% endif %}
+
+        /* Module: 08-edit-templates.js */
+        /**
+         * Module: Edit Mode Templates
+         * HTML generation for edit mode
+         */
+
+        {% if config.ENABLE_EDITING %}
         async function fetchAndCacheFavicon(url) {
             try {
                 // Use our proxy endpoint to avoid CORS issues
@@ -772,6 +842,9 @@
             }
         }
 
+        /**
+         * Save link to configuration
+         */
         function saveLinkToConfig(link) {
             if (editContext.action === 'edit') {
                 // Edit existing link
@@ -799,126 +872,134 @@
             updateCategoryDisplay();
         }
 
+        /**
+         * Generate HTML for link icon (favicon or emoji)
+         */
+        function createLinkIconHTML(link) {
+            if (link.icon) {
+                // Check if it's a base64 data URI
+                if (link.icon.startsWith('data:image/')) {
+                    return `<img src="${link.icon}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+                }
+                // It's an emoji or text
+                return link.icon;
+            }
+            // Fallback to Google favicon service
+            return `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
+        }
+
+        /**
+         * Generate HTML for a single link item
+         */
+        function createLinkItemHTML(link, linkIndex, isSubcategory) {
+            const iconHtml = createLinkIconHTML(link);
+            const editAction = isSubcategory ? 'editLink(this, true, event)' : 'editLink(this, false, event)';
+            const deleteAction = isSubcategory ? 'deleteLink(this, true, event)' : 'deleteLink(this, false, event)';
+
+            return `
+                <li class="link-item" data-link-index="${linkIndex}" draggable="false">
+                    <span class="link-drag-handle">⋮⋮</span>
+                    <a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">
+                        <span class="link-icon">${iconHtml}</span>
+                        <span>${link.name}</span>
+                    </a>
+                    <div class="edit-controls link-controls">
+                        <button class="edit-btn edit-btn-small" onclick="${editAction}">Edit</button>
+                        <button class="edit-btn edit-btn-small danger" onclick="${deleteAction}">×</button>
+                    </div>
+                </li>
+            `;
+        }
+
+        /**
+         * Generate HTML for links list
+         */
+        function createLinksListHTML(links, isSubcategory) {
+            if (!links || links.length === 0) return '';
+
+            const linksHtml = links.map((link, index) => createLinkItemHTML(link, index, isSubcategory)).join('');
+            return `<ul class="links-list">${linksHtml}</ul>`;
+        }
+
+        /**
+         * Generate HTML for a subcategory
+         */
+        function createSubcategoryHTML(subcategory, subIndex) {
+            return `
+                <div class="subcategory" data-subcategory-index="${subIndex}" draggable="false">
+                    <div class="subcategory-title">
+                        <span class="subcategory-drag-handle">⋮⋮</span>
+                        <span class="subcategory-icon">${subcategory.icon || '📂'}</span>
+                        <span>${subcategory.name}</span>
+                    </div>
+                    ${createLinksListHTML(subcategory.links, true)}
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editSubcategory(this)">Edit Subcategory</button>
+                        <button class="edit-btn add" onclick="addLink(this, true)">+ Link</button>
+                        <button class="edit-btn danger" onclick="deleteSubcategory(this)">Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Generate HTML for a category
+         */
+        function createCategoryHTML(category, catIndex) {
+            const subcategoriesHtml = category.subcategory
+                ? category.subcategory.map((sub, i) => createSubcategoryHTML(sub, i)).join('')
+                : '';
+
+            return `
+                <div class="category" data-category-index="${catIndex}" draggable="false">
+                    <span class="category-drag-handle">⋮⋮</span>
+                    <div class="category-title">
+                        <span class="category-icon">${category.icon || '📁'}</span>
+                        <span>${category.name}</span>
+                    </div>
+                    ${createLinksListHTML(category.links, false)}
+                    ${subcategoriesHtml}
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editCategory(this)">Edit Category</button>
+                        <button class="edit-btn add" onclick="addLink(this, false)">+ Link</button>
+                        <button class="edit-btn add" onclick="addSubcategory(this)">+ Subcategory</button>
+                        <button class="edit-btn danger" onclick="deleteCategory(this)">Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Update category display from currentConfig
+         * Rebuilds the entire links container to match configuration
+         */
+        {% endif %}
+
+        /* Module: 09-edit-modals.js */
+        /**
+         * Module: Edit Mode Modals
+         * Add/Edit/Delete operations for categories, subcategories, links
+         */
+
+        {% if config.ENABLE_EDITING %}
         function updateCategoryDisplay() {
-            // Changes are stored in currentConfig and will be saved when exiting edit mode
-            // Rebuild the links container from currentConfig
-            const container = document.getElementById('linksContainer');
-            if (!container || !currentConfig) return;
+            if (!DOM.linksContainer || !currentConfig) return;
 
-            // Simple approach: regenerate the entire container HTML
-            // This ensures the DOM matches currentConfig
-            let html = '';
+            const categoriesHtml = currentConfig.category
+                .map((category, index) => createCategoryHTML(category, index))
+                .join('');
 
-            currentConfig.category.forEach((category, catIndex) => {
-                html += `<div class="category" data-category-index="${catIndex}" draggable="false">`;
-                html += `<span class="category-drag-handle">⋮⋮</span>`;
-                html += `<div class="category-title">`;
-                html += `<span class="category-icon">${category.icon || '📁'}</span>`;
-                html += `<span>${category.name}</span>`;
-                html += `</div>`;
+            const addButtonHtml = `
+                <div class="edit-controls add-category-container">
+                    <button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>
+                </div>
+            `;
 
-                // Category links
-                if (category.links && category.links.length > 0) {
-                    html += `<ul class="links-list">`;
-                    category.links.forEach((link, linkIndex) => {
-                        let iconHtml;
-                        if (link.icon) {
-                            // Check if it's a base64 data URI
-                            if (link.icon.startsWith('data:image/')) {
-                                iconHtml = `<img src="${link.icon}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
-                            } else {
-                                // It's an emoji or text
-                                iconHtml = link.icon;
-                            }
-                        } else {
-                            // Fallback to Google favicon service
-                            iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
-                        }
-                        html += `<li class="link-item" data-link-index="${linkIndex}" draggable="false">`;
-                        html += `<span class="link-drag-handle">⋮⋮</span>`;
-                        html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">`;
-                        html += `<span class="link-icon">${iconHtml}</span>`;
-                        html += `<span>${link.name}</span>`;
-                        html += `</a>`;
-                        html += `<div class="edit-controls link-controls">`;
-                        html += `<button class="edit-btn edit-btn-small" onclick="editLink(this, false, event)">Edit</button>`;
-                        html += `<button class="edit-btn edit-btn-small danger" onclick="deleteLink(this, false, event)">×</button>`;
-                        html += `</div>`;
-                        html += `</li>`;
-                    });
-                    html += `</ul>`;
-                }
-
-                // Subcategories
-                if (category.subcategory && category.subcategory.length > 0) {
-                    category.subcategory.forEach((subcategory, subIndex) => {
-                        html += `<div class="subcategory" data-subcategory-index="${subIndex}" draggable="false">`;
-                        html += `<div class="subcategory-title">`;
-                        html += `<span class="subcategory-drag-handle">⋮⋮</span>`;
-                        html += `<span class="subcategory-icon">${subcategory.icon || '📂'}</span>`;
-                        html += `<span>${subcategory.name}</span>`;
-                        html += `</div>`;
-
-                        if (subcategory.links && subcategory.links.length > 0) {
-                            html += `<ul class="links-list">`;
-                            subcategory.links.forEach((link, linkIndex) => {
-                                let iconHtml;
-                                if (link.icon) {
-                                    // Check if it's a base64 data URI
-                                    if (link.icon.startsWith('data:image/')) {
-                                        iconHtml = `<img src="${link.icon}" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
-                                    } else {
-                                        // It's an emoji or text
-                                        iconHtml = link.icon;
-                                    }
-                                } else {
-                                    // Fallback to Google favicon service
-                                    iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=32" alt="" style="width: 1em; height: 1em; vertical-align: middle;">`;
-                                }
-                                html += `<li class="link-item" data-link-index="${linkIndex}" draggable="false">`;
-                                html += `<span class="link-drag-handle">⋮⋮</span>`;
-                                html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" data-link="${link.name}">`;
-                                html += `<span class="link-icon">${iconHtml}</span>`;
-                                html += `<span>${link.name}</span>`;
-                                html += `</a>`;
-                                html += `<div class="edit-controls link-controls">`;
-                                html += `<button class="edit-btn edit-btn-small" onclick="editLink(this, true, event)">Edit</button>`;
-                                html += `<button class="edit-btn edit-btn-small danger" onclick="deleteLink(this, true, event)">×</button>`;
-                                html += `</div>`;
-                                html += `</li>`;
-                            });
-                            html += `</ul>`;
-                        }
-
-                        html += `<div class="edit-controls">`;
-                        html += `<button class="edit-btn" onclick="editSubcategory(this)">Edit Subcategory</button>`;
-                        html += `<button class="edit-btn add" onclick="addLink(this, true)">+ Link</button>`;
-                        html += `<button class="edit-btn danger" onclick="deleteSubcategory(this)">Delete</button>`;
-                        html += `</div>`;
-                        html += `</div>`;
-                    });
-                }
-
-                // Category edit controls
-                html += `<div class="edit-controls">`;
-                html += `<button class="edit-btn" onclick="editCategory(this)">Edit Category</button>`;
-                html += `<button class="edit-btn add" onclick="addLink(this, false)">+ Link</button>`;
-                html += `<button class="edit-btn add" onclick="addSubcategory(this)">+ Subcategory</button>`;
-                html += `<button class="edit-btn danger" onclick="deleteCategory(this)">Delete</button>`;
-                html += `</div>`;
-                html += `</div>`;
-            });
-
-            // Add category button
-            html += `<div class="edit-controls add-category-container">`;
-            html += `<button class="edit-btn add" onclick="addCategory()" style="font-size: 1rem; padding: 10px 20px;">+ Add Category</button>`;
-            html += `</div>`;
-
-            container.innerHTML = html;
+            DOM.linksContainer.innerHTML = categoriesHtml + addButtonHtml;
 
             // Re-apply edit mode class if still in edit mode
             if (editMode) {
-                container.classList.add('edit-mode');
+                DOM.linksContainer.classList.add(CSS_CLASSES.EDIT_MODE);
                 // Re-enable dragging for newly created elements
                 enableCategoryDragging();
                 enableLinkDragging();
@@ -928,29 +1009,38 @@
             console.log('DOM updated from currentConfig');
         }
 
+        /**
+         * Add new category
+         */
         function addCategory() {
             if (!currentConfig) return;
 
             editContext = { type: 'category', action: 'add' };
-            document.getElementById('modalTitle').textContent = 'Add Category';
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemIcon').value = '📁';
-            document.getElementById('urlGroup').style.display = 'none';
-            document.getElementById('editModal').classList.add('show');
+            DOM.modalTitle.textContent = 'Add Category';
+            DOM.itemName.value = '';
+            DOM.itemIcon.value = '📁';
+            DOM.urlGroup.style.display = 'none';
+            DOM.editModal.classList.add(CSS_CLASSES.SHOW);
         }
 
+        /**
+         * Edit existing category
+         */
         function editCategory(button) {
             const { categoryDiv, categoryIndex } = getCategoryFromElement(button);
             const category = currentConfig.category[categoryIndex];
 
             editContext = { type: 'category', action: 'edit', index: categoryIndex };
-            document.getElementById('modalTitle').textContent = 'Edit Category';
-            document.getElementById('itemName').value = category.name;
-            document.getElementById('itemIcon').value = category.icon || '📁';
-            document.getElementById('urlGroup').style.display = 'none';
-            document.getElementById('editModal').classList.add('show');
+            DOM.modalTitle.textContent = 'Edit Category';
+            DOM.itemName.value = category.name;
+            DOM.itemIcon.value = category.icon || '📁';
+            DOM.urlGroup.style.display = 'none';
+            DOM.editModal.classList.add(CSS_CLASSES.SHOW);
         }
 
+        /**
+         * Delete category with confirmation
+         */
         function deleteCategory(button) {
             const { categoryIndex } = getCategoryFromElement(button);
             const category = currentConfig.category[categoryIndex];
@@ -964,17 +1054,23 @@
             );
         }
 
+        /**
+         * Add new subcategory
+         */
         function addSubcategory(button) {
             const { categoryIndex } = getCategoryFromElement(button);
 
             editContext = { type: 'subcategory', action: 'add', categoryIndex };
-            document.getElementById('modalTitle').textContent = 'Add Subcategory';
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemIcon').value = '📂';
-            document.getElementById('urlGroup').style.display = 'none';
-            document.getElementById('editModal').classList.add('show');
+            DOM.modalTitle.textContent = 'Add Subcategory';
+            DOM.itemName.value = '';
+            DOM.itemIcon.value = '📂';
+            DOM.urlGroup.style.display = 'none';
+            DOM.editModal.classList.add(CSS_CLASSES.SHOW);
         }
 
+        /**
+         * Edit existing subcategory
+         */
         function editSubcategory(button) {
             const subcategoryDiv = button.closest('.subcategory');
             const { categoryIndex } = getCategoryFromElement(button);
@@ -982,13 +1078,16 @@
             const subcategory = currentConfig.category[categoryIndex].subcategory[subcategoryIndex];
 
             editContext = { type: 'subcategory', action: 'edit', categoryIndex, subcategoryIndex };
-            document.getElementById('modalTitle').textContent = 'Edit Subcategory';
-            document.getElementById('itemName').value = subcategory.name;
-            document.getElementById('itemIcon').value = subcategory.icon || '📂';
-            document.getElementById('urlGroup').style.display = 'none';
-            document.getElementById('editModal').classList.add('show');
+            DOM.modalTitle.textContent = 'Edit Subcategory';
+            DOM.itemName.value = subcategory.name;
+            DOM.itemIcon.value = subcategory.icon || '📂';
+            DOM.urlGroup.style.display = 'none';
+            DOM.editModal.classList.add(CSS_CLASSES.SHOW);
         }
 
+        /**
+         * Delete subcategory with confirmation
+         */
         function deleteSubcategory(button) {
             const subcategoryDiv = button.closest('.subcategory');
             const { categoryIndex } = getCategoryFromElement(button);
@@ -1004,6 +1103,9 @@
             );
         }
 
+        /**
+         * Add new link
+         */
         function addLink(button, isSubcategory) {
             if (isSubcategory) {
                 const subcategoryDiv = button.closest('.subcategory');
@@ -1015,14 +1117,17 @@
                 editContext = { type: 'link', action: 'add', categoryIndex };
             }
 
-            document.getElementById('modalTitle').textContent = 'Add Link';
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemUrl').value = '';
-            document.getElementById('itemIcon').value = '';
-            document.getElementById('urlGroup').style.display = 'block';
-            document.getElementById('editModal').classList.add('show');
+            DOM.modalTitle.textContent = 'Add Link';
+            DOM.itemName.value = '';
+            DOM.itemUrl.value = '';
+            DOM.itemIcon.value = '';
+            DOM.urlGroup.style.display = 'block';
+            DOM.editModal.classList.add(CSS_CLASSES.SHOW);
         }
 
+        /**
+         * Edit existing link
+         */
         function editLink(button, isSubcategory, event) {
             event.preventDefault();
             event.stopPropagation();
@@ -1038,26 +1143,29 @@
 
                 editContext = { type: 'link', action: 'edit', categoryIndex, subcategoryIndex, linkIndex };
 
-                document.getElementById('modalTitle').textContent = 'Edit Link';
-                document.getElementById('itemName').value = link.name;
-                document.getElementById('itemUrl').value = link.url;
-                document.getElementById('itemIcon').value = link.icon || '🔗';
+                DOM.modalTitle.textContent = 'Edit Link';
+                DOM.itemName.value = link.name;
+                DOM.itemUrl.value = link.url;
+                DOM.itemIcon.value = link.icon || '🔗';
             } else {
                 const { categoryIndex } = getCategoryFromElement(button);
                 const link = currentConfig.category[categoryIndex].links[linkIndex];
 
                 editContext = { type: 'link', action: 'edit', categoryIndex, linkIndex };
 
-                document.getElementById('modalTitle').textContent = 'Edit Link';
-                document.getElementById('itemName').value = link.name;
-                document.getElementById('itemUrl').value = link.url;
-                document.getElementById('itemIcon').value = link.icon || '🔗';
+                DOM.modalTitle.textContent = 'Edit Link';
+                DOM.itemName.value = link.name;
+                DOM.itemUrl.value = link.url;
+                DOM.itemIcon.value = link.icon || '🔗';
             }
 
-            document.getElementById('urlGroup').style.display = 'block';
-            document.getElementById('editModal').classList.add('show');
+            DOM.urlGroup.style.display = 'block';
+            DOM.editModal.classList.add(CSS_CLASSES.SHOW);
         }
 
+        /**
+         * Delete link with confirmation
+         */
         function deleteLink(button, isSubcategory, event) {
             event.preventDefault();
             event.stopPropagation();
@@ -1092,24 +1200,48 @@
             }
         }
 
+        /**
+         * Close edit modal
+         */
         function closeModal() {
-            document.getElementById('editModal').classList.remove('show');
+            if (DOM.editModal) {
+                DOM.editModal.classList.remove(CSS_CLASSES.SHOW);
+            }
             editContext = null;
         }
 
+        /**
+         * Show confirmation dialog
+         */
         function showConfirmDialog(message, onConfirm) {
-            document.getElementById('confirmMessage').textContent = message;
-            document.getElementById('confirmButton').onclick = () => {
-                onConfirm();
-                closeConfirmModal();
-            };
-            document.getElementById('confirmModal').classList.add('show');
+            if (!DOM.confirmModal || !DOM.confirmMessage) return;
+
+            DOM.confirmMessage.textContent = message;
+            DOM.confirmModal.classList.add(CSS_CLASSES.SHOW);
+
+            // Store callback for confirmation
+            window._confirmCallback = onConfirm;
         }
 
+        /**
+         * Close confirmation modal
+         */
         function closeConfirmModal() {
-            document.getElementById('confirmModal').classList.remove('show');
+            if (DOM.confirmModal) {
+                DOM.confirmModal.classList.remove(CSS_CLASSES.SHOW);
+            }
+            window._confirmCallback = null;
         }
 
+        {% endif %}
+
+        /* Module: 10-drag-drop.js */
+        /**
+         * Module: Drag and Drop
+         * Drag and drop functionality for widgets, categories, links, subcategories
+         */
+
+        {% if config.ENABLE_EDITING %}
         document.getElementById('editForm').addEventListener('submit', (e) => {
             e.preventDefault();
 
@@ -1783,9 +1915,147 @@
         }
 
 
+
         {% endif %}
 
-        // WebSocket Integration
+        /* Module: 11-initialization.js */
+        /**
+         * Module: Initialization and WebSocket
+         * Page initialization, event listeners, and WebSocket event handlers
+         */
+
+        // Initialize DOM cache on page load
+        initDOMCache();
+
+        // Set up event listeners for top buttons
+        {% if config.ENABLE_SYSTEM_STATS %}
+        if (DOM.statsToggle) {
+            DOM.statsToggle.addEventListener('click', toggleSystemStats);
+        }
+        if (DOM.statsSlimBar) {
+            DOM.statsSlimBar.addEventListener('click', toggleSystemStats);
+        }
+        // Set up position buttons using event delegation
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-action="set-stats-position"]');
+            if (target) {
+                const position = target.dataset.position;
+                setStatsPosition(position);
+            }
+            if (e.target.closest('[data-action="toggle-stats"]')) {
+                toggleSystemStats();
+            }
+        });
+        {% endif %}
+
+        {% if config.ENABLE_EDITING %}
+        if (DOM.editToggle) {
+            DOM.editToggle.addEventListener('click', toggleEditMode);
+        }
+        {% endif %}
+
+        // Update clock every second
+        updateClock();
+        updateDate();
+        setInterval(updateClock, 1000);
+
+        // Update date at midnight
+        setInterval(updateDate, 60000);
+
+        {% if config.ENABLE_WEATHER %}
+        // Update weather on load and every 10 minutes
+        updateWeather();
+        setInterval(updateWeather, 600000);
+
+        // Forecast expand/collapse functionality
+        const forecastExpandBtn = document.getElementById('forecastExpandBtn');
+        const forecastContainer = document.getElementById('forecastContainer');
+        let forecastExpanded = false;
+
+        if (forecastExpandBtn && forecastContainer) {
+            forecastExpandBtn.addEventListener('click', () => {
+                forecastExpanded = !forecastExpanded;
+                if (forecastExpanded) {
+                    forecastContainer.style.display = 'block';
+                    forecastExpandBtn.textContent = '📅 Hide Forecast';
+                    // Load forecast when expanded for the first time
+                    if (forecastContainer.dataset.loaded !== 'true') {
+                        updateWeatherForecast();
+                        forecastContainer.dataset.loaded = 'true';
+                    }
+                } else {
+                    forecastContainer.style.display = 'none';
+                    forecastExpandBtn.textContent = '📅 Show Forecast';
+                }
+            });
+        }
+
+        // Forecast mode toggle functionality
+        const forecastModeToggle = document.getElementById('forecastModeToggle');
+        if (forecastModeToggle) {
+            forecastModeToggle.addEventListener('click', () => {
+                forecastMode = forecastMode === 'hourly' ? 'daily' : 'hourly';
+                forecastModeToggle.textContent = forecastMode === 'hourly' ? 'Hourly' : 'Daily';
+                updateWeatherForecast();
+            });
+        }
+
+        // Update forecast every 10 minutes if expanded
+        setInterval(() => {
+            if (forecastExpanded) {
+                updateWeatherForecast();
+            }
+        }, 600000);
+        {% endif %}
+
+        {% if config.ENABLE_RSS %}
+        // Update RSS feeds on load and every 5 minutes
+        updateRSSFeeds();
+        setInterval(updateRSSFeeds, 300000);
+        {% endif %}
+
+        // Check for file changes (fallback to polling if WebSocket is disabled)
+        {% if not config.ENABLE_WEBSOCKET %}
+        setInterval(checkForReload, RELOAD_INTERVAL);
+        {% endif %}
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            const searchInput = document.getElementById('searchInput');
+            const helpOverlay = document.getElementById('helpOverlay');
+
+            // Ignore if typing in input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    searchInput.blur();
+                }
+                return;
+            }
+
+            switch(e.key) {
+                case '/':
+                    e.preventDefault();
+                    searchInput.focus();
+                    break;
+                case '?':
+                    e.preventDefault();
+                    helpOverlay.classList.toggle('show');
+                    break;
+                case 'Escape':
+                    helpOverlay.classList.remove('show');
+                    break;
+            }
+        });
+
+        // Search form submission
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchForm = document.getElementById('searchForm');
+            if (searchForm) {
+                searchForm.addEventListener('submit', handleSearch);
+            }
+        });
+
         {% if config.ENABLE_WEBSOCKET %}
         // WebSocket client will be loaded from separate file
         // Set up event handlers when WebSocket is available
@@ -1814,11 +2084,8 @@
             });
 
             // Configuration change events trigger reload
-            // The WebSocket client already handles reload in its handleConfigChange method
-            // But we can add custom handlers here if needed
             wsClient.on('config_changed', (data) => {
                 console.log('Received config change via WebSocket:', data.type);
-                // Reload is handled automatically by WebSocket client
             });
 
             {% if config.ENABLE_SYSTEM_STATS %}

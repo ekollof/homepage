@@ -15,12 +15,12 @@
     <!-- Top-right button container -->
     <div class="top-buttons-container">
         {% if config.ENABLE_SYSTEM_STATS %}
-        <button class="stats-toggle" id="statsToggle" onclick="toggleSystemStats()">
+        <button class="stats-toggle" id="statsToggle">
             <span>📊</span>
         </button>
         {% endif %}
         {% if config.ENABLE_EDITING %}
-        <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()">
+        <button class="edit-toggle" id="editToggle">
             <span id="editIcon">✏️</span>
             <span id="editText">Edit Mode</span>
         </button>
@@ -31,7 +31,7 @@
     <!-- System Stats Sidebar -->
     <div class="system-stats-sidebar position-left" id="systemStatsSidebar">
         <!-- Slim iconized bar (always visible when sidebar is not expanded) -->
-        <div class="stats-slim-bar" id="statsSlimBar" onclick="toggleSystemStats()">
+        <div class="stats-slim-bar" id="statsSlimBar" data-action="toggle-stats">
             <div class="slim-stat" title="CPU">
                 <span class="slim-icon">💻</span>
                 <span class="slim-value" id="cpuSlimValue">--</span>
@@ -55,12 +55,12 @@
             <div class="stats-header">
                 <span class="stats-title">System Stats</span>
                 <div class="stats-position-controls">
-                    <button class="position-btn" onclick="setStatsPosition('left')" title="Left">⬅️</button>
-                    <button class="position-btn" onclick="setStatsPosition('right')" title="Right">➡️</button>
-                    <button class="position-btn" onclick="setStatsPosition('top')" title="Top">⬆️</button>
-                    <button class="position-btn" onclick="setStatsPosition('bottom')" title="Bottom">⬇️</button>
+                    <button class="position-btn" data-action="set-stats-position" data-position="left" title="Left">⬅️</button>
+                    <button class="position-btn" data-action="set-stats-position" data-position="right" title="Right">➡️</button>
+                    <button class="position-btn" data-action="set-stats-position" data-position="top" title="Top">⬆️</button>
+                    <button class="position-btn" data-action="set-stats-position" data-position="bottom" title="Bottom">⬇️</button>
                 </div>
-                <button class="stats-close" onclick="toggleSystemStats()" title="Collapse">◀</button>
+                <button class="stats-close" data-action="toggle-stats" title="Collapse">◀</button>
             </div>
 
             <div class="stats-content">
@@ -406,8 +406,10 @@
     {% endif %}
 
     {% if config.ENABLE_WEBSOCKET %}
-    <!-- Socket.IO client library from CDN -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" integrity="sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HeMKtKePeN3wqL9gh/zU1yOkIvn" crossorigin="anonymous"></script>
+    <!-- Socket.IO client library (local with CDN fallback) -->
+    <script src="{{ url_for('assets.socket_io') }}" 
+            onerror="this.onerror=null; this.src='https://cdn.socket.io/4.7.2/socket.io.min.js'; console.log('Using CDN fallback for Socket.IO');">
+    </script>
     <!-- WebSocket client -->
     <script src="{{ url_for('assets.websocket_client') }}"></script>
     {% endif %}

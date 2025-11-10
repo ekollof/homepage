@@ -1,0 +1,122 @@
+/**
+ * Module: RSS Feed Carousel
+ * Handles RSS feed display and navigation
+ */
+
+{% if config.ENABLE_RSS %}
+let rssItems = [];
+let currentRSSIndex = 0;
+let rssAutoRotate = null;
+
+/**
+ * Fetch RSS feeds from server
+ */
+function updateRSSFeeds() {
+    if (!DOM.rssWidget) return;
+
+    fetch('/api/rss')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error || !data.items || data.items.length === 0) {
+                DOM.rssWidget.innerHTML = `<div class="rss-error">No RSS items available</div>`;
+                return;
+            }
+
+            rssItems = data.items;
+            currentRSSIndex = 0;
+            renderRSSCarousel();
+            startRSSAutoRotate();
+        })
+        .catch(error => {
+            DOM.rssWidget.innerHTML = `<div class="rss-error">RSS feeds unavailable</div>`;
+            console.warn('RSS fetch failed:', error.message);
+        });
+}
+
+/**
+ * Render RSS carousel with navigation
+ */
+function renderRSSCarousel() {
+    if (!DOM.rssWidget || rssItems.length === 0) return;
+
+    const itemsHtml = rssItems.map(item => {
+        const date = item.published ? new Date(item.published).toLocaleDateString() : '';
+        const description = item.description ? `<div class="rss-item-description">${item.description}</div>` : '';
+        
+        return `
+            <div class="rss-item">
+                <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="rss-item-link">
+                    ${item.title}
+                </a>
+                <div class="rss-item-meta">
+                    <span class="rss-item-feed">${item.feed_title}</span>
+                    ${date ? `<span class="rss-item-date">${date}</span>` : ''}
+                </div>
+                ${description}
+            </div>
+        `;
+    }).join('');
+
+    DOM.rssWidget.innerHTML = `
+        <div class="rss-title">
+            <span>📰 Latest News</span>
+            <div class="rss-nav">
+                <button class="rss-nav-btn" data-action="rss-prev" aria-label="Previous">‹</button>
+                <span class="rss-counter">${currentRSSIndex + 1} / ${rssItems.length}</span>
+                <button class="rss-nav-btn" data-action="rss-next" aria-label="Next">›</button>
+            </div>
+        </div>
+        <div class="rss-carousel">
+            <div class="rss-items" style="transform: translateX(-${currentRSSIndex * 100}%)">
+                ${itemsHtml}
+            </div>
+        </div>
+    `;
+    
+    // Attach event listeners to navigation buttons
+    DOM.rssWidget.querySelector('[data-action="rss-prev"]').addEventListener('click', prevRSSItem);
+    DOM.rssWidget.querySelector('[data-action="rss-next"]').addEventListener('click', nextRSSItem);
+}
+
+/**
+ * Navigate to next RSS item
+ */
+function nextRSSItem() {
+    if (rssItems.length === 0) return;
+    currentRSSIndex = (currentRSSIndex + 1) % rssItems.length;
+    renderRSSCarousel();
+    resetRSSAutoRotate();
+}
+
+/**
+ * Navigate to previous RSS item
+ */
+function prevRSSItem() {
+    if (rssItems.length === 0) return;
+    currentRSSIndex = (currentRSSIndex - 1 + rssItems.length) % rssItems.length;
+    renderRSSCarousel();
+    resetRSSAutoRotate();
+}
+
+/**
+ * Start auto-rotation timer for RSS feed
+ */
+function startRSSAutoRotate() {
+    if (rssAutoRotate) clearInterval(rssAutoRotate);
+    rssAutoRotate = setInterval(() => {
+        nextRSSItem();
+    }, 30000); // 30 seconds
+}
+
+/**
+ * Reset auto-rotation timer
+ */
+function resetRSSAutoRotate() {
+    startRSSAutoRotate();
+}
+{% endif %}

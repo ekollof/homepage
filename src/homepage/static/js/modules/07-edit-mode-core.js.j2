@@ -1,0 +1,164 @@
+/**
+ * Module: Edit Mode Core
+ * Core edit mode functionality
+ */
+
+{% if config.ENABLE_EDITING %}
+// Edit mode functionality
+let editMode = false;
+let currentConfig = null;
+let editContext = null;
+
+function toggleEditMode() {
+    editMode = !editMode;
+
+    if (editMode) {
+        DOM.linksContainer.classList.add(CSS_CLASSES.EDIT_MODE);
+        if (DOM.widgetsContainer) {
+            DOM.widgetsContainer.parentElement.classList.add(CSS_CLASSES.EDIT_MODE);
+            enableWidgetDragging();
+        }
+        enableCategoryDragging();
+        enableLinkDragging();
+        enableSubcategoryDragging();
+        DOM.editToggle.classList.add(CSS_CLASSES.ACTIVE);
+        DOM.editIcon.textContent = '💾';
+        DOM.editText.textContent = 'Save & Exit';
+        loadConfig();
+    } else {
+        DOM.linksContainer.classList.remove(CSS_CLASSES.EDIT_MODE);
+        if (DOM.widgetsContainer) {
+            DOM.widgetsContainer.parentElement.classList.remove(CSS_CLASSES.EDIT_MODE);
+            disableWidgetDragging();
+        }
+        disableCategoryDragging();
+        disableLinkDragging();
+        disableSubcategoryDragging();
+        DOM.editToggle.classList.remove(CSS_CLASSES.ACTIVE);
+        DOM.editIcon.textContent = '✏️';
+        DOM.editText.textContent = 'Edit Mode';
+        saveAndExit();
+    }
+}
+
+/**
+ * Load configuration from server
+ */
+function loadConfig() {
+    fetch('/api/config')
+        .then(response => response.json())
+        .then(data => {
+            currentConfig = data;
+            console.log('Configuration loaded', currentConfig);
+
+            // Load widget order from config
+            loadWidgetOrder();
+
+            // Fetch and cache any missing favicons on load
+            fetchMissingFavicons();
+        })
+        .catch(error => console.error('Failed to load config:', error));
+}
+
+async function fetchMissingFavicons() {
+    // Find all links with empty icons and fetch their favicons
+    let hasChanges = false;
+
+    for (let catIndex = 0; catIndex < currentConfig.category.length; catIndex++) {
+        const category = currentConfig.category[catIndex];
+
+        // Check category links
+        if (category.links) {
+            for (let linkIndex = 0; linkIndex < category.links.length; linkIndex++) {
+                const link = category.links[linkIndex];
+                if (link.icon === '' || !link.icon) {
+                    console.log('Fetching favicon for:', link.name);
+                    try {
+                        const faviconData = await fetchAndCacheFavicon(link.url);
+                        link.icon = faviconData;
+                        hasChanges = true;
+                    } catch (error) {
+                        console.error('Failed to fetch favicon for', link.name, error);
+                    }
+                }
+            }
+        }
+
+        // Check subcategory links
+        if (category.subcategory) {
+            for (let subIndex = 0; subIndex < category.subcategory.length; subIndex++) {
+                const subcategory = category.subcategory[subIndex];
+                if (subcategory.links) {
+                    for (let linkIndex = 0; linkIndex < subcategory.links.length; linkIndex++) {
+                        const link = subcategory.links[linkIndex];
+                        if (link.icon === '' || !link.icon) {
+                            console.log('Fetching favicon for:', link.name);
+                            try {
+                                const faviconData = await fetchAndCacheFavicon(link.url);
+                                link.icon = faviconData;
+                                hasChanges = true;
+                            } catch (error) {
+                                console.error('Failed to fetch favicon for', link.name, error);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // If we fetched any favicons, update the DOM
+    if (hasChanges) {
+        console.log('Favicons fetched, updating display');
+        updateCategoryDisplay();
+    }
+}
+
+/**
+ * Save configuration and exit edit mode
+ */
+function saveAndExit() {
+    if (!currentConfig || !DOM.editToggle) return;
+
+    // Show saving indicator
+    const originalText = DOM.editToggle.innerHTML;
+    DOM.editToggle.innerHTML = '<span>💾</span><span>Saving...</span>';
+    DOM.editToggle.style.pointerEvents = 'none';
+
+    fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentConfig)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Save failed');
+        return response.json();
+    })
+    .then(() => {
+        console.log('Configuration saved');
+        // Add cache-busting parameter to force reload
+        setTimeout(() => {
+            window.location.href = window.location.pathname + '?t=' + Date.now();
+        }, 500);
+    })
+    .catch(error => {
+        console.error('Failed to save config:', error);
+        alert('Failed to save configuration. Please try again.');
+        DOM.editToggle.innerHTML = originalText;
+        DOM.editToggle.style.pointerEvents = 'auto';
+    });
+}
+
+/**
+ * Get category element and index from a child element
+ */
+function getCategoryFromElement(element) {
+    const categoryDiv = element.closest('.category');
+    const categoryIndex = parseInt(categoryDiv.dataset.categoryIndex);
+    return { categoryDiv, categoryIndex };
+}
+
+/**
+ * Fetch favicon for a URL via proxy endpoint
+ */
+{% endif %}

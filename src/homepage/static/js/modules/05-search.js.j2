@@ -1,0 +1,83 @@
+/**
+ * Module: Search and Tracking
+ * Handles search functionality and event tracking
+ */
+
+/**
+ * Check if page reload is needed (config changes)
+ */
+function checkForReload() {
+    // Don't reload if in edit mode - user is actively editing
+    if (editMode) {
+        return;
+    }
+
+    fetch('/check_reload')
+        .then(response => response.json())
+        .then(data => {
+            if (data.reload) {
+                window.location.reload();
+            }
+        })
+        .catch(error => console.error('Error checking for reload:', error));
+}
+
+/**
+ * Handle search form submission
+ */
+function handleSearch(event) {
+    event.preventDefault();
+
+    if (!DOM.searchInput || !DOM.searchProvider) return;
+
+    const query = DOM.searchInput.value.trim();
+
+    if (!query) {
+        return;
+    }
+
+    const searchUrls = {
+        'brave': 'https://search.brave.com/search?q=',
+        'google': 'https://www.google.com/search?q=',
+        'duckduckgo': 'https://duckduckgo.com/?q=',
+        'bing': 'https://www.bing.com/search?q='
+    };
+
+    const baseUrl = searchUrls[DOM.searchProvider.value] || searchUrls['brave'];
+    const searchUrl = baseUrl + encodeURIComponent(query);
+
+    // Track search
+    trackEvent('search', { provider: DOM.searchProvider.value, query: query });
+
+    window.open(searchUrl, '_blank', 'noopener,noreferrer');
+
+    // Save to search history
+    saveSearchHistory(query, DOM.searchProvider.value);
+    DOM.searchInput.value = '';
+}
+
+/**
+ * Save search query to local storage
+ */
+function saveSearchHistory(query, provider) {
+    try {
+        let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+        history.unshift({ query, provider, timestamp: Date.now() });
+        history = history.slice(0, 50); // Keep last 50 searches
+        localStorage.setItem('searchHistory', JSON.stringify(history));
+    } catch (e) {
+        console.error('Failed to save search history:', e);
+    }
+}
+
+/**
+ * Track events to server (analytics)
+ */
+function trackEvent(eventType, data) {
+    // Send tracking data to server
+    fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: eventType, data: data, timestamp: Date.now() })
+    }).catch(() => {}); // Silently fail
+}

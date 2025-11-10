@@ -127,6 +127,20 @@ def websocket_client():
     return response
 
 
+@assets_bp.route("/socket.io.min.js")
+def socket_io():
+    """Serve Socket.IO library from local cache."""
+    from pathlib import Path
+    static_dir = Path(__file__).parent.parent / "static" / "js"
+    socket_io_path = static_dir / "socket.io.min.js"
+    
+    if socket_io_path.exists():
+        return send_file(socket_io_path, mimetype="application/javascript")
+    
+    # If file doesn't exist, return 404
+    return "Socket.IO library not found", 404
+
+
 @assets_bp.route("/favicon")
 def favicon():
     """Serve favicon."""

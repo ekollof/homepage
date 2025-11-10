@@ -1,0 +1,38 @@
+/**
+ * Module: Clock and Date
+ * Handles clock and date display updates
+ */
+
+/**
+ * Update the clock display
+ * Uses 12h or 24h format based on CLOCK_FORMAT constant
+ */
+function updateClock() {
+    if (!DOM.clock) return;
+
+    const now = new Date();
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    if (CLOCK_FORMAT === '12') {
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        DOM.clock.textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
+    } else {
+        hours = String(hours).padStart(2, '0');
+        DOM.clock.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+}
+
+/**
+ * Update the date display
+ */
+function updateDate() {
+    if (!DOM.date) return;
+
+    const now = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateString = now.toLocaleDateString('en-US', options);
+    DOM.date.textContent = dateString;
+}

@@ -1,7 +1,7 @@
 """WebSocket routes for real-time connection management."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from flask import Blueprint, jsonify
 
