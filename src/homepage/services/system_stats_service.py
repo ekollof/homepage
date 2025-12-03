@@ -25,7 +25,13 @@ class SystemStatsService:
         # CPU statistics
         cpu_percent = psutil.cpu_percent(interval=0.1)
         cpu_count = psutil.cpu_count()
-        cpu_freq = psutil.cpu_freq()
+        
+        # cpu_freq can fail on FreeBSD with buffer size mismatch
+        try:
+            cpu_freq = psutil.cpu_freq()
+        except (SystemError, RuntimeError) as e:
+            logger.debug("cpu_freq not available: %s", e)
+            cpu_freq = None
 
         # Memory statistics
         memory = psutil.virtual_memory()

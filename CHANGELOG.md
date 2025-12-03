@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **FreeBSD System Stats**: Fixed `cpu_freq()` crash on FreeBSD due to buffer size mismatch in psutil
+  - Added graceful error handling for platforms where CPU frequency is unavailable
+  - System stats now return `null` for CPU frequency fields when not supported
+
 ### Added
 - **BSD Support**: Native FreeBSD and OpenBSD compatibility
   - XDG autostart desktop file for auto-start on login
