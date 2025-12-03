@@ -58,7 +58,9 @@ help:
 
 install:
 	@echo "Creating virtual environment..."
-	python3 -m venv $(VENV)
+	@PYTHON_BIN=$$(sh scripts/find_python_interp.sh) && \
+		$$PYTHON_BIN -m venv $(VENV) || \
+		(echo "Error: Python 3.10+ not found" && exit 1)
 	@echo "Installing package..."
 	$(PIP) install --upgrade pip
 	$(PIP) install -e .
