@@ -2,42 +2,8 @@
 
 set -e
 
-# Detect OS and delegate to appropriate installer
-OS_TYPE=$(uname -s)
-
-case "$OS_TYPE" in
-    FreeBSD|OpenBSD|NetBSD|DragonFly)
-        echo "Detected BSD system: $OS_TYPE"
-        echo "Using XDG autostart installer..."
-        echo ""
-        exec "$(dirname "$0")/install-bsd.sh"
-        ;;
-    Linux)
-        # Check if systemd is available
-        if command -v systemctl >/dev/null 2>&1; then
-            echo "Detected Linux with systemd"
-            echo "Using systemd installer..."
-            echo ""
-            # Continue with systemd installation below
-        else
-            echo "Detected Linux without systemd"
-            echo "Using XDG autostart installer..."
-            echo ""
-            exec "$(dirname "$0")/install-bsd.sh"
-        fi
-        ;;
-    *)
-        echo "Unknown OS: $OS_TYPE"
-        echo "Trying XDG autostart installer..."
-        echo ""
-        exec "$(dirname "$0")/install-bsd.sh"
-        ;;
-esac
-
-# The rest of this script only runs on Linux with systemd
-
 echo "=========================================="
-echo "Homepage Installation Script (systemd)"
+echo "Homepage Installation Script (BSD)"
 echo "=========================================="
 echo ""
 
@@ -48,6 +14,11 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 echo "Installation directory: $PROJECT_ROOT"
+echo ""
+
+# Detect OS
+OS_TYPE=$(uname -s)
+echo "Detected OS: $OS_TYPE"
 echo ""
 
 # Create virtual environment
@@ -92,16 +63,16 @@ fi
 echo "✓ Symlinks created"
 echo ""
 
-# Install systemd service
-echo "[5/5] Setting up systemd service..."
-SERVICE_DIR="$HOME/.config/systemd/user"
-mkdir -p "$SERVICE_DIR"
+# Install XDG autostart
+echo "[5/5] Setting up XDG autostart..."
+AUTOSTART_DIR="$HOME/.config/autostart"
+mkdir -p "$AUTOSTART_DIR"
 
-# Create service file with actual paths
-sed "s|INSTALL_DIR_PLACEHOLDER|$PROJECT_ROOT|g" scripts/homepage.service > "$SERVICE_DIR/homepage.service"
+# Create desktop file with actual paths
+sed "s|INSTALL_DIR_PLACEHOLDER|$PROJECT_ROOT|g" scripts/homepage.desktop > "$AUTOSTART_DIR/homepage.desktop"
+chmod +x "$AUTOSTART_DIR/homepage.desktop"
 
-systemctl --user daemon-reload
-echo "✓ Service file installed to $SERVICE_DIR/homepage.service"
+echo "✓ Desktop file installed to $AUTOSTART_DIR/homepage.desktop"
 echo "  Working directory: $PROJECT_ROOT"
 echo ""
 
@@ -116,17 +87,18 @@ echo "   cat docs/QUICKSTART.md"
 echo ""
 echo "2. Edit data/links.toml to customize your links"
 echo ""
-echo "3. Start the service:"
-echo "   systemctl --user start homepage.service"
+echo "3. Start the server manually:"
+echo "   make run"
+echo "   # OR:"
+echo "   ./venv/bin/python -m homepage.app"
 echo ""
-echo "4. Enable auto-start on boot:"
-echo "   systemctl --user enable homepage.service"
+echo "4. The server will auto-start on next login via XDG autostart"
 echo ""
-echo "5. Check service status:"
-echo "   systemctl --user status homepage.service"
+echo "5. To start it now without rebooting:"
+echo "   nohup ./venv/bin/python -m homepage.app > /dev/null 2>&1 &"
 echo ""
-echo "6. View logs:"
-echo "   journalctl --user -u homepage.service -f"
+echo "6. Check if it's running:"
+echo "   pgrep -f 'python.*homepage.app'"
 echo ""
 echo "7. Open in browser:"
 echo "   http://localhost:5000"
@@ -138,4 +110,7 @@ echo "   docs/USAGE.md       - Usage guide"
 echo ""
 echo "Optional: Install development tools"
 echo "   ./venv/bin/pip install -e \".[dev]\""
+echo ""
+echo "To disable autostart:"
+echo "   rm $AUTOSTART_DIR/homepage.desktop"
 echo ""

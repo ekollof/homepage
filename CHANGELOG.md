@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **BSD Support**: Native FreeBSD and OpenBSD compatibility
+  - XDG autostart desktop file for auto-start on login
+  - POSIX-compliant install scripts (sh instead of bash)
+  - BSD-compatible Makefile targets
+  - Automatic OS detection in installer
+  - Support for systems without systemd
+  - New make targets:
+    - `autostart-install` - Install XDG autostart desktop file
+    - `autostart-enable` - Enable XDG autostart
+    - `autostart-disable` - Disable XDG autostart
+    - `start-daemon` - Start server in background
+    - `stop-daemon` - Stop background server process
+  - New installation scripts:
+    - `scripts/install-bsd.sh` - BSD-specific installer
+    - `scripts/homepage.desktop` - XDG autostart desktop entry template
+  - Updated documentation:
+    - README.md now covers both systemd and XDG autostart
+    - DEPLOYMENT.md includes BSD deployment guide
+    - Platform-specific notes for FreeBSD, OpenBSD, NetBSD
 - **WebSocket Support**: Real-time bidirectional communication for instant updates
   - **Live Updates**: Push notifications instead of polling for configuration changes
   - **Real-time System Stats**: WebSocket-based system stats updates (optional)

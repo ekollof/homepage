@@ -1,4 +1,4 @@
-.PHONY: help install install-dev run clean lint format check test test-cov setup-hooks service-install service-start service-stop service-restart service-status service-enable service-disable logs docker-build docker-run docker-stop validate-config stats health export-metrics lint-js render-js check-all build-js
+.PHONY: help install install-dev run clean lint format check test test-cov setup-hooks service-install service-start service-stop service-restart service-status service-enable service-disable logs autostart-install autostart-enable autostart-disable start-daemon stop-daemon docker-build docker-run docker-stop validate-config stats health export-metrics lint-js render-js check-all build-js
 
 VENV = venv
 PYTHON = $(VENV)/bin/python
@@ -11,6 +11,7 @@ PYTEST = $(VENV)/bin/pytest
 RENDER_SCRIPT = scripts/render_template.py
 BUILD_JS_SCRIPT = scripts/build_js.py
 RENDERED_JS = scripts_rendered.js
+PWD != pwd
 
 help:
 	@echo "Homepage Development Makefile"
@@ -37,6 +38,8 @@ help:
 	@echo "  docker-build     - Build Docker image"
 	@echo "  docker-run       - Run Docker container"
 	@echo "  docker-stop      - Stop Docker container"
+	@echo ""
+	@echo "Linux with systemd:"
 	@echo "  service-install  - Install systemd service"
 	@echo "  service-start    - Start systemd service"
 	@echo "  service-stop     - Stop systemd service"
@@ -45,6 +48,13 @@ help:
 	@echo "  service-enable   - Enable systemd service auto-start"
 	@echo "  service-disable  - Disable systemd service auto-start"
 	@echo "  logs             - Follow systemd service logs"
+	@echo ""
+	@echo "BSD and other systems (XDG autostart):"
+	@echo "  autostart-install - Install XDG autostart desktop file"
+	@echo "  autostart-enable  - Enable XDG autostart"
+	@echo "  autostart-disable - Disable XDG autostart"
+	@echo "  start-daemon      - Start homepage in background"
+	@echo "  stop-daemon       - Stop background homepage process"
 
 install:
 	@echo "Creating virtual environment..."
@@ -155,10 +165,10 @@ docker-stop:
 service-install:
 	@echo "Installing systemd service..."
 	@mkdir -p ~/.config/systemd/user
-	@sed "s|INSTALL_DIR_PLACEHOLDER|$(shell pwd)|g" scripts/homepage.service > ~/.config/systemd/user/homepage.service
+	@sed "s|INSTALL_DIR_PLACEHOLDER|$(PWD)|g" scripts/homepage.service > ~/.config/systemd/user/homepage.service
 	@systemctl --user daemon-reload
 	@echo "Service installed to ~/.config/systemd/user/homepage.service"
-	@echo "Working directory: $(shell pwd)"
+	@echo "Working directory: $(PWD)"
 
 service-start:
 	systemctl --user start homepage.service
@@ -185,3 +195,49 @@ service-disable:
 
 logs:
 	journalctl --user -u homepage.service -f
+
+# BSD/XDG Autostart targets
+autostart-install:
+	@echo "Installing XDG autostart desktop file..."
+	@mkdir -p ~/.config/autostart
+	@sed "s|INSTALL_DIR_PLACEHOLDER|$(PWD)|g" scripts/homepage.desktop > ~/.config/autostart/homepage.desktop
+	@chmod +x ~/.config/autostart/homepage.desktop
+	@echo "Desktop file installed to ~/.config/autostart/homepage.desktop"
+	@echo "Working directory: $(PWD)"
+	@echo "Autostart will activate on next login"
+
+autostart-enable:
+	@if [ -f ~/.config/autostart/homepage.desktop ]; then \
+		sed -i.bak 's/Hidden=true/Hidden=false/' ~/.config/autostart/homepage.desktop && rm -f ~/.config/autostart/homepage.desktop.bak; \
+		echo "Autostart enabled"; \
+	else \
+		echo "Error: Desktop file not found. Run 'make autostart-install' first."; \
+		exit 1; \
+	fi
+
+autostart-disable:
+	@if [ -f ~/.config/autostart/homepage.desktop ]; then \
+		sed -i.bak 's/Hidden=false/Hidden=true/' ~/.config/autostart/homepage.desktop && rm -f ~/.config/autostart/homepage.desktop.bak; \
+		echo "Autostart disabled"; \
+	else \
+		echo "Error: Desktop file not found."; \
+		exit 1; \
+	fi
+
+start-daemon:
+	@echo "Starting homepage in background..."
+	@if pgrep -f "python.*homepage.app" > /dev/null; then \
+		echo "Homepage is already running (PID: $$(pgrep -f 'python.*homepage.app'))"; \
+	else \
+		nohup $(PYTHON) -m homepage.app > /tmp/homepage.log 2>&1 & \
+		echo "Homepage started (PID: $$!)"; \
+		echo "Logs: /tmp/homepage.log"; \
+	fi
+
+stop-daemon:
+	@echo "Stopping homepage..."
+	@if pgrep -f "python.*homepage.app" > /dev/null; then \
+		pkill -f "python.*homepage.app" && echo "Homepage stopped" || echo "Failed to stop homepage"; \
+	else \
+		echo "Homepage is not running"; \
+	fi

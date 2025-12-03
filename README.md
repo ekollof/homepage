@@ -34,6 +34,8 @@ A customizable homepage web server that displays links from a TOML configuration
 
 - Python 3.10 or higher
 - pip
+- **Linux**: systemd (for service management) or XDG autostart support
+- **BSD**: XDG autostart support (FreeBSD, OpenBSD, NetBSD)
 
 ## Installation
 
@@ -43,14 +45,64 @@ Use the installation script for automated setup:
 
 ```bash
 cd ~/Code/homepage
-./install.sh
+./scripts/install.sh
 ```
+
+**The installer automatically detects your OS:**
+- **Linux with systemd**: Installs as systemd user service
+- **BSD (FreeBSD/OpenBSD/NetBSD)**: Installs XDG autostart desktop file
+- **Linux without systemd**: Falls back to XDG autostart
 
 This will:
 - Create a virtual environment
 - Install all dependencies
-- Set up the systemd service
+- Set up autostart (systemd or XDG)
 - Display next steps
+
+### Platform-Specific Setup
+
+#### Linux with systemd
+
+After installation:
+```bash
+# Start the service
+systemctl --user start homepage.service
+
+# Enable auto-start on boot
+systemctl --user enable homepage.service
+
+# Check status
+systemctl --user status homepage.service
+
+# View logs
+journalctl --user -u homepage.service -f
+```
+
+Or use make targets:
+```bash
+make service-start
+make service-enable
+make logs
+```
+
+#### BSD and XDG Autostart Systems
+
+After installation:
+```bash
+# Start manually (will auto-start on next login)
+make start-daemon
+
+# Stop the daemon
+make stop-daemon
+
+# Check if running
+pgrep -f "python.*homepage.app"
+
+# View logs
+tail -f /tmp/homepage.log
+```
+
+The XDG autostart desktop file at `~/.config/autostart/homepage.desktop` will start the server automatically on login.
 
 ### Manual Installation
 
@@ -72,6 +124,15 @@ python3 -m venv venv
 4. Install with development tools (optional):
 ```bash
 ./venv/bin/pip install -e ".[dev]"
+```
+
+5. Set up autostart:
+```bash
+# For systemd (Linux)
+make service-install
+
+# For XDG autostart (BSD, or Linux without systemd)
+make autostart-install
 ```
 
 ## Configuration

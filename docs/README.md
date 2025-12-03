@@ -9,6 +9,17 @@ Welcome to the Homepage application documentation!
   - Installation steps
   - First run
   - Basic customization
+- **[BSD Installation Guide](BSD_INSTALL.md)** - FreeBSD, OpenBSD, NetBSD specific guide
+  - Platform-specific installation
+  - XDG autostart setup
+  - BSD-specific troubleshooting
+
+### Deployment
+- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment options
+  - Systemd service (Linux)
+  - XDG autostart (BSD and Linux without systemd)
+  - Docker deployment
+  - Reverse proxy setup
 
 ### User Documentation
 - **[Usage Guide](USAGE.md)** - Complete guide to using the homepage

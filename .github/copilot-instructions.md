@@ -37,7 +37,8 @@ homepage/
 ### Running and Testing
 
 ```bash
-# Development setup (creates venv, installs deps, sets up systemd)
+# Development setup (creates venv, installs deps, sets up autostart)
+# Auto-detects: systemd (Linux) or XDG autostart (BSD)
 ./scripts/install.sh
 
 # Run locally (uses dev config, caching disabled)
@@ -56,17 +57,35 @@ make validate-config
 
 **Important:** The project uses a virtual environment at `./venv/`. All Python commands should use `./venv/bin/python` or use `make` targets.
 
-### Systemd Service Management
+### Service Management
 
-The app is designed to run as a systemd user service:
+The app supports multiple service/autostart systems:
 
+**Linux with systemd:**
 ```bash
-make service-install    # Install service (auto-configured paths)
+make service-install    # Install systemd user service (auto-configured paths)
 make service-start      # Start service
+make service-stop       # Stop service
 make logs              # Follow logs (journalctl)
 ```
 
 Service file (`scripts/homepage.service`) uses placeholder `INSTALL_DIR_PLACEHOLDER` that gets replaced during installation.
+
+**BSD and XDG Autostart (FreeBSD, OpenBSD, NetBSD, Linux without systemd):**
+```bash
+make autostart-install  # Install XDG autostart desktop file
+make start-daemon      # Start in background (or wait for next login)
+make stop-daemon       # Stop background process
+# Logs: /tmp/homepage.log
+```
+
+Desktop file (`scripts/homepage.desktop`) uses placeholder `INSTALL_DIR_PLACEHOLDER` that gets replaced during installation. Auto-starts on login via XDG autostart mechanism.
+
+**Platform Detection:**
+The `install.sh` script automatically detects the OS and chooses the appropriate method:
+- FreeBSD, OpenBSD, NetBSD, DragonFly → XDG autostart
+- Linux with systemd → systemd user service
+- Linux without systemd → XDG autostart
 
 ## Configuration System
 

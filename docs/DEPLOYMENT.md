@@ -5,7 +5,8 @@ This guide covers different deployment options for the Homepage application.
 ## Table of Contents
 
 - [Local Development](#local-development)
-- [Systemd Service](#systemd-service)
+- [Systemd Service (Linux)](#systemd-service-linux)
+- [XDG Autostart (BSD and Linux without systemd)](#xdg-autostart-bsd-and-linux-without-systemd)
 - [Docker](#docker)
 - [Docker Compose](#docker-compose)
 - [Reverse Proxy Setup](#reverse-proxy-setup)
@@ -34,9 +35,9 @@ Access at http://localhost:5000
 
 ---
 
-## Systemd Service
+## Systemd Service (Linux)
 
-For running as a background service on Linux:
+For running as a background service on Linux with systemd:
 
 ### Quick Setup
 
@@ -44,7 +45,7 @@ The installation script automatically configures the correct paths:
 
 ```bash
 # Install and start service (recommended)
-./install.sh
+./scripts/install.sh
 
 # Or manually
 make service-install
@@ -118,6 +119,100 @@ systemctl --user stop homepage.service
 # Disable auto-start
 systemctl --user disable homepage.service
 ```
+
+---
+
+## XDG Autostart (BSD and Linux without systemd)
+
+For FreeBSD, OpenBSD, NetBSD, and Linux systems without systemd, Homepage uses the XDG autostart mechanism.
+
+### Quick Setup
+
+The installation script automatically detects BSD systems and installs the XDG desktop file:
+
+```bash
+# Install (automatically detects OS)
+./scripts/install.sh
+
+# Or manually for BSD/XDG systems
+./scripts/install-bsd.sh
+
+# Or use make
+make autostart-install
+```
+
+The installer will:
+- Detect the installation directory
+- Create `~/.config/autostart/homepage.desktop`
+- Configure auto-start on login
+
+### Starting the Service
+
+Unlike systemd, XDG autostart only runs on login. To start immediately:
+
+```bash
+# Start in background
+make start-daemon
+
+# Or manually
+nohup ./venv/bin/python -m homepage.app > /tmp/homepage.log 2>&1 &
+```
+
+### Service Management
+
+```bash
+# Check if running
+pgrep -f "python.*homepage.app"
+
+# View logs
+tail -f /tmp/homepage.log
+
+# Stop service
+make stop-daemon
+# Or: pkill -f "python.*homepage.app"
+
+# Disable auto-start
+make autostart-disable
+
+# Enable auto-start
+make autostart-enable
+```
+
+### Manual Configuration
+
+To manually create the XDG desktop file:
+
+```bash
+mkdir -p ~/.config/autostart
+cat > ~/.config/autostart/homepage.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Homepage Server
+Comment=Custom homepage web server
+Exec=/path/to/homepage/venv/bin/python -m homepage.app
+Path=/path/to/homepage
+Terminal=false
+Hidden=false
+X-GNOME-Autostart-enabled=true
+EOF
+chmod +x ~/.config/autostart/homepage.desktop
+```
+
+**Note:** Replace `/path/to/homepage` with your actual installation directory.
+
+### Platform-Specific Notes
+
+**FreeBSD:**
+- Ensure you have Python 3.10+ installed: `pkg install python310`
+- XDG autostart works with most desktop environments (GNOME, KDE, XFCE)
+
+**OpenBSD:**
+- Install Python: `pkg_add python3`
+- Some lightweight WMs may not support XDG autostart; use cron's `@reboot` as alternative
+
+**NetBSD:**
+- Install Python via pkgsrc: `pkgin install python310`
+- XDG autostart supported on major desktop environments
 
 ---
 

@@ -1,0 +1,22 @@
+# Homepage XDG Autostart Desktop Entry
+#
+# This file is a template. The INSTALL_DIR_PLACEHOLDER will be replaced
+# with the actual installation directory during installation.
+#
+# Install using:
+#   ./scripts/install.sh  (recommended)
+#   make autostart-install  (for development)
+#
+# Manual installation:
+#   sed "s|INSTALL_DIR_PLACEHOLDER|/path/to/homepage|g" scripts/homepage.desktop > ~/.config/autostart/homepage.desktop
+#
+
+[Desktop Entry]
+Type=Application
+Name=Homepage Server
+Comment=Custom homepage web server
+Exec=INSTALL_DIR_PLACEHOLDER/venv/bin/python -m homepage.app
+Path=INSTALL_DIR_PLACEHOLDER
+Terminal=false
+Hidden=false
+X-GNOME-Autostart-enabled=true
