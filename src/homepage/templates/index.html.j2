@@ -142,21 +142,19 @@
                         ↓ <span id="networkRecv">-- MB</span> •
                         ↑ <span id="networkSent">-- MB</span>
                     </div>
-                    <div class="sparkline-container">
-                        <div class="sparkline-label">↓ Download</div>
-                        <svg class="sparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
-                            <polyline id="networkRecvSparklinePath" points="" />
-                        </svg>
-                    </div>
-                    <div class="sparkline-container">
-                        <div class="sparkline-label">↑ Upload</div>
-                        <svg class="sparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
-                            <polyline id="networkSentSparklinePath" points="" />
-                        </svg>
-                    </div>
-                    <div class="stat-info" style="font-size: 0.75rem; margin-top: 4px;">
+                    <div class="stat-info" style="font-size: 0.75rem; margin-top: 2px; margin-bottom: 4px;">
                         ↓ <span id="networkRecvRate">0.0</span> MB/s •
                         ↑ <span id="networkSentRate">0.0</span> MB/s
+                    </div>
+                    <div class="sparkline-container">
+                        <svg class="sparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
+                            <polyline id="networkRecvSparklinePath" fill="none" stroke="{{ colors.color5 }}" stroke-width="1.5" points=""></polyline>
+                        </svg>
+                    </div>
+                    <div class="sparkline-container">
+                        <svg class="sparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
+                            <polyline id="networkSentSparklinePath" fill="none" stroke="{{ colors.color3 }}" stroke-width="1.5" points=""></polyline>
+                        </svg>
                     </div>
                 </div>
 
