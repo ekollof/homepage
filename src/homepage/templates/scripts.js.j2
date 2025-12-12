@@ -302,23 +302,9 @@
         function renderRSSCarousel() {
             if (!DOM.rssWidget || rssItems.length === 0) return;
 
-            const itemsHtml = rssItems.map(item => {
-                const date = item.published ? new Date(item.published).toLocaleDateString() : '';
-                const description = item.description ? `<div class="rss-item-description">${item.description}</div>` : '';
-
-                return `
-                    <div class="rss-item">
-                        <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="rss-item-link">
-                            ${item.title}
-                        </a>
-                        <div class="rss-item-meta">
-                            <span class="rss-item-feed">${item.feed_title}</span>
-                            ${date ? `<span class="rss-item-date">${date}</span>` : ''}
-                        </div>
-                        ${description}
-                    </div>
-                `;
-            }).join('');
+            const currentItem = rssItems[currentRSSIndex];
+            const date = currentItem.published ? new Date(currentItem.published).toLocaleDateString() : '';
+            const description = currentItem.description ? `<div class="rss-item-description">${currentItem.description}</div>` : '';
 
             DOM.rssWidget.innerHTML = `
                 <div class="rss-title">
@@ -329,10 +315,15 @@
                         <button class="rss-nav-btn" data-action="rss-next" aria-label="Next">›</button>
                     </div>
                 </div>
-                <div class="rss-carousel">
-                    <div class="rss-items" style="transform: translateX(-${currentRSSIndex * 100}%)">
-                        ${itemsHtml}
+                <div class="rss-content">
+                    <a href="${currentItem.link}" target="_blank" rel="noopener noreferrer" class="rss-item-link">
+                        ${currentItem.title}
+                    </a>
+                    <div class="rss-item-meta">
+                        <span class="rss-item-feed">${currentItem.feed_title}</span>
+                        ${date ? `<span class="rss-item-date">${date}</span>` : ''}
                     </div>
+                    ${description}
                 </div>
             `;
 
