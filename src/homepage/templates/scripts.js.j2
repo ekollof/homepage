@@ -468,6 +468,8 @@
         let systemStatsPosition = 'left';
         let cpuHistory = [];
         let memoryHistory = [];
+        let networkRecvHistory = [];
+        let networkSentHistory = [];
         const maxHistoryPoints = 20;
 
         function toggleSystemStats() {
@@ -557,6 +559,17 @@
                     // Update Network section
                     document.getElementById('networkRecv').textContent = `${data.network_recv_mb.toFixed(1)} MB`;
                     document.getElementById('networkSent').textContent = `${data.network_sent_mb.toFixed(1)} MB`;
+                    document.getElementById('networkRecvRate').textContent = data.network_recv_rate_mbs.toFixed(3);
+                    document.getElementById('networkSentRate').textContent = data.network_sent_rate_mbs.toFixed(3);
+
+                    // Update Network sparklines (scale to max 10 MB/s for visualization)
+                    const maxNetworkRate = 10; // MB/s
+                    networkRecvHistory.push(Math.min(data.network_recv_rate_mbs, maxNetworkRate));
+                    networkSentHistory.push(Math.min(data.network_sent_rate_mbs, maxNetworkRate));
+                    if (networkRecvHistory.length > maxHistoryPoints) networkRecvHistory.shift();
+                    if (networkSentHistory.length > maxHistoryPoints) networkSentHistory.shift();
+                    updateSparkline('networkRecvSparklinePath', networkRecvHistory, maxNetworkRate);
+                    updateSparkline('networkSentSparklinePath', networkSentHistory, maxNetworkRate);
 
                     // Update Battery section (conditional)
                     if (data.battery) {
@@ -594,12 +607,12 @@
             bar.style.setProperty('--bar-width', `${percentage}%`);
         }
 
-        function updateSparkline(pathId, data) {
+        function updateSparkline(pathId, data, maxValue = 100) {
             if (data.length === 0) return;
 
             const points = data.map((value, index) => {
                 const x = (index / (maxHistoryPoints - 1)) * 120;
-                const y = 30 - (value / 100) * 30;
+                const y = 30 - (value / maxValue) * 30;
                 return `${x},${y}`;
             }).join(' ');
 

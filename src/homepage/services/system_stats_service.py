@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 class SystemStatsService:
     """Service for collecting system statistics."""
 
+    # Class variable to store last network I/O reading for rate calculation
+    _last_net_io = None
+    _last_net_time = None
+
     @staticmethod
     def get_stats() -> dict:
         """Get real-time system statistics.
@@ -41,6 +45,29 @@ class SystemStatsService:
 
         # Network statistics
         net_io = psutil.net_io_counters()
+        current_time = time.time()
+
+        # Calculate network rates (bytes per second)
+        net_recv_rate = 0.0
+        net_sent_rate = 0.0
+        if SystemStatsService._last_net_io and SystemStatsService._last_net_time:
+            time_delta = current_time - SystemStatsService._last_net_time
+            if time_delta > 0:
+                # Calculate rates in MB/s
+                net_recv_rate = (
+                    (net_io.bytes_recv - SystemStatsService._last_net_io.bytes_recv)
+                    / time_delta
+                    / (1024**2)
+                )
+                net_sent_rate = (
+                    (net_io.bytes_sent - SystemStatsService._last_net_io.bytes_sent)
+                    / time_delta
+                    / (1024**2)
+                )
+
+        # Store current readings for next calculation
+        SystemStatsService._last_net_io = net_io
+        SystemStatsService._last_net_time = current_time
 
         # Process count
         processes = len(psutil.pids())
@@ -64,6 +91,8 @@ class SystemStatsService:
             "disk_free_gb": round(disk.free / (1024**3), 1),
             "network_sent_mb": round(net_io.bytes_sent / (1024**2), 1),
             "network_recv_mb": round(net_io.bytes_recv / (1024**2), 1),
+            "network_sent_rate_mbs": round(net_sent_rate, 3),
+            "network_recv_rate_mbs": round(net_recv_rate, 3),
             "processes": processes,
             "uptime_seconds": int(uptime_seconds),
         }
