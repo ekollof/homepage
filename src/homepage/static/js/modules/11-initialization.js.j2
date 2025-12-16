@@ -31,6 +31,17 @@ document.addEventListener('click', (e) => {
 if (DOM.editToggle) {
     DOM.editToggle.addEventListener('click', toggleEditMode);
 }
+
+// Set up confirmation dialog button handlers
+const confirmButton = document.getElementById('confirmButton');
+if (confirmButton) {
+    confirmButton.addEventListener('click', () => {
+        if (window._confirmCallback) {
+            window._confirmCallback();
+        }
+        closeConfirmModal();
+    });
+}
 {% endif %}
 
 // Update clock every second
