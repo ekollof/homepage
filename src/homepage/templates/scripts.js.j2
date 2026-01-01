@@ -596,6 +596,11 @@
                         document.getElementById('temperatureInfo').style.display = 'inline';
                         document.getElementById('temperature').textContent = Math.round(data.temperature_avg);
                     }
+
+                    // Update Power Management section (Linux only)
+                    if (data.power_management) {
+                        updatePowerManagement(data.power_management);
+                    }
                 })
                 .catch(error => {
                     console.error('Failed to fetch system stats:', error);
@@ -619,6 +624,7 @@
             document.getElementById(pathId).setAttribute('points', points);
         }
 
+
         function formatUptime(seconds) {
             const days = Math.floor(seconds / 86400);
             const hours = Math.floor((seconds % 86400) / 3600);
@@ -629,6 +635,122 @@
             return `${minutes}m`;
         }
 
+        function updatePowerManagement(powerMgmt) {
+            const section = document.getElementById('powerManagementSection');
+            if (!section) return;
+
+            section.style.display = 'block';
+
+            // Update CPU Governor info
+            const governors = powerMgmt.governors;
+            if (governors && governors.available) {
+                const governorInfo = document.getElementById('governorInfo');
+                const governorSelect = document.getElementById('governorSelect');
+                const powerSavingStatus = document.getElementById('powerSavingStatus');
+
+                // Update power saving indicator
+                if (powerSavingStatus) {
+                    powerSavingStatus.textContent = governors.power_saving_enabled ? '⚡ Enabled' : '🔋 Disabled';
+                    powerSavingStatus.className = governors.power_saving_enabled ? 'power-saving-enabled' : 'power-saving-disabled';
+                }
+
+                // Update current governor display
+                if (governors.current_governor && governorInfo) {
+                    governorInfo.textContent = governors.current_governor;
+                }
+
+                // Populate governor dropdown
+                if (governors.available_governors && governorSelect) {
+                    governorSelect.innerHTML = '';
+                    governors.available_governors.forEach(gov => {
+                        const option = document.createElement('option');
+                        option.value = gov;
+                        option.textContent = gov;
+                        if (gov === governors.current_governor) {
+                            option.selected = true;
+                        }
+                        governorSelect.appendChild(option);
+                    });
+                }
+            }
+
+            // Update I/O Scheduler info
+            const ioSchedulers = powerMgmt.io_schedulers;
+            if (ioSchedulers && ioSchedulers.available) {
+                const schedulerContainer = document.getElementById('schedulerContainer');
+                if (schedulerContainer && ioSchedulers.devices) {
+                    schedulerContainer.innerHTML = '';
+                    ioSchedulers.devices.forEach(device => {
+                        const deviceDiv = document.createElement('div');
+                        deviceDiv.className = 'scheduler-device';
+                        deviceDiv.innerHTML = `
+                            <div class="stat-info">
+                                <strong>${device.device}:</strong> ${device.current_scheduler || 'N/A'}
+                            </div>
+                            <select class="scheduler-select" data-device="${device.device}">
+                                ${device.available_schedulers.map(sched => 
+                                    `<option value="${sched}" ${sched === device.current_scheduler ? 'selected' : ''}>${sched}</option>`
+                                ).join('')}
+                            </select>
+                        `;
+                        schedulerContainer.appendChild(deviceDiv);
+
+                        // Add change event listener
+                        const select = deviceDiv.querySelector('.scheduler-select');
+                        select.addEventListener('change', (e) => {
+                            setIOScheduler(device.device, e.target.value);
+                        });
+                    });
+                }
+            }
+        }
+
+        function setCPUGovernor(governor) {
+            fetch('/api/system-stats/cpu-governor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ governor: governor })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('CPU governor set:', data.message);
+                    // Refresh stats to show new values
+                    setTimeout(updateSystemStats, 500);
+                } else {
+                    console.error('Failed to set CPU governor:', data.message);
+                    alert(`Failed to set CPU governor: ${data.message}\n\nYou may need to run with sudo privileges or adjust permissions.`);
+                }
+            })
+            .catch(error => {
+                console.error('Error setting CPU governor:', error);
+                alert('Error setting CPU governor. Check console for details.');
+            });
+        }
+
+        function setIOScheduler(device, scheduler) {
+            fetch('/api/system-stats/io-scheduler', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ device: device, scheduler: scheduler })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('I/O scheduler set:', data.message);
+                    // Refresh stats to show new values
+                    setTimeout(updateSystemStats, 500);
+                } else {
+                    console.error('Failed to set I/O scheduler:', data.message);
+                    alert(`Failed to set I/O scheduler: ${data.message}\n\nYou may need to run with sudo privileges or adjust permissions.`);
+                }
+            })
+            .catch(error => {
+                console.error('Error setting I/O scheduler:', error);
+                alert('Error setting I/O scheduler. Check console for details.');
+            });
+        }
+
         // Initialize system stats sidebar
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('systemStatsSidebar');
@@ -636,6 +758,14 @@
             // Start updating slim bar immediately
             updateSystemStats();
             setInterval(updateSystemStats, 5000);
+
+            // Add event listener for governor select
+            const governorSelect = document.getElementById('governorSelect');
+            if (governorSelect) {
+                governorSelect.addEventListener('change', (e) => {
+                    setCPUGovernor(e.target.value);
+                });
+            }
         });
 
         // Add keyboard shortcut for system stats (s key)

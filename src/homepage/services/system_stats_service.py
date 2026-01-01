@@ -1,7 +1,9 @@
 """System statistics service."""
 
 import logging
+import platform
 import time
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +14,288 @@ class SystemStatsService:
     # Class variable to store last network I/O reading for rate calculation
     _last_net_io = None
     _last_net_time = None
+
+    @staticmethod
+    def _is_linux() -> bool:
+        """Check if running on Linux."""
+        return platform.system() == "Linux"
+
+    @staticmethod
+    def _read_sysfs_file(path: str) -> str | None:
+        """Safely read a sysfs file."""
+        try:
+            return Path(path).read_text().strip()
+        except (FileNotFoundError, PermissionError, OSError) as e:
+            logger.debug("Failed to read %s: %s", path, e)
+            return None
+
+    @staticmethod
+    def _write_sysfs_file(path: str, value: str) -> bool:
+        """Safely write to a sysfs file."""
+        try:
+            Path(path).write_text(value)
+            return True
+        except (FileNotFoundError, PermissionError, OSError) as e:
+            logger.error("Failed to write to %s: %s", path, e)
+            return False
+
+    @staticmethod
+    def get_cpu_governors() -> dict:
+        """Get available and current CPU governors (Linux only).
+
+        Returns:
+            Dictionary with available governors, current governor per CPU,
+            and whether power saving is enabled.
+        """
+        if not SystemStatsService._is_linux():
+            return {"available": False, "reason": "Not Linux"}
+
+        try:
+            import psutil  # pylint: disable=import-outside-toplevel
+
+            cpu_count = psutil.cpu_count()
+            governors_info = {"available": True, "cpus": [], "power_saving_enabled": False}
+
+            # Check each CPU
+            for cpu in range(cpu_count):
+                cpu_info = {"cpu": cpu}
+
+                # Get available governors
+                available_path = (
+                    f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_available_governors"
+                )
+                available = SystemStatsService._read_sysfs_file(available_path)
+                if available:
+                    cpu_info["available_governors"] = available.split()
+
+                # Get current governor
+                governor_path = f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor"
+                governor = SystemStatsService._read_sysfs_file(governor_path)
+                if governor:
+                    cpu_info["governor"] = governor
+                    # Power saving governors
+                    if governor in ["powersave", "conservative"]:
+                        governors_info["power_saving_enabled"] = True
+
+                governors_info["cpus"].append(cpu_info)
+
+            # If all CPUs have same governor, simplify
+            governors = [cpu.get("governor") for cpu in governors_info["cpus"]]
+            if governors and all(g == governors[0] for g in governors):
+                governors_info["current_governor"] = governors[0]
+                # Simplify to just show one set of available governors
+                if governors_info["cpus"]:
+                    governors_info["available_governors"] = governors_info["cpus"][0].get(
+                        "available_governors", []
+                    )
+
+            return governors_info
+
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Failed to get CPU governors: %s", e)
+            return {"available": False, "reason": str(e)}
+
+    @staticmethod
+    def _find_privilege_escalator() -> str | None:
+        """Find available privilege escalation tool (pkexec, sudo, or doas).
+
+        Returns:
+            Command to use for privilege escalation, or None if none found
+        """
+        import shutil  # pylint: disable=import-outside-toplevel
+
+        # Try pkexec first (best for GUI apps, no password prompt if policy allows)
+        if shutil.which("pkexec"):
+            return "pkexec"
+        # Then sudo
+        if shutil.which("sudo"):
+            return "sudo"
+        # Finally doas
+        if shutil.which("doas"):
+            return "doas"
+
+        return None
+
+    @staticmethod
+    def set_cpu_governor(governor: str) -> dict:
+        """Set CPU governor for all CPUs (Linux only).
+
+        Args:
+            governor: Governor name (e.g., 'performance', 'powersave')
+
+        Returns:
+            Dictionary with success status and message
+        """
+        if not SystemStatsService._is_linux():
+            return {"success": False, "message": "Not Linux"}
+
+        try:
+            import subprocess  # pylint: disable=import-outside-toplevel
+            from pathlib import Path  # pylint: disable=import-outside-toplevel
+
+            # Find privilege escalation tool
+            escalator = SystemStatsService._find_privilege_escalator()
+            if not escalator:
+                return {
+                    "success": False,
+                    "message": (
+                        "No privilege escalation tool found " "(pkexec, sudo, or doas required)"
+                    ),
+                }
+
+            # Get path to helper script
+            helper_script = (
+                Path(__file__).parent.parent.parent.parent / "scripts" / "power-mgmt-helper.sh"
+            )
+            if not helper_script.exists():
+                return {
+                    "success": False,
+                    "message": f"Helper script not found: {helper_script}",
+                }
+
+            # Execute helper script with privilege escalation
+            cmd = [escalator, str(helper_script), "set-governor", governor]
+
+            # Add non-interactive flag for sudo
+            if escalator == "sudo":
+                cmd = ["sudo", "-n", str(helper_script), "set-governor", governor]
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+                env={"PATH": "/usr/bin:/bin:/usr/local/bin"},  # Clean environment
+            )
+
+            if result.returncode == 0:
+                return {"success": True, "message": result.stdout.strip()}
+            else:
+                error_msg = result.stderr.strip() or result.stdout.strip()
+                return {"success": False, "message": error_msg or "Failed to set governor"}
+
+        except subprocess.TimeoutExpired:
+            return {"success": False, "message": "Operation timed out (30s limit)"}
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Failed to set CPU governor: %s", e)
+            return {"success": False, "message": str(e)}
+
+    @staticmethod
+    def get_io_schedulers() -> dict:
+        """Get available and current I/O schedulers (Linux only).
+
+        Returns:
+            Dictionary with scheduler info per block device
+        """
+        if not SystemStatsService._is_linux():
+            return {"available": False, "reason": "Not Linux"}
+
+        try:
+            schedulers_info = {"available": True, "devices": []}
+
+            # Check common block devices
+            sys_block = Path("/sys/block")
+            if not sys_block.exists():
+                return {"available": False, "reason": "/sys/block not found"}
+
+            for device_path in sorted(sys_block.iterdir()):
+                device_name = device_path.name
+                # Skip loop devices, ram devices, etc.
+                if device_name.startswith(("loop", "ram")):
+                    continue
+
+                scheduler_path = device_path / "queue" / "scheduler"
+                scheduler_data = SystemStatsService._read_sysfs_file(str(scheduler_path))
+
+                if scheduler_data:
+                    # Parse scheduler format: "noop deadline [cfq]"
+                    available = scheduler_data.replace("[", "").replace("]", "").split()
+                    current = None
+                    for sched in scheduler_data.split():
+                        if sched.startswith("[") and sched.endswith("]"):
+                            current = sched[1:-1]
+                            break
+
+                    schedulers_info["devices"].append(
+                        {
+                            "device": device_name,
+                            "current_scheduler": current,
+                            "available_schedulers": available,
+                        }
+                    )
+
+            return schedulers_info
+
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Failed to get I/O schedulers: %s", e)
+            return {"available": False, "reason": str(e)}
+
+    @staticmethod
+    def set_io_scheduler(device: str, scheduler: str) -> dict:
+        """Set I/O scheduler for a block device (Linux only).
+
+        Args:
+            device: Device name (e.g., 'sda', 'nvme0n1')
+            scheduler: Scheduler name (e.g., 'deadline', 'cfq', 'noop')
+
+        Returns:
+            Dictionary with success status and message
+        """
+        if not SystemStatsService._is_linux():
+            return {"success": False, "message": "Not Linux"}
+
+        try:
+            import subprocess  # pylint: disable=import-outside-toplevel
+            from pathlib import Path  # pylint: disable=import-outside-toplevel
+
+            # Find privilege escalation tool
+            escalator = SystemStatsService._find_privilege_escalator()
+            if not escalator:
+                return {
+                    "success": False,
+                    "message": (
+                        "No privilege escalation tool found " "(pkexec, sudo, or doas required)"
+                    ),
+                }
+
+            # Get path to helper script
+            helper_script = (
+                Path(__file__).parent.parent.parent.parent / "scripts" / "power-mgmt-helper.sh"
+            )
+            if not helper_script.exists():
+                return {
+                    "success": False,
+                    "message": f"Helper script not found: {helper_script}",
+                }
+
+            # Execute helper script with privilege escalation
+            cmd = [escalator, str(helper_script), "set-scheduler", device, scheduler]
+
+            # Add non-interactive flag for sudo
+            if escalator == "sudo":
+                cmd = ["sudo", "-n", str(helper_script), "set-scheduler", device, scheduler]
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+                env={"PATH": "/usr/bin:/bin:/usr/local/bin"},  # Clean environment
+            )
+
+            if result.returncode == 0:
+                return {"success": True, "message": result.stdout.strip()}
+            else:
+                error_msg = result.stderr.strip() or result.stdout.strip()
+                return {"success": False, "message": error_msg or "Failed to set scheduler"}
+
+        except subprocess.TimeoutExpired:
+            return {"success": False, "message": "Operation timed out (30s limit)"}
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Failed to set I/O scheduler: %s", e)
+            return {"success": False, "message": str(e)}
 
     @staticmethod
     def get_stats() -> dict:
@@ -124,5 +408,14 @@ class SystemStatsService:
                             all_temps.append(entry.current)
                 if all_temps:
                     stats["temperature_avg"] = round(sum(all_temps) / len(all_temps), 1)
+
+        # Add power management info (Linux only)
+        if SystemStatsService._is_linux():
+            governors = SystemStatsService.get_cpu_governors()
+            if governors.get("available"):
+                stats["power_management"] = {
+                    "governors": governors,
+                    "io_schedulers": SystemStatsService.get_io_schedulers(),
+                }
 
         return stats

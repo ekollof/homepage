@@ -197,3 +197,53 @@
 #batteryBar::after {
     --bar-color: var(--color-3);
 }
+
+/* Power Management Section */
+.power-saving-enabled {
+    color: var(--color-2);
+    font-weight: bold;
+}
+
+.power-saving-disabled {
+    color: var(--color-8);
+}
+
+.governor-select,
+.scheduler-select {
+    width: 100%;
+    padding: 6px;
+    margin-top: 6px;
+    background: var(--color-0);
+    border: 1px solid var(--color-8);
+    border-radius: 4px;
+    color: var(--color-foreground);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.governor-select:hover,
+.scheduler-select:hover {
+    border-color: var(--color-12);
+    background: var(--color-8);
+}
+
+.governor-select:focus,
+.scheduler-select:focus {
+    outline: none;
+    border-color: var(--color-12);
+    box-shadow: 0 0 0 2px rgba(131, 165, 152, 0.2);
+}
+
+.scheduler-device {
+    margin-top: 8px;
+    padding: 8px;
+    background: var(--color-0);
+    border: 1px solid var(--color-8);
+    border-radius: 4px;
+}
+
+.scheduler-device .stat-info {
+    margin-bottom: 4px;
+}
+

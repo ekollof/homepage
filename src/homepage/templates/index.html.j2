@@ -179,6 +179,20 @@
                         <span id="temperatureInfo" style="display: none;"><br>Temp: <span id="temperature">--</span>°C</span>
                     </div>
                 </div>
+
+                <!-- Power Management (Linux only) -->
+                <div class="stat-section" id="powerManagementSection" style="display: none;">
+                    <div class="stat-label">Power Management</div>
+                    <div class="stat-info">
+                        Power Saving: <span id="powerSavingStatus">--</span><br>
+                        CPU Governor: <span id="governorInfo">--</span>
+                    </div>
+                    <select id="governorSelect" class="governor-select" title="Change CPU Governor">
+                        <option value="">Loading...</option>
+                    </select>
+                    <div class="stat-label" style="margin-top: 10px;">I/O Schedulers</div>
+                    <div id="schedulerContainer"></div>
+                </div>
             </div>
         </div>
         </div>
