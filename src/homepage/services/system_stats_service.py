@@ -54,11 +54,18 @@ class SystemStatsService:
             import psutil  # pylint: disable=import-outside-toplevel
 
             cpu_count = psutil.cpu_count()
-            governors_info = {"available": True, "cpus": [], "power_saving_enabled": False}
+            if cpu_count is None:
+                return {"available": False, "reason": "Could not determine CPU count"}
+
+            governors_info: dict[str, bool | list | str | None] = {
+                "available": True,
+                "cpus": [],
+                "power_saving_enabled": False,
+            }
 
             # Check each CPU
             for cpu in range(cpu_count):
-                cpu_info = {"cpu": cpu}
+                cpu_info: dict[str, int | str | list[str]] = {"cpu": cpu}
 
                 # Get available governors
                 available_path = (
@@ -77,17 +84,21 @@ class SystemStatsService:
                     if governor in ["powersave", "conservative"]:
                         governors_info["power_saving_enabled"] = True
 
-                governors_info["cpus"].append(cpu_info)
+                governors_info["cpus"].append(cpu_info)  # type: ignore[union-attr]
 
             # If all CPUs have same governor, simplify
-            governors = [cpu.get("governor") for cpu in governors_info["cpus"]]
-            if governors and all(g == governors[0] for g in governors):
-                governors_info["current_governor"] = governors[0]
-                # Simplify to just show one set of available governors
-                if governors_info["cpus"]:
-                    governors_info["available_governors"] = governors_info["cpus"][0].get(
-                        "available_governors", []
-                    )
+            cpus_list = governors_info["cpus"]
+            if isinstance(cpus_list, list):
+                governors = [
+                    cpu.get("governor") if isinstance(cpu, dict) else None for cpu in cpus_list
+                ]
+                if governors and all(g == governors[0] for g in governors):
+                    governors_info["current_governor"] = governors[0]
+                    # Simplify to just show one set of available governors
+                    if cpus_list and isinstance(cpus_list[0], dict):
+                        governors_info["available_governors"] = cpus_list[0].get(
+                            "available_governors", []
+                        )
 
             return governors_info
 
