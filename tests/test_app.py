@@ -745,9 +745,11 @@ class TestFaviconExtraction:
         """Test /api/favicon endpoint uses cache."""
         # Enable cache for this test
         import homepage.app as app_module
+        from homepage.routes import editing
 
         # Save original cache state
         original_cache = app_module.cache
+        original_editing_cache = editing._cache
         original_enable_cache = app_module.config.ENABLE_CACHE
 
         try:
@@ -755,7 +757,9 @@ class TestFaviconExtraction:
             # Reinitialize cache
             from homepage.utils import SimpleCache
 
-            app_module.cache = SimpleCache(ttl=3600)
+            new_cache = SimpleCache(ttl=3600)
+            app_module.cache = new_cache
+            editing._cache = new_cache  # Update blueprint cache too
 
             with patch("homepage.utils.extract_favicon_from_page") as mock_extract:
                 mock_extract.return_value = "data:image/png;base64,fake_data"
@@ -775,6 +779,7 @@ class TestFaviconExtraction:
         finally:
             # Restore original cache state
             app_module.cache = original_cache
+            editing._cache = original_editing_cache
             monkeypatch.setattr(app_module.config, "ENABLE_CACHE", original_enable_cache)
 
     def test_favicon_endpoint_fallback_to_google(self, client):
