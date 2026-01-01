@@ -746,27 +746,36 @@ class TestFaviconExtraction:
         # Enable cache for this test
         import homepage.app as app_module
 
-        monkeypatch.setattr(app_module.config, "ENABLE_CACHE", True)
-        # Reinitialize cache
-        from homepage.utils import SimpleCache
+        # Save original cache state
+        original_cache = app_module.cache
+        original_enable_cache = app_module.config.ENABLE_CACHE
 
-        app_module.cache = SimpleCache(ttl=3600)
+        try:
+            monkeypatch.setattr(app_module.config, "ENABLE_CACHE", True)
+            # Reinitialize cache
+            from homepage.utils import SimpleCache
 
-        with patch("homepage.utils.extract_favicon_from_page") as mock_extract:
-            mock_extract.return_value = "data:image/png;base64,fake_data"
+            app_module.cache = SimpleCache(ttl=3600)
 
-            # First request - should call extraction
-            response1 = client.get("/api/favicon?url=https://example.com")
-            assert response1.status_code == 200
-            data1 = response1.get_json()
-            assert data1["cached"] is False
-            assert "favicon" in data1
+            with patch("homepage.utils.extract_favicon_from_page") as mock_extract:
+                mock_extract.return_value = "data:image/png;base64,fake_data"
 
-            # Second request - should use cache
-            response2 = client.get("/api/favicon?url=https://example.com")
-            assert response2.status_code == 200
-            data2 = response2.get_json()
-            assert data2["cached"] is True
+                # First request - should call extraction
+                response1 = client.get("/api/favicon?url=https://example.com")
+                assert response1.status_code == 200
+                data1 = response1.get_json()
+                assert data1["cached"] is False
+                assert "favicon" in data1
+
+                # Second request - should use cache
+                response2 = client.get("/api/favicon?url=https://example.com")
+                assert response2.status_code == 200
+                data2 = response2.get_json()
+                assert data2["cached"] is True
+        finally:
+            # Restore original cache state
+            app_module.cache = original_cache
+            monkeypatch.setattr(app_module.config, "ENABLE_CACHE", original_enable_cache)
 
     def test_favicon_endpoint_fallback_to_google(self, client):
         """Test /api/favicon falls back to Google when direct extraction fails."""
@@ -962,56 +971,78 @@ class TestCPUGovernors:
         """Test setting CPU governor successfully."""
         from homepage.services.system_stats_service import SystemStatsService
 
-        write_calls = []
+        # Mock privilege escalation finding
+        def mock_which(cmd):
+            return "/usr/bin/sudo" if cmd == "sudo" else None
 
-        def mock_write(path, value):
-            write_calls.append((path, value))
-            return True
+        # Mock successful subprocess run
+        class MockResult:
+            returncode = 0
+            stdout = "Successfully set governor to performance for all 16 CPUs"
+            stderr = ""
 
-        monkeypatch.setattr(SystemStatsService, "_write_sysfs_file", staticmethod(mock_write))
+        def mock_run(*args, **kwargs):
+            return MockResult()
 
-        with patch("psutil.cpu_count", return_value=2):
-            result = SystemStatsService.set_cpu_governor("performance")
+        monkeypatch.setattr("shutil.which", mock_which)
+        monkeypatch.setattr("subprocess.run", mock_run)
+
+        result = SystemStatsService.set_cpu_governor("performance")
 
         assert result["success"] is True
         assert "performance" in result["message"]
-        assert len(write_calls) == 2
 
     @pytest.mark.skipif(platform.system() != "Linux", reason="Linux only")
     def test_set_cpu_governor_partial_failure(self, monkeypatch):
         """Test setting CPU governor with partial failure."""
         from homepage.services.system_stats_service import SystemStatsService
 
-        write_attempts = [0]
+        # Mock privilege escalation finding
+        def mock_which(cmd):
+            return "/usr/bin/sudo" if cmd == "sudo" else None
 
-        def mock_write(path, value):
-            write_attempts[0] += 1
-            # Fail on second write
-            return write_attempts[0] == 1
+        # Mock failed subprocess run (non-zero exit code)
+        class MockResult:
+            returncode = 1
+            stdout = ""
+            stderr = "Warning: Set governor for 1/2 CPUs"
 
-        monkeypatch.setattr(SystemStatsService, "_write_sysfs_file", staticmethod(mock_write))
+        def mock_run(*args, **kwargs):
+            return MockResult()
 
-        with patch("psutil.cpu_count", return_value=2):
-            result = SystemStatsService.set_cpu_governor("performance")
+        monkeypatch.setattr("shutil.which", mock_which)
+        monkeypatch.setattr("subprocess.run", mock_run)
+
+        result = SystemStatsService.set_cpu_governor("performance")
 
         assert result["success"] is False
-        assert "Partially succeeded" in result["message"]
+        assert "1/2" in result["message"]
 
     @pytest.mark.skipif(platform.system() != "Linux", reason="Linux only")
     def test_set_cpu_governor_all_failure(self, monkeypatch):
         """Test setting CPU governor with all writes failing."""
         from homepage.services.system_stats_service import SystemStatsService
 
-        def mock_write(path, value):
-            return False
+        # Mock privilege escalation finding
+        def mock_which(cmd):
+            return "/usr/bin/sudo" if cmd == "sudo" else None
 
-        monkeypatch.setattr(SystemStatsService, "_write_sysfs_file", staticmethod(mock_write))
+        # Mock completely failed subprocess run
+        class MockResult:
+            returncode = 1
+            stdout = ""
+            stderr = "Error: Failed to set governor (no CPUs updated)"
 
-        with patch("psutil.cpu_count", return_value=2):
-            result = SystemStatsService.set_cpu_governor("performance")
+        def mock_run(*args, **kwargs):
+            return MockResult()
+
+        monkeypatch.setattr("shutil.which", mock_which)
+        monkeypatch.setattr("subprocess.run", mock_run)
+
+        result = SystemStatsService.set_cpu_governor("performance")
 
         assert result["success"] is False
-        assert "permission denied" in result["message"].lower()
+        assert "Failed to set governor" in result["message"]
 
     @pytest.mark.skipif(platform.system() == "Linux", reason="Non-Linux only")
     def test_get_cpu_governors_non_linux(self):
@@ -1138,15 +1169,26 @@ class TestIOSchedulers:
         """Test setting I/O scheduler with failure."""
         from homepage.services.system_stats_service import SystemStatsService
 
-        def mock_write(path, value):
-            return False
+        # Mock privilege escalation finding
+        def mock_which(cmd):
+            return "/usr/bin/sudo" if cmd == "sudo" else None
 
-        monkeypatch.setattr(SystemStatsService, "_write_sysfs_file", staticmethod(mock_write))
+        # Mock failed subprocess run
+        class MockResult:
+            returncode = 1
+            stdout = ""
+            stderr = "Error: Failed to set I/O scheduler"
+
+        def mock_run(*args, **kwargs):
+            return MockResult()
+
+        monkeypatch.setattr("shutil.which", mock_which)
+        monkeypatch.setattr("subprocess.run", mock_run)
 
         result = SystemStatsService.set_io_scheduler("sda", "deadline")
 
         assert result["success"] is False
-        assert "permission denied" in result["message"].lower()
+        assert "Failed to set I/O scheduler" in result["message"]
 
     @pytest.mark.skipif(platform.system() == "Linux", reason="Non-Linux only")
     def test_get_io_schedulers_non_linux(self):
