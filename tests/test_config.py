@@ -1,6 +1,5 @@
 """Tests for configuration management."""
 
-
 from homepage.config import Config
 
 
