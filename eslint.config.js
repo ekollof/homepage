@@ -34,7 +34,7 @@ export default [
       }
     },
     rules: {
-      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_|^e$|^data$", "varsIgnorePattern": "^_|^sidebar$|^categoryDiv$" }],
+      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_|^e$|^data$", "varsIgnorePattern": "^_|^sidebar$|^categoryDiv$|^(add|edit|delete)(Category|Subcategory|Link)|^move(Widget(Up|Down))$" }],
       "no-console": "off",
       "no-undef": "error",
       "no-redeclare": "error",
