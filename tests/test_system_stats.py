@@ -337,12 +337,21 @@ class TestIOSchedulers:
         """Test setting I/O scheduler successfully."""
         from homepage.services.system_stats_service import SystemStatsService
 
-        def mock_write(path, value):
-            assert "sda" in path
-            assert value == "deadline"
-            return True
+        # Mock privilege escalation finding
+        def mock_which(cmd):
+            return "/usr/bin/sudo" if cmd == "sudo" else None
 
-        monkeypatch.setattr(SystemStatsService, "_write_sysfs_file", staticmethod(mock_write))
+        # Mock successful subprocess run
+        class MockResult:
+            returncode = 0
+            stdout = "I/O scheduler for sda set to deadline"
+            stderr = ""
+
+        def mock_run(*args, **kwargs):
+            return MockResult()
+
+        monkeypatch.setattr("shutil.which", mock_which)
+        monkeypatch.setattr("subprocess.run", mock_run)
 
         result = SystemStatsService.set_io_scheduler("sda", "deadline")
 
