@@ -98,6 +98,15 @@ def docs_redirect():
     # Check if docs are built
     docs_path = Path(__file__).parent.parent.parent.parent / "site"
     if docs_path.exists():
+        # Read the index.html and inject base href
+        index_file = docs_path / "index.html"
+        if index_file.exists():
+            with open(index_file) as f:
+                html = f.read()
+            # Inject base href if not already present
+            if "<base href=" not in html:
+                html = html.replace("<head>", '<head>\n    <base href="/docs/">')
+            return html, 200, {"Content-Type": "text/html; charset=utf-8"}
         return send_from_directory(docs_path, "index.html")
     # Fallback to basic docs page
     return jsonify({"error": "Documentation not built. Run 'mkdocs build' to generate."}), 404
@@ -109,4 +118,16 @@ def serve_docs(filename: str):
     docs_path = Path(__file__).parent.parent.parent.parent / "site"
     if not docs_path.exists():
         return jsonify({"error": "Documentation not built"}), 404
+
+    # For HTML files, inject base href
+    if filename.endswith(".html"):
+        file_path = docs_path / filename
+        if file_path.exists() and file_path.is_file():
+            with open(file_path) as f:
+                html = f.read()
+            # Inject base href if not already present
+            if "<base href=" not in html:
+                html = html.replace("<head>", '<head>\n    <base href="/docs/">')
+            return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
     return send_from_directory(docs_path, filename)
