@@ -302,9 +302,23 @@
         function renderRSSCarousel() {
             if (!DOM.rssWidget || rssItems.length === 0) return;
 
-            const currentItem = rssItems[currentRSSIndex];
-            const date = currentItem.published ? new Date(currentItem.published).toLocaleDateString() : '';
-            const description = currentItem.description ? `<div class="rss-item-description">${currentItem.description}</div>` : '';
+            const itemsHtml = rssItems.map(item => {
+                const date = item.published ? new Date(item.published).toLocaleDateString() : '';
+                const description = item.description ? `<div class="rss-item-description">${item.description}</div>` : '';
+
+                return `
+                    <div class="rss-item">
+                        <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="rss-item-link">
+                            ${item.title}
+                        </a>
+                        <div class="rss-item-meta">
+                            <span class="rss-item-feed">${item.feed_title}</span>
+                            ${date ? `<span class="rss-item-date">${date}</span>` : ''}
+                        </div>
+                        ${description}
+                    </div>
+                `;
+            }).join('');
 
             DOM.rssWidget.innerHTML = `
                 <div class="rss-title">
@@ -315,15 +329,10 @@
                         <button class="rss-nav-btn" data-action="rss-next" aria-label="Next">›</button>
                     </div>
                 </div>
-                <div class="rss-content">
-                    <a href="${currentItem.link}" target="_blank" rel="noopener noreferrer" class="rss-item-link">
-                        ${currentItem.title}
-                    </a>
-                    <div class="rss-item-meta">
-                        <span class="rss-item-feed">${currentItem.feed_title}</span>
-                        ${date ? `<span class="rss-item-date">${date}</span>` : ''}
+                <div class="rss-carousel">
+                    <div class="rss-items" style="transform: translateX(-${currentRSSIndex * 100}%)">
+                        ${itemsHtml}
                     </div>
-                    ${description}
                 </div>
             `;
 
@@ -468,8 +477,6 @@
         let systemStatsPosition = 'left';
         let cpuHistory = [];
         let memoryHistory = [];
-        let networkRecvHistory = [];
-        let networkSentHistory = [];
         const maxHistoryPoints = 20;
 
         function toggleSystemStats() {
@@ -559,17 +566,6 @@
                     // Update Network section
                     document.getElementById('networkRecv').textContent = `${data.network_recv_mb.toFixed(1)} MB`;
                     document.getElementById('networkSent').textContent = `${data.network_sent_mb.toFixed(1)} MB`;
-                    document.getElementById('networkRecvRate').textContent = data.network_recv_rate_mbs.toFixed(3);
-                    document.getElementById('networkSentRate').textContent = data.network_sent_rate_mbs.toFixed(3);
-
-                    // Update Network sparklines (scale to max 10 MB/s for visualization)
-                    const maxNetworkRate = 10; // MB/s
-                    networkRecvHistory.push(Math.min(data.network_recv_rate_mbs, maxNetworkRate));
-                    networkSentHistory.push(Math.min(data.network_sent_rate_mbs, maxNetworkRate));
-                    if (networkRecvHistory.length > maxHistoryPoints) networkRecvHistory.shift();
-                    if (networkSentHistory.length > maxHistoryPoints) networkSentHistory.shift();
-                    updateSparkline('networkRecvSparklinePath', networkRecvHistory, maxNetworkRate);
-                    updateSparkline('networkSentSparklinePath', networkSentHistory, maxNetworkRate);
 
                     // Update Battery section (conditional)
                     if (data.battery) {
@@ -612,18 +608,17 @@
             bar.style.setProperty('--bar-width', `${percentage}%`);
         }
 
-        function updateSparkline(pathId, data, maxValue = 100) {
+        function updateSparkline(pathId, data) {
             if (data.length === 0) return;
 
             const points = data.map((value, index) => {
                 const x = (index / (maxHistoryPoints - 1)) * 120;
-                const y = 30 - (value / maxValue) * 30;
+                const y = 30 - (value / 100) * 30;
                 return `${x},${y}`;
             }).join(' ');
 
             document.getElementById(pathId).setAttribute('points', points);
         }
-
 
         function formatUptime(seconds) {
             const days = Math.floor(seconds / 86400);
@@ -899,6 +894,12 @@
             // If we fetched any favicons, update the DOM
             if (hasChanges) {
                 console.log('Favicons fetched, updating display');
+                updateCategoryDisplay();
+            }
+
+            // Always update the DOM when in edit mode to sync indices with config
+            if (editMode) {
+                console.log('Edit mode active, updating display to sync indices');
                 updateCategoryDisplay();
             }
         }
@@ -2085,6 +2086,17 @@
         {% if config.ENABLE_EDITING %}
         if (DOM.editToggle) {
             DOM.editToggle.addEventListener('click', toggleEditMode);
+        }
+
+        // Set up confirmation dialog button handlers
+        const confirmButton = document.getElementById('confirmButton');
+        if (confirmButton) {
+            confirmButton.addEventListener('click', () => {
+                if (window._confirmCallback) {
+                    window._confirmCallback();
+                }
+                closeConfirmModal();
+            });
         }
         {% endif %}
 

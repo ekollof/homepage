@@ -105,6 +105,7 @@ class DevelopmentConfig(Config):
 
     DEBUG = True
     ENABLE_CACHE = False
+    TEMPLATES_AUTO_RELOAD = True
 
 
 class ProductionConfig(Config):

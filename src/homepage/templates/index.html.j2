@@ -427,7 +427,7 @@
             <p id="confirmMessage">Are you sure?</p>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmButton">Confirm</button>
+                <button type="button" class="btn btn-primary" id="confirmButton" onclick="if(window._confirmCallback){window._confirmCallback();} closeConfirmModal();">Confirm</button>
             </div>
         </div>
     </div>

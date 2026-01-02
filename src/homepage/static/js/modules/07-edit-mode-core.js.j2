@@ -112,6 +112,12 @@ async function fetchMissingFavicons() {
         console.log('Favicons fetched, updating display');
         updateCategoryDisplay();
     }
+
+    // Always update the DOM when in edit mode to sync indices with config
+    if (editMode) {
+        console.log('Edit mode active, updating display to sync indices');
+        updateCategoryDisplay();
+    }
 }
 
 /**

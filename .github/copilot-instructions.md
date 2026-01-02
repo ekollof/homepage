@@ -34,6 +34,42 @@ homepage/
 
 ## Core Development Workflows
 
+### JavaScript Module System
+
+**CRITICAL:** JavaScript files are modular and must be built before changes take effect.
+
+The JavaScript is organized in modules located in `src/homepage/static/js/modules/`:
+- `01-constants-and-cache.js.j2` - DOM cache and constants
+- `02-clock.js.j2` - Clock functionality
+- `03-weather.js.j2` - Weather widget
+- `04-rss.js.j2` - RSS feed widget
+- `05-search.js.j2` - Search functionality
+- `06-system-stats.js.j2` - System stats
+- `07-edit-mode-core.js.j2` - Edit mode core logic
+- `08-edit-templates.js.j2` - HTML generation for edit mode
+- `09-edit-modals.js.j2` - Modal dialogs for editing
+- `10-drag-drop.js.j2` - Drag and drop functionality
+- `11-initialization.js.j2` - Page initialization
+
+**Workflow for JavaScript changes:**
+```bash
+# 1. Edit module files in src/homepage/static/js/modules/
+# 2. Build combined JavaScript file
+make build-js
+
+# 3. Restart service to pick up changes
+make service-restart
+
+# 4. Verify changes are rendered
+curl -s http://localhost:5000/ | grep "your-change"
+```
+
+**Important Notes:**
+- `src/homepage/templates/scripts.js.j2` is GENERATED - do not edit directly
+- `make render-js` is only for linting, not for deployment
+- Flask renders templates at runtime, no separate render step needed
+- Service restart may fail if port is in use - kill stale processes first: `pkill -f "python.*homepage"`
+
 ### Running and Testing
 
 ```bash
