@@ -1,5 +1,4 @@
 site_name: Homepage Documentation
-site_url: http://localhost:5000/docs/
 site_description: A customizable homepage web server with dynamic theming
 site_author: Homepage Contributors
 repo_url: https://github.com/ekollof/homepage
