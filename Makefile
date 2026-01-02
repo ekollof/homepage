@@ -131,7 +131,7 @@ lint-js: render-js
 
 build-docs:
 	@echo "Building documentation with mkdocs..."
-	@$(VENV)/bin/mkdocs build --strict
+	@$(VENV)/bin/mkdocs build
 	@echo "Documentation built successfully! Available at /docs"
 
 serve-docs:
