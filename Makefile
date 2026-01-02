@@ -1,4 +1,4 @@
-.PHONY: help install install-dev run clean lint format check test test-cov setup-hooks service-install service-start service-stop service-restart service-status service-enable service-disable logs autostart-install autostart-enable autostart-disable start-daemon stop-daemon docker-build docker-run docker-stop validate-config stats health export-metrics lint-js render-js check-all build-js
+.PHONY: help install install-dev run clean lint format check test test-cov setup-hooks service-install service-start service-stop service-restart service-status service-enable service-disable logs autostart-install autostart-enable autostart-disable start-daemon stop-daemon docker-build docker-run docker-stop validate-config stats health export-metrics lint-js render-js check-all build-js build-docs serve-docs
 
 VENV = venv
 PYTHON = $(VENV)/bin/python
@@ -27,6 +27,8 @@ help:
 	@echo "  lint-js          - Lint JavaScript code with ESLint"
 	@echo "  build-js         - Build JavaScript from modules"
 	@echo "  render-js        - Render Jinja2 JavaScript template"
+	@echo "  build-docs       - Build HTML documentation with mkdocs"
+	@echo "  serve-docs       - Serve documentation locally for development"
 	@echo "  check            - Run format and lint checks (Python only)"
 	@echo "  check-all        - Run all checks (Python + JavaScript)"
 	@echo "  test             - Run tests with pytest"
@@ -126,6 +128,15 @@ lint-js: render-js
 	@echo "JavaScript linting complete!"
 	@rm -f $(RENDERED_JS)
 	@echo "Cleaned up rendered file"
+
+build-docs:
+	@echo "Building documentation with mkdocs..."
+	@$(VENV)/bin/mkdocs build --strict
+	@echo "Documentation built successfully! Available at /docs"
+
+serve-docs:
+	@echo "Serving documentation locally..."
+	@$(VENV)/bin/mkdocs serve
 
 test:
 	@echo "Running tests..."

@@ -2,9 +2,10 @@
 
 import logging
 from collections.abc import Callable
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
-from flask import Blueprint, jsonify, make_response, render_template
+from flask import Blueprint, jsonify, make_response, render_template, send_from_directory
 
 if TYPE_CHECKING:
     from ..config import Config
@@ -88,3 +89,24 @@ def check_reload():
     if reload:
         _file_watcher_state["reload_needed"] = False
     return jsonify({"reload": reload})
+
+
+@core_bp.route("/docs")
+@core_bp.route("/docs/")
+def docs_redirect():
+    """Redirect to documentation."""
+    # Check if docs are built
+    docs_path = Path(__file__).parent.parent.parent.parent / "site"
+    if docs_path.exists():
+        return send_from_directory(docs_path, "index.html")
+    # Fallback to basic docs page
+    return jsonify({"error": "Documentation not built. Run 'mkdocs build' to generate."}), 404
+
+
+@core_bp.route("/docs/<path:filename>")
+def serve_docs(filename: str):
+    """Serve documentation files."""
+    docs_path = Path(__file__).parent.parent.parent.parent / "site"
+    if not docs_path.exists():
+        return jsonify({"error": "Documentation not built"}), 404
+    return send_from_directory(docs_path, filename)

@@ -592,6 +592,27 @@ body {
     z-index: 999;
 }
 
+/* Documentation button styles */
+.docs-button {
+    background-color: rgba(40, 40, 40, 0.95);
+    border: 2px solid {{ colors.color12 }};
+    border-radius: 8px;
+    padding: 10px 15px;
+    color: {{ colors.color11 }};
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: background-color 0.2s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.docs-button:hover {
+    background-color: rgba(60, 60, 60, 0.95);
+    transform: scale(1.05);
+}
+
 /* Edit mode styles */
 .edit-toggle {
     background-color: rgba(40, 40, 40, 0.95);

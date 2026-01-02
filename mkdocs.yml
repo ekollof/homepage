@@ -1,0 +1,72 @@
+site_name: Homepage Documentation
+site_description: A customizable homepage web server with dynamic theming
+site_author: Homepage Contributors
+repo_url: https://github.com/ekollof/homepage
+repo_name: ekollof/homepage
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    scheme: slate
+    primary: blue
+    accent: indigo
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quick Start: QUICKSTART.md
+      - BSD Installation: BSD_INSTALL.md
+  - User Guide:
+      - Usage: USAGE.md
+      - Features: FEATURES.md
+  - Customization:
+      - Editing Links: EDITING.md
+      - GeoIP Setup: GEOIP_SETUP.md
+  - Deployment:
+      - Deployment Guide: DEPLOYMENT.md
+      - Production WebSocket: PRODUCTION_WEBSOCKET.md
+      - Power Management: POWER_MANAGEMENT_SETUP.md
+  - Developer:
+      - Technical Notes: TECHNICAL.md
+      - JavaScript Guide: JAVASCRIPT_GUIDE.md
+      - Project Structure: PROJECT_STRUCTURE.md
+      - WebSocket API: WEBSOCKET.md
+  - Reference:
+      - API: API.md
+      - Changelog: CHANGELOG.md
+      - Contributing: CONTRIBUTING.md
+      - Migration Guide: MIGRATION.md
+      - Feature Ideas: FEATURE_IDEAS.md
+
+markdown_extensions:
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.arithmatex
+  - toc:
+      permalink: true
+  - codehilite
+  - admonition
+  - tables
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ekollof/homepage
