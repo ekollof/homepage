@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 # Setup script for GeoLite2 databases
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CITY_DB="$SCRIPT_DIR/GeoLite2-City.mmdb"
 COUNTRY_DB="$SCRIPT_DIR/GeoLite2-Country.mmdb"
 ASN_DB="$SCRIPT_DIR/GeoLite2-ASN.mmdb"
@@ -12,28 +12,38 @@ echo "🌍 GeoLite2 Database Setup"
 echo ""
 
 # Check if databases already exist
-existing_dbs=()
-[ -f "$CITY_DB" ] && existing_dbs+=("City")
-[ -f "$COUNTRY_DB" ] && existing_dbs+=("Country")
-[ -f "$ASN_DB" ] && existing_dbs+=("ASN")
+existing_count=0
+existing_list=""
+if [ -f "$CITY_DB" ]; then
+    existing_count=$((existing_count + 1))
+    existing_list="City"
+fi
+if [ -f "$COUNTRY_DB" ]; then
+    existing_count=$((existing_count + 1))
+    existing_list="$existing_list Country"
+fi
+if [ -f "$ASN_DB" ]; then
+    existing_count=$((existing_count + 1))
+    existing_list="$existing_list ASN"
+fi
 
-if [ ${#existing_dbs[@]} -gt 0 ]; then
-    echo "✓ Existing databases found: ${existing_dbs[*]}"
-    for db_type in "${existing_dbs[@]}"; do
-        case $db_type in
-            City) size=$(du -h "$CITY_DB" | cut -f1); echo "  City: $size" ;;
-            Country) size=$(du -h "$COUNTRY_DB" | cut -f1); echo "  Country: $size" ;;
-            ASN) size=$(du -h "$ASN_DB" | cut -f1); echo "  ASN: $size" ;;
-        esac
-    done
+if [ $existing_count -gt 0 ]; then
+    echo "✓ Existing databases found:$existing_list"
+    [ -f "$CITY_DB" ] && echo "  City: $(du -h "$CITY_DB" | cut -f1)"
+    [ -f "$COUNTRY_DB" ] && echo "  Country: $(du -h "$COUNTRY_DB" | cut -f1)"
+    [ -f "$ASN_DB" ] && echo "  ASN: $(du -h "$ASN_DB" | cut -f1)"
     echo ""
-    read -p "Do you want to replace them? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Keeping existing databases."
-        exit 0
-    fi
-    rm -f "$CITY_DB" "$COUNTRY_DB" "$ASN_DB"
+    printf "Do you want to replace them? (y/N) "
+    read -r reply
+    case "$reply" in
+        [Yy]*) 
+            rm -f "$CITY_DB" "$COUNTRY_DB" "$ASN_DB"
+            ;;
+        *)
+            echo "Keeping existing databases."
+            exit 0
+            ;;
+    esac
 fi
 
 echo ""
@@ -43,7 +53,8 @@ echo "1) Download test databases (small, limited data, no registration)"
 echo "2) Instructions for full databases (requires MaxMind account)"
 echo "3) Skip GeoIP setup (use API-based providers instead)"
 echo ""
-read -p "Enter choice [1-3]: " choice
+printf "Enter choice [1-3]: "
+read -r choice
 
 case $choice in
     1)
@@ -134,7 +145,7 @@ esac
 echo ""
 echo "🧪 Testing databases..."
 
-if command -v python3 &> /dev/null; then
+if command -v python3 >/dev/null 2>&1; then
     if ./venv/bin/python3 -c "import geoip2.database; reader = geoip2.database.Reader('$CITY_DB'); response = reader.city('89.160.20.112'); print(f'✓ Test passed: {response.city.name}, {response.country.name}')" 2>/dev/null; then
         echo ""
         echo "✅ Setup complete!"
