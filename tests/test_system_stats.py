@@ -587,9 +587,11 @@ class TestPowerManagementIntegration:
         assert "governors" in data["power_management"]
         assert data["power_management"]["governors"]["available"] is True
 
-    @pytest.mark.skipif(platform.system() == "Linux", reason="Non-Linux only")
+    @pytest.mark.skipif(
+        platform.system() in ("Linux", "FreeBSD"), reason="Non-Linux/FreeBSD only"
+    )
     def test_system_stats_excludes_power_management_non_linux(self, client, monkeypatch):
-        """Test that system stats excludes power management on non-Linux."""
+        """Test that system stats excludes power management on non-Linux/FreeBSD systems."""
         import homepage.app as app_module
 
         monkeypatch.setattr(app_module.config, "ENABLE_SYSTEM_STATS", True)
@@ -614,5 +616,5 @@ class TestPowerManagementIntegration:
         assert response.status_code == 200
         data = response.get_json()
 
-        # Power management should NOT be present on non-Linux
+        # Power management should NOT be present on non-Linux/FreeBSD systems
         assert "power_management" not in data
