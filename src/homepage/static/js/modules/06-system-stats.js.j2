@@ -126,9 +126,14 @@ function updateSystemStats() {
                 document.getElementById('temperature').textContent = Math.round(data.temperature_avg);
             }
 
-            // Update Power Management section (Linux only)
+            // Update Power Management section (Linux/FreeBSD)
             if (data.power_management) {
                 updatePowerManagement(data.power_management);
+            }
+
+            // Update ZFS section (if available)
+            if (data.zfs) {
+                updateZFSStats(data.zfs);
             }
         })
         .catch(error => {
@@ -169,7 +174,13 @@ function updatePowerManagement(powerMgmt) {
 
     section.style.display = 'block';
 
-    // Update CPU Governor info
+    // Handle FreeBSD power management
+    if (powerMgmt.freebsd) {
+        updateFreeBSDPowerManagement(powerMgmt.freebsd);
+        return;
+    }
+
+    // Update CPU Governor info (Linux)
     const governors = powerMgmt.governors;
     if (governors && governors.available) {
         const governorInfo = document.getElementById('governorInfo');
@@ -233,6 +244,115 @@ function updatePowerManagement(powerMgmt) {
     }
 }
 
+function updateFreeBSDPowerManagement(freebsdPower) {
+    const section = document.getElementById('powerManagementSection');
+    if (!section) return;
+
+    // Clear existing content and rebuild for FreeBSD
+    section.innerHTML = '<div class="stat-label">⚡ Power Management (FreeBSD)</div>';
+
+    // CPU Frequency section
+    if (freebsdPower.cpu_freq) {
+        const cpuFreqDiv = document.createElement('div');
+        cpuFreqDiv.className = 'power-mgmt-item';
+        
+        const currentFreq = freebsdPower.cpu_freq.current || 'N/A';
+        cpuFreqDiv.innerHTML = `
+            <div class="stat-info">
+                <strong>CPU Frequency:</strong> ${currentFreq} MHz
+            </div>
+        `;
+
+        if (freebsdPower.cpu_freq.available_levels && freebsdPower.cpu_freq.available_levels.length > 0) {
+            const freqSelect = document.createElement('select');
+            freqSelect.className = 'freq-select';
+            freqSelect.id = 'freebsdFreqSelect';
+            
+            freebsdPower.cpu_freq.available_levels.forEach(freq => {
+                const option = document.createElement('option');
+                option.value = freq;
+                option.textContent = `${freq} MHz`;
+                if (freq === currentFreq) {
+                    option.selected = true;
+                }
+                freqSelect.appendChild(option);
+            });
+
+            freqSelect.addEventListener('change', (e) => {
+                setFreeBSDCPUFreq(parseInt(e.target.value));
+            });
+
+            cpuFreqDiv.appendChild(freqSelect);
+        }
+
+        section.appendChild(cpuFreqDiv);
+    }
+
+    // Powerd daemon status
+    if (freebsdPower.powerd) {
+        const powerdDiv = document.createElement('div');
+        powerdDiv.className = 'power-mgmt-item';
+        
+        const running = freebsdPower.powerd.running ? '✓' : '✗';
+        const enabled = freebsdPower.powerd.enabled ? 'Enabled' : 'Disabled';
+        
+        let statusHTML = `
+            <div class="stat-info">
+                <strong>powerd:</strong> ${enabled} ${running}
+            </div>
+        `;
+
+        if (freebsdPower.powerd.ac_mode || freebsdPower.powerd.battery_mode) {
+            statusHTML += `
+                <div class="stat-info" style="margin-left: 1em; font-size: 0.9em;">
+                    AC: ${freebsdPower.powerd.ac_mode || 'N/A'} | 
+                    Battery: ${freebsdPower.powerd.battery_mode || 'N/A'}
+                </div>
+            `;
+        }
+
+        powerdDiv.innerHTML = statusHTML;
+        section.appendChild(powerdDiv);
+    }
+
+    // Battery status (if available)
+    if (freebsdPower.battery_life !== undefined) {
+        const batteryDiv = document.createElement('div');
+        batteryDiv.className = 'power-mgmt-item';
+        
+        const acStatus = freebsdPower.ac_connected ? '🔌 AC' : '🔋 Battery';
+        batteryDiv.innerHTML = `
+            <div class="stat-info">
+                <strong>Power:</strong> ${acStatus} (${freebsdPower.battery_life}%)
+            </div>
+        `;
+        section.appendChild(batteryDiv);
+    }
+}
+
+function setFreeBSDCPUFreq(freq) {
+    fetch('/api/system-stats/freebsd-cpu-freq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ freq: freq })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('CPU frequency set:', data.message);
+            // Refresh stats to show new values
+            setTimeout(updateSystemStats, 500);
+        } else {
+            console.error('Failed to set CPU frequency:', data.message);
+            alert(`Failed to set CPU frequency: ${data.message}\n\nYou may need to run with sudo/doas privileges or adjust permissions.`);
+        }
+    })
+    .catch(error => {
+        console.error('Error setting CPU frequency:', error);
+        alert('Error setting CPU frequency. Check console for details.');
+    });
+}
+
 function setCPUGovernor(governor) {
     fetch('/api/system-stats/cpu-governor', {
         method: 'POST',
@@ -277,6 +397,62 @@ function setIOScheduler(device, scheduler) {
         console.error('Error setting I/O scheduler:', error);
         alert('Error setting I/O scheduler. Check console for details.');
     });
+}
+
+function updateZFSStats(zfsData) {
+    const section = document.getElementById('zfsSection');
+    if (!section) return;
+
+    section.style.display = 'block';
+
+    // Update ARC stats
+    if (zfsData.arc) {
+        const arc = zfsData.arc;
+        
+        document.getElementById('arcSize').textContent = `${arc.size_mb} MB`;
+        document.getElementById('arcMax').textContent = `${arc.max_mb} MB`;
+        document.getElementById('arcPercent').textContent = `${arc.size_percent}%`;
+        document.getElementById('arcHitRatio').textContent = `${arc.hit_ratio}%`;
+        
+        // Update ARC size bar
+        updateStatBar('arcBar', arc.size_percent);
+        
+        // Color code hit ratio (green >95%, yellow 85-95%, red <85%)
+        const hitRatioElement = document.getElementById('arcHitRatio');
+        hitRatioElement.style.color = arc.hit_ratio > 95 ? 'var(--color2)' : 
+                                       arc.hit_ratio > 85 ? 'var(--color3)' : 
+                                       'var(--color1)';
+    }
+
+    // Update pool information
+    if (zfsData.pools && zfsData.pools.length > 0) {
+        const poolsContainer = document.getElementById('zfsPools');
+        poolsContainer.innerHTML = '';
+        
+        zfsData.pools.forEach(pool => {
+            const poolDiv = document.createElement('div');
+            poolDiv.className = 'zfs-pool';
+            
+            // Health indicator with emoji
+            const healthIcon = pool.health === 'ONLINE' ? '✓' : 
+                             pool.health === 'DEGRADED' ? '⚠' : '✗';
+            const healthColor = pool.health === 'ONLINE' ? 'var(--color2)' : 
+                              pool.health === 'DEGRADED' ? 'var(--color3)' : 
+                              'var(--color1)';
+            
+            poolDiv.innerHTML = `
+                <div class="stat-info">
+                    <strong>${pool.name}:</strong> 
+                    <span style="color: ${healthColor}">${healthIcon} ${pool.health}</span>
+                </div>
+                <div class="stat-info" style="margin-left: 1em; font-size: 0.9em;">
+                    ${pool.allocated} / ${pool.size} (${pool.free} free)
+                </div>
+            `;
+            
+            poolsContainer.appendChild(poolDiv);
+        });
+    }
 }
 
 // Initialize system stats sidebar

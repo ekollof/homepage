@@ -618,3 +618,103 @@ class TestPowerManagementIntegration:
 
         # Power management should NOT be present on non-Linux/FreeBSD systems
         assert "power_management" not in data
+
+
+class TestZFSStats:
+    """Test ZFS statistics functionality."""
+
+    def test_zfs_stats_available_with_zfs(self, monkeypatch):
+        """Test ZFS stats when ZFS is available."""
+        from homepage.services.system_stats_service import SystemStatsService
+
+        # Mock sysctl to return ZFS data
+        def mock_read_sysctl(name):
+            sysctl_values = {
+                "kstat.zfs.misc.arcstats.size": "10737418240",  # 10GB
+                "kstat.zfs.misc.arcstats.c_max": "21474836480",  # 20GB
+                "kstat.zfs.misc.arcstats.hits": "1000000",
+                "kstat.zfs.misc.arcstats.misses": "10000",
+            }
+            return sysctl_values.get(name)
+
+        monkeypatch.setattr(SystemStatsService, "_read_sysctl", mock_read_sysctl)
+        monkeypatch.setattr(SystemStatsService, "_is_zfs_available", lambda: True)
+
+        # Mock zpool list command
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "tank\tONLINE\t500G\t100G\t400G\n"
+
+        with patch("subprocess.run", return_value=mock_result):
+            stats = SystemStatsService.get_zfs_stats()
+
+        assert stats["available"] is True
+        assert "arc" in stats
+        assert stats["arc"]["size_mb"] == 10240.0
+        assert stats["arc"]["max_mb"] == 20480.0
+        assert stats["arc"]["size_percent"] == 50.0
+        assert stats["arc"]["hit_ratio"] == 99.0  # 1000000/(1000000+10000)
+        assert "pools" in stats
+        assert len(stats["pools"]) == 1
+        assert stats["pools"][0]["name"] == "tank"
+        assert stats["pools"][0]["health"] == "ONLINE"
+
+    def test_zfs_stats_not_available(self, monkeypatch):
+        """Test ZFS stats when ZFS is not available."""
+        from homepage.services.system_stats_service import SystemStatsService
+
+        monkeypatch.setattr(SystemStatsService, "_is_zfs_available", lambda: False)
+
+        stats = SystemStatsService.get_zfs_stats()
+
+        assert stats["available"] is False
+        assert stats["reason"] == "ZFS not loaded"
+
+    def test_zfs_in_system_stats_response(self, client, monkeypatch):
+        """Test that ZFS stats appear in system stats API when available."""
+        import homepage.app as app_module
+        from homepage.services.system_stats_service import SystemStatsService
+
+        monkeypatch.setattr(app_module.config, "ENABLE_SYSTEM_STATS", True)
+
+        # Mock ZFS stats
+        mock_zfs_stats = {
+            "available": True,
+            "arc": {
+                "size_mb": 8192.0,
+                "max_mb": 16384.0,
+                "size_percent": 50.0,
+                "hit_ratio": 99.5,
+                "hits": 1000000,
+                "misses": 5000,
+            },
+            "pools": [{"name": "tank", "health": "ONLINE", "size": "1T", "allocated": "500G", "free": "500G"}],
+        }
+
+        monkeypatch.setattr(SystemStatsService, "get_zfs_stats", lambda: mock_zfs_stats)
+
+        with patch("psutil.cpu_percent", return_value=10.0):
+            with patch("psutil.cpu_count", return_value=4):
+                with patch("psutil.cpu_freq", return_value=None):
+                    with patch("psutil.virtual_memory") as mock_mem:
+                        mock_mem.return_value = MagicMock(
+                            percent=50, used=2e9, total=4e9, available=2e9
+                        )
+                        with patch("psutil.disk_usage") as mock_disk:
+                            mock_disk.return_value = MagicMock(
+                                percent=30, used=100e9, total=500e9, free=400e9
+                            )
+                            with patch("psutil.net_io_counters") as mock_net:
+                                mock_net.return_value = MagicMock(bytes_sent=1e9, bytes_recv=2e9)
+                                with patch("psutil.pids", return_value=list(range(100))):
+                                    with patch("psutil.boot_time", return_value=0):
+                                        response = client.get("/api/system-stats")
+
+        assert response.status_code == 200
+        data = response.get_json()
+
+        # Check ZFS stats are present
+        assert "zfs" in data
+        assert data["zfs"]["available"] is True
+        assert data["zfs"]["arc"]["hit_ratio"] == 99.5
+        assert len(data["zfs"]["pools"]) == 1

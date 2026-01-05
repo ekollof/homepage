@@ -82,3 +82,27 @@ def set_io_scheduler():
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Failed to set I/O scheduler: %s", e)
         return jsonify({"error": str(e)}), 500
+
+
+@system_stats_bp.route("/api/system-stats/freebsd-cpu-freq", methods=["POST"])
+def set_freebsd_cpu_freq():
+    """Set CPU frequency on FreeBSD."""
+    assert _config is not None
+
+    if not _config.ENABLE_SYSTEM_STATS:
+        return jsonify({"error": "System stats feature not enabled"}), 404
+
+    try:
+        data = request.get_json()
+        if not data or "freq" not in data:
+            return jsonify({"error": "Missing 'freq' parameter"}), 400
+
+        freq = int(data["freq"])
+        result = SystemStatsService.set_freebsd_cpu_freq(freq)
+        return jsonify(result), 200 if result.get("success") else 500
+
+    except ValueError:
+        return jsonify({"error": "Invalid frequency value"}), 400
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error("Failed to set CPU frequency: %s", e)
+        return jsonify({"error": str(e)}), 500

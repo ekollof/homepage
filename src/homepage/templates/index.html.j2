@@ -183,7 +183,7 @@
                     </div>
                 </div>
 
-                <!-- Power Management (Linux only) -->
+                <!-- Power Management (Linux/FreeBSD) -->
                 <div class="stat-section" id="powerManagementSection" style="display: none;">
                     <div class="stat-label">Power Management</div>
                     <div class="stat-info">
@@ -195,6 +195,32 @@
                     </select>
                     <div class="stat-label" style="margin-top: 10px;">I/O Schedulers</div>
                     <div id="schedulerContainer"></div>
+                </div>
+
+                <!-- ZFS Statistics -->
+                <div class="stat-section" id="zfsSection" style="display: none;">
+                    <div class="stat-label">💾 ZFS</div>
+                    
+                    <!-- ARC Stats -->
+                    <div class="stat-info" style="margin-bottom: 8px;">
+                        <strong>ARC Cache</strong>
+                    </div>
+                    <div class="stat-info" style="font-size: 0.9em; margin-left: 1em;">
+                        Size: <span id="arcSize">--</span> / <span id="arcMax">--</span>
+                        (<span id="arcPercent">--</span>)
+                    </div>
+                    <div class="stat-bar-container" style="margin: 4px 0 8px 1em;">
+                        <div class="stat-bar" id="arcBar"></div>
+                    </div>
+                    <div class="stat-info" style="font-size: 0.9em; margin-left: 1em;">
+                        Hit Ratio: <span id="arcHitRatio" style="font-weight: bold;">--</span>
+                    </div>
+
+                    <!-- Pools -->
+                    <div class="stat-info" style="margin-top: 10px; margin-bottom: 4px;">
+                        <strong>Pools</strong>
+                    </div>
+                    <div id="zfsPools"></div>
                 </div>
             </div>
         </div>

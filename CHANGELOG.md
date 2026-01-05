@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **FreeBSD Power Management**: Native FreeBSD power management support in system stats panel
+  - CPU frequency level detection and switching via `sysctl`
+  - `powerd` daemon status monitoring (enabled, running, AC/battery modes)
+  - ACPI battery life and AC connection status
+  - Interactive frequency selection dropdown in UI
+  - Power management helper script updated for FreeBSD compatibility (`set-freebsd-freq` command)
+  - All existing Linux power management features (CPU governors, I/O schedulers) preserved
+
 ### Fixed
 - **FreeBSD System Stats**: Fixed `cpu_freq()` crash on FreeBSD due to buffer size mismatch in psutil
   - Added graceful error handling for platforms where CPU frequency is unavailable
