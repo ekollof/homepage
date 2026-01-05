@@ -72,7 +72,22 @@ function updateSystemStats() {
             updateStatBar('cpuBar', data.cpu_percent);
             document.getElementById('cpuValue').textContent = `${Math.round(data.cpu_percent)}%`;
             document.getElementById('cpuCores').textContent = `${data.cpu_count} cores`;
-            document.getElementById('cpuFreq').textContent = `${Math.round(data.cpu_freq_current)} MHz`;
+            
+            // CPU frequency - try psutil first, then FreeBSD power mgmt, then hide
+            let cpuFreqText = '';
+            if (data.cpu_freq_current) {
+                cpuFreqText = `${Math.round(data.cpu_freq_current)} MHz`;
+            } else if (data.power_management?.freebsd?.cpu_freq?.current) {
+                cpuFreqText = `${data.power_management.freebsd.cpu_freq.current} MHz`;
+            }
+            
+            const cpuFreqElement = document.getElementById('cpuFreq');
+            if (cpuFreqText) {
+                cpuFreqElement.textContent = cpuFreqText;
+                cpuFreqElement.style.display = 'inline';
+            } else {
+                cpuFreqElement.style.display = 'none';
+            }
 
             // Update CPU sparkline
             cpuHistory.push(data.cpu_percent);
