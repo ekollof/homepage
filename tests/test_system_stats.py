@@ -587,9 +587,7 @@ class TestPowerManagementIntegration:
         assert "governors" in data["power_management"]
         assert data["power_management"]["governors"]["available"] is True
 
-    @pytest.mark.skipif(
-        platform.system() in ("Linux", "FreeBSD"), reason="Non-Linux/FreeBSD only"
-    )
+    @pytest.mark.skipif(platform.system() in ("Linux", "FreeBSD"), reason="Non-Linux/FreeBSD only")
     def test_system_stats_excludes_power_management_non_linux(self, client, monkeypatch):
         """Test that system stats excludes power management on non-Linux/FreeBSD systems."""
         import homepage.app as app_module
@@ -688,7 +686,15 @@ class TestZFSStats:
                 "hits": 1000000,
                 "misses": 5000,
             },
-            "pools": [{"name": "tank", "health": "ONLINE", "size": "1T", "allocated": "500G", "free": "500G"}],
+            "pools": [
+                {
+                    "name": "tank",
+                    "health": "ONLINE",
+                    "size": "1T",
+                    "allocated": "500G",
+                    "free": "500G",
+                }
+            ],
         }
 
         monkeypatch.setattr(SystemStatsService, "get_zfs_stats", lambda: mock_zfs_stats)

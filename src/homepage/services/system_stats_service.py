@@ -594,7 +594,7 @@ class SystemStatsService:
 
             # Get ARC statistics
             arc_stats = {}
-            
+
             if SystemStatsService._is_freebsd():
                 # FreeBSD: use sysctl
                 size = SystemStatsService._read_sysctl("kstat.zfs.misc.arcstats.size")
