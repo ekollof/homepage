@@ -637,6 +637,8 @@ class TestZFSStats:
 
         monkeypatch.setattr(SystemStatsService, "_read_sysctl", mock_read_sysctl)
         monkeypatch.setattr(SystemStatsService, "_is_zfs_available", lambda: True)
+        monkeypatch.setattr(SystemStatsService, "_is_freebsd", lambda: True)
+        monkeypatch.setattr(SystemStatsService, "_is_linux", lambda: False)
 
         # Mock zpool list command
         mock_result = MagicMock()
