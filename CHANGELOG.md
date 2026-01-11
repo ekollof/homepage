@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Python 3.14 Support**: Updated compatibility for Python 3.14
+  - Added Python 3.14 to project classifiers
+  - Updated Black target versions to include py314
+  - All tests pass with Python 3.14.2
+  - Dependencies successfully installed and working
+
+### Added
 - **FreeBSD Power Management**: Native FreeBSD power management support in system stats panel
   - CPU frequency level detection and switching via `sysctl`
   - `powerd` daemon status monitoring (enabled, running, AC/battery modes)
