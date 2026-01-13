@@ -66,6 +66,13 @@ install:
 	@echo "Installing package..."
 	$(PIP) install --upgrade pip
 	$(PIP) install -e .
+	@if [ ! -f .env ]; then \
+		echo "Creating minimal .env file..."; \
+		cp data/.env.example .env; \
+		echo ".env file created from data/.env.example"; \
+	else \
+		echo ".env file already exists, skipping..."; \
+	fi
 	@echo "Installation complete!"
 
 install-dev: install
