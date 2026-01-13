@@ -5,32 +5,78 @@
 Homepage is a Flask-based customizable startpage server that displays hierarchical links from TOML config with dynamic theming from pywal. The app serves a single-page interface with live wallpaper backgrounds, integrated search, and optional weather/metrics features.
 
 **Key Architecture:**
-- Modern Python package structure in `src/homepage/`
+- Modern Python package structure in `src/homepage/` with modular route/service separation
 - Flask app (`src/homepage/app.py`) with Jinja2 template generation
 - Configuration-driven theming (pywal colors → Gruvbox dark fallback)
 - File watchers for hot-reload without server restart
-- Optional metrics collection with in-memory state
+- Optional features: metrics, weather, RSS feeds, system stats, WebSocket support
 - CLI tool for validation and monitoring (`src/homepage/cli.py`)
 
 **Project Structure:**
 ```
 homepage/
 ├── src/homepage/          # Python package source code
-│   ├── app.py            # Main Flask application
+│   ├── app.py            # Main Flask application (registers blueprints)
 │   ├── cli.py            # Command-line interface
 │   ├── config.py         # Configuration management
 │   ├── metrics.py        # Metrics collection
 │   ├── utils.py          # Utility functions
+│   ├── routes/           # Route blueprints (modular)
+│   │   ├── api.py        # Metrics/tracking API
+│   │   ├── assets.py     # Static asset routes
+│   │   ├── core.py       # Main page routes
+│   │   ├── editing.py    # Link editing endpoints
+│   │   ├── rss.py        # RSS feed endpoints
+│   │   ├── system_stats.py # System statistics
+│   │   ├── weather.py    # Weather endpoints
+│   │   └── websocket.py  # WebSocket routes
+│   ├── services/         # Business logic layer
+│   │   ├── geoip_service.py        # GeoIP location detection
+│   │   ├── rss_service.py          # RSS feed fetching
+│   │   ├── system_stats_service.py # System metrics
+│   │   ├── weather_service.py      # Weather data
+│   │   └── websocket_service.py    # WebSocket real-time updates
 │   ├── templates/        # Jinja2 templates
 │   └── static/           # Static assets
+│       └── js/modules/   # JavaScript modules (13 files)
 ├── data/                  # Configuration and data files
-│   ├── links.toml        # Link configuration
+│   ├── links.toml        # Link configuration (base, tracked)
+│   ├── links.override.toml # User edits (gitignored)
 │   └── *.mmdb            # GeoIP databases
 ├── docker/                # Docker configuration
-├── scripts/               # Installation scripts
-├── docs/                  # All documentation
+├── scripts/               # Installation and build scripts
+├── docs/                  # Comprehensive documentation (20+ files)
 └── tests/                 # Test suite
 ```
+
+## Modular Architecture
+
+### Route Blueprints (`src/homepage/routes/`)
+
+The application uses Flask blueprints for route organization:
+
+- **`core.py`** - Main page rendering (`/`, `/check_reload`)
+- **`api.py`** - Metrics and tracking endpoints (`/api/track`, `/api/metrics`)
+- **`weather.py`** - Weather data endpoint (`/api/weather`)
+- **`rss.py`** - RSS feed endpoint (`/api/rss`)
+- **`system_stats.py`** - System statistics endpoint (`/api/system-stats`)
+- **`editing.py`** - Link configuration editing (`/api/links/*`)
+- **`assets.py`** - Static asset serving (wallpaper, favicon)
+- **`websocket.py`** - WebSocket connection handler (`/ws`)
+
+All blueprints are registered in `src/homepage/app.py` via `app.register_blueprint()`.
+
+### Service Layer (`src/homepage/services/`)
+
+Business logic is separated into service modules:
+
+- **`weather_service.py`** - Weather data fetching (OpenMeteo, OpenWeatherMap)
+- **`geoip_service.py`** - IP geolocation (MaxMind, ipapi, ip-api)
+- **`rss_service.py`** - RSS feed parsing and caching
+- **`system_stats_service.py`** - System metrics (CPU, memory, disk, network)
+- **`websocket_service.py`** - WebSocket connection management and broadcasting
+
+Services are imported by route handlers and provide clean separation of concerns.
 
 ## Core Development Workflows
 
@@ -38,18 +84,20 @@ homepage/
 
 **CRITICAL:** JavaScript files are modular and must be built before changes take effect.
 
-The JavaScript is organized in modules located in `src/homepage/static/js/modules/`:
+The JavaScript is organized in modules located in `src/homepage/static/js/modules/` (13 total):
 - `01-constants-and-cache.js.j2` - DOM cache and constants
 - `02-clock.js.j2` - Clock functionality
 - `03-weather.js.j2` - Weather widget
 - `04-rss.js.j2` - RSS feed widget
 - `05-search.js.j2` - Search functionality
-- `06-system-stats.js.j2` - System stats
-- `07-edit-mode-core.js.j2` - Edit mode core logic
-- `08-edit-templates.js.j2` - HTML generation for edit mode
-- `09-edit-modals.js.j2` - Modal dialogs for editing
-- `10-drag-drop.js.j2` - Drag and drop functionality
-- `11-initialization.js.j2` - Page initialization
+- `06-system-stats.js.j2` - System stats widget
+- `07-collapsible-stats.js.j2` - Collapsible system stats panel
+- `08-edit-mode-core.js.j2` - Edit mode core logic
+- `09-edit-templates.js.j2` - HTML generation for edit mode
+- `10-edit-modals.js.j2` - Modal dialogs for editing
+- `11-drag-drop.js.j2` - Drag and drop functionality
+- `12-collapsible-categories.js.j2` - Collapsible category sections
+- `13-initialization.js.j2` - Page initialization
 
 **Workflow for JavaScript changes:**
 ```bash
@@ -136,10 +184,31 @@ The app uses a class-based config with environment variable overrides:
 **Environment Variables:**
 - `HOMEPAGE_ENV` - `development` (default) or `production`
 - `HOMEPAGE_HOST`, `HOMEPAGE_PORT` - server binding (default: `127.0.0.1:5000`)
-- `HOMEPAGE_ENABLE_WEATHER`, `HOMEPAGE_ENABLE_METRICS` - feature flags
-- `HOMEPAGE_ENABLE_EDITING` - enable/disable in-browser link editing (default: `True`)
+- `HOMEPAGE_DEBUG` - enable Flask debug mode (default: `False`)
+- `HOMEPAGE_SECRET_KEY` - Flask secret key for sessions
+- `HOMEPAGE_ENABLE_CACHE` - enable response caching (default: `True`, disabled in dev)
+- `HOMEPAGE_ENABLE_COMPRESSION` - enable gzip compression (default: `True`)
+- `HOMEPAGE_ENABLE_METRICS` - enable metrics collection (default: `True`)
+- `HOMEPAGE_ENABLE_WEATHER` - enable weather widget (default: `False`)
+- `HOMEPAGE_ENABLE_RSS` - enable RSS feed widget (default: `False`)
+- `HOMEPAGE_ENABLE_EDITING` - enable in-browser link editing (default: `True`)
+- `HOMEPAGE_ENABLE_SYSTEM_STATS` - enable system stats widget (default: `True`)
+- `HOMEPAGE_ENABLE_WEBSOCKET` - enable WebSocket real-time updates (default: `True`)
 - `HOMEPAGE_WEATHER_PROVIDER` - `openmeteo` (default, no API key) or `openweathermap`
+- `HOMEPAGE_WEATHER_API_KEY` - API key for OpenWeatherMap
+- `HOMEPAGE_WEATHER_LOCATION` - manual location override (`lat,lon` or city name)
+- `HOMEPAGE_WEATHER_UNITS` - `metric` (default) or `imperial`
 - `HOMEPAGE_GEOIP_PROVIDER` - `maxmind` (default), `ipapi`, or `ip-api`
+- `HOMEPAGE_GEOIP_DB_PATH` - path to MaxMind GeoLite2 database
+- `HOMEPAGE_CLOCK_FORMAT` - `24` (default) or `12`
+- `HOMEPAGE_RSS_FEEDS` - pipe-separated list of RSS feed URLs
+- `HOMEPAGE_RSS_MAX_ITEMS` - max items per feed (default: `5`)
+- `HOMEPAGE_RSS_CACHE_TTL` - RSS cache TTL in seconds (default: `300`)
+- `HOMEPAGE_SYSTEM_STATS_REFRESH_INTERVAL` - refresh interval in seconds (default: `5`)
+- `HOMEPAGE_SYSTEM_STATS_POSITION` - widget position: `left`, `right`, `top`, or `bottom` (default: `left`)
+- `HOMEPAGE_WEBSOCKET_PING_TIMEOUT` - WebSocket ping timeout (default: `60`)
+- `HOMEPAGE_WEBSOCKET_PING_INTERVAL` - WebSocket ping interval (default: `25`)
+- `HOMEPAGE_LOG_LEVEL` - logging level (default: `INFO`)
 
 **Critical Paths:**
 - `BASE_DIR = Path(__file__).parent.parent.parent` - Project root
@@ -306,6 +375,37 @@ Three providers for IP → location:
 
 **Pattern:** Manual location (`lat,lon` in config) bypasses GeoIP. Localhost requests get fallback handling.
 
+## RSS Feed Features
+
+RSS feed widget displays aggregated feeds from multiple sources:
+- Configured via `HOMEPAGE_RSS_FEEDS` (pipe-separated URLs)
+- Cached with configurable TTL (`HOMEPAGE_RSS_CACHE_TTL`, default 5 minutes)
+- Max items per feed limit (`HOMEPAGE_RSS_MAX_ITEMS`, default 5)
+- Fetched via `/api/rss` endpoint
+- Service handles parsing, validation, and error handling
+
+## System Stats Features
+
+Real-time system metrics widget with configurable positioning:
+- **Metrics collected:** CPU usage, memory usage, disk usage, network I/O, uptime
+- **Position:** `HOMEPAGE_SYSTEM_STATS_POSITION` - `left` (default), `right`, `top`, or `bottom`
+- **Refresh interval:** `HOMEPAGE_SYSTEM_STATS_REFRESH_INTERVAL` (default 5 seconds)
+- **Collapsible panel:** Can be expanded/collapsed to save screen space
+- **WebSocket updates:** Real-time push updates when WebSocket enabled
+- Platform-specific implementation (works on Linux, BSD, macOS, Windows)
+
+## WebSocket Features
+
+Real-time bidirectional communication for live updates:
+- **Enabled by default:** `HOMEPAGE_ENABLE_WEBSOCKET=True`
+- **Async mode:** Threading (dev), eventlet/gevent (production recommended)
+- **Broadcasts:** Config changes, system stats updates, weather updates
+- **Connection management:** Automatic reconnection, ping/pong heartbeat
+- **Configuration:**
+  - `HOMEPAGE_WEBSOCKET_PING_TIMEOUT` - timeout in seconds (default 60)
+  - `HOMEPAGE_WEBSOCKET_PING_INTERVAL` - ping interval (default 25)
+  - `HOMEPAGE_WEBSOCKET_ASYNC_MODE` - threading, eventlet, or gevent
+
 ## Metrics System (`metrics.py`)
 
 In-memory metrics with thread-safe counters:
@@ -323,12 +423,16 @@ Template (`templates/index.html`) is Flask-rendered with inline CSS/JS:
 - Polls `/check_reload` every 2s for config changes
 - Posts search/click events to `/api/track` when metrics enabled
 - Fetches weather from `/api/weather` on load if enabled
+- Fetches RSS feeds from `/api/rss` if enabled
+- Displays system stats from `/api/system-stats` if enabled
+- **WebSocket support** (`ENABLE_WEBSOCKET=True`) - real-time updates for stats, weather, and config changes
 - **Edit mode** (`ENABLE_EDITING=True`) - in-browser link editing:
   - Toggle with edit button (top-right) or `e` key
   - CRUD operations for categories, subcategories, and links
   - Saves to `links.override.toml` (gitignored)
   - Modal-based forms for adding/editing items
   - Confirmation dialogs for deletions
+- **Collapsible UI** - categories and stats panels can be collapsed/expanded
 
 **No build step** - everything is inline for simplicity. Edit template in `app.py`.
 
@@ -342,23 +446,41 @@ Template (`templates/index.html`) is Flask-rendered with inline CSS/JS:
 6. **Cache invalidation** - file watchers call `cache.clear()` on change events
 7. **Python 3.10 compatibility** - use `tomli` package, not `tomllib` directly
 8. **Configuration files** - always reference `data/` directory for config files
+9. **WebSocket threading** - use `threading` mode for development, consider `eventlet`/`gevent` for production
+10. **Route registration** - all routes are in blueprints registered in `app.py`, not in app.py directly
 
 ## Adding New Features
 
 **Before adding new routes/features:**
 1. Add feature flag in `Config` class in `src/homepage/config.py` with env var override
 2. Add corresponding settings to both `DevelopmentConfig` and `ProductionConfig`
-3. Check feature flag in route handler and return 404 if disabled
-4. Add tests with monkeypatching to enable feature
-5. Update CLI if feature needs monitoring/management
+3. Create appropriate route module in `src/homepage/routes/` and/or service in `src/homepage/services/`
+4. Register blueprint in `src/homepage/app.py` (don't add routes directly to app.py)
+5. Check feature flag in route handler and return 404 if disabled
+6. Add tests with monkeypatching to enable feature
+7. Update CLI if feature needs monitoring/management
+8. Document in `docs/FEATURES.md` and update `docs/API.md` if adding endpoints
 
 **Example pattern:**
 ```python
-@app.route("/api/newfeature")
+# src/homepage/routes/newfeature.py
+from flask import Blueprint, jsonify
+from ..config import get_config
+
+config = get_config()
+newfeature_bp = Blueprint("newfeature", __name__)
+
+@newfeature_bp.route("/api/newfeature")
 def new_feature():
     if not config.ENABLE_NEW_FEATURE:
         return jsonify({"error": "Feature not enabled"}), 404
     # ... implementation
+```
+
+**Then register in app.py:**
+```python
+from .routes.newfeature import newfeature_bp
+app.register_blueprint(newfeature_bp)
 ```
 
 ## Documentation Guidelines
@@ -367,9 +489,23 @@ def new_feature():
 
 - Update `CHANGELOG.md` with all changes following Keep a Changelog format
 - Keep only `README.md` and `CHANGELOG.md` in the project root
-- All other documentation belongs in `docs/` directory
+- All other documentation belongs in `docs/` directory (20+ specialized guides available)
 - Use git commit messages for detailed change history
 - Summary documents are redundant and add maintenance burden
+
+**Available documentation in `docs/`:**
+- `API.md` - REST API and WebSocket endpoint documentation
+- `FEATURES.md` - Feature overview and configuration
+- `TECHNICAL.md` - Technical architecture details
+- `JAVASCRIPT_GUIDE.md` - JavaScript module system guide
+- `EDITING.md` - In-browser editing feature
+- `WEBSOCKET.md` - WebSocket implementation details
+- `DEPLOYMENT.md` - Production deployment guide
+- `BSD_INSTALL.md` - BSD-specific installation
+- `MIGRATION.md` - Version migration guides
+- `GEOIP_SETUP.md` - GeoIP database setup
+- `POWER_MANAGEMENT_SETUP.md` - Power management configuration
+- And more (see `docs/` directory)
 
 ---
 

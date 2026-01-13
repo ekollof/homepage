@@ -121,7 +121,15 @@ systemctl --user restart homepage.service
 - `updateSparkline()` - CPU/memory charts
 - `formatUptime()` - Uptime formatting
 
-### 07-edit-mode-core.js.j2
+### 07-collapsible-stats.js.j2
+**Purpose:** Collapsible system stats panel  
+**Key Features:**
+- `toggleStatsDetails()` - Expand/collapse detailed stats
+- `initCollapsibleStats()` - Setup collapse controls
+- Stats panel state persistence
+- Smooth transitions and animations
+
+### 08-edit-mode-core.js.j2
 **Purpose:** Core edit mode functionality  
 **Key Features:**
 - `toggleEditMode()` - Enter/exit edit mode
@@ -130,7 +138,7 @@ systemctl --user restart homepage.service
 - `saveAndExit()` - Save and exit
 - `fetchAndCacheFavicon()` - Favicon proxy
 
-### 08-edit-templates.js.j2
+### 09-edit-templates.js.j2
 **Purpose:** HTML template generation  
 **Key Features:**
 - `createLinkItemHTML()` - Generate link HTML
@@ -139,7 +147,7 @@ systemctl --user restart homepage.service
 - `updateCategoryDisplay()` - Rebuild entire display
 - `saveLinkToConfig()` - Persist to config
 
-### 09-edit-modals.js.j2
+### 10-edit-modals.js.j2
 **Purpose:** Add/Edit/Delete operations  
 **Key Features:**
 - `addCategory()`, `editCategory()`, `deleteCategory()`
@@ -148,7 +156,7 @@ systemctl --user restart homepage.service
 - `showConfirmDialog()` - Confirmation dialogs
 - `closeModal()` - Modal management
 
-### 10-drag-drop.js.j2
+### 11-drag-drop.js.j2
 **Purpose:** Drag and drop reordering  
 **Key Features:**
 - Widget reordering (weather, RSS, stats)
@@ -157,7 +165,15 @@ systemctl --user restart homepage.service
 - `enableWidgetDragging()`, `enableCategoryDragging()`, `enableLinkDragging()`
 - Persistence to localStorage/config
 
-### 11-initialization.js.j2
+### 12-collapsible-categories.js.j2
+**Purpose:** Collapsible category sections  
+**Key Features:**
+- `toggleCategory()` - Expand/collapse categories
+- `initCollapsibleCategories()` - Setup collapse controls
+- Category state persistence to localStorage
+- Smooth expand/collapse animations
+
+### 13-initialization.js.j2
 **Purpose:** App initialization and WebSocket  
 **Key Features:**
 - `DOMContentLoaded` setup
@@ -175,7 +191,7 @@ Edit: `02-clock.js.j2`
 Edit: `04-rss.js.j2`
 
 ### Want to add a new widget?
-1. Create new module (e.g., `12-my-widget.js.j2`)
+1. Create new module (e.g., `14-my-widget.js.j2`)
 2. Add your code
 3. Run `make build-js`
 
