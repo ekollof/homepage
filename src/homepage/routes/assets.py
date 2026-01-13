@@ -63,6 +63,7 @@ def scripts():
     assert _config is not None
     js_content = _render_template(  # type: ignore[misc]
         "scripts.js.j2",
+        config=_config,
         clock_format=_config.CLOCK_FORMAT,  # type: ignore[union-attr]
         reload_interval=_config.RELOAD_CHECK_INTERVAL,  # type: ignore[union-attr]
         enable_metrics=_config.ENABLE_METRICS,  # type: ignore[union-attr]

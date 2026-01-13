@@ -44,10 +44,10 @@ def track():
     match data["type"]:
         case "search":
             if "query" in data and "provider" in data:
-                _metrics.track_search(data["query"], data["provider"])
+                _metrics.track_search(data["provider"], data["query"])
         case "link_click":
-            if "link" in data:
-                _metrics.track_link_click(data["link"])
+            if "name" in data and "url" in data:
+                _metrics.track_link_click(data["name"], data["url"])
         case _:
             return jsonify({"error": "Unknown event type"}), 400
 

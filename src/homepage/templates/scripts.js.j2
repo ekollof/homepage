@@ -456,11 +456,12 @@
          * Track events to server (analytics)
          */
         function trackEvent(eventType, data) {
-            // Send tracking data to server
+            // Send tracking data to server with correct format
+            const payload = { type: eventType, ...data };
             fetch('/api/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ event: eventType, data: data, timestamp: Date.now() })
+                body: JSON.stringify(payload)
             }).catch(() => {}); // Silently fail
         }
 
@@ -2648,6 +2649,20 @@
                 searchForm.addEventListener('submit', handleSearch);
             }
         });
+
+        {% if config.ENABLE_METRICS %}
+        // Track link clicks
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a[data-link]');
+            if (link && link.hasAttribute('data-link')) {
+                const linkName = link.getAttribute('data-link');
+                const linkUrl = link.getAttribute('href');
+                if (linkName && linkUrl) {
+                    trackEvent('link_click', { name: linkName, url: linkUrl });
+                }
+            }
+        });
+        {% endif %}
 
         {% if config.ENABLE_WEBSOCKET %}
         // WebSocket client will be loaded from separate file

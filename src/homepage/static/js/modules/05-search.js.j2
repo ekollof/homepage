@@ -74,10 +74,11 @@ function saveSearchHistory(query, provider) {
  * Track events to server (analytics)
  */
 function trackEvent(eventType, data) {
-    // Send tracking data to server
+    // Send tracking data to server with correct format
+    const payload = { type: eventType, ...data };
     fetch('/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: eventType, data: data, timestamp: Date.now() })
+        body: JSON.stringify(payload)
     }).catch(() => {}); // Silently fail
 }

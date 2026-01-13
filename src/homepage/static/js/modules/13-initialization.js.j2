@@ -146,6 +146,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+{% if config.ENABLE_METRICS %}
+// Track link clicks
+document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[data-link]');
+    if (link && link.hasAttribute('data-link')) {
+        const linkName = link.getAttribute('data-link');
+        const linkUrl = link.getAttribute('href');
+        if (linkName && linkUrl) {
+            trackEvent('link_click', { name: linkName, url: linkUrl });
+        }
+    }
+});
+{% endif %}
+
 {% if config.ENABLE_WEBSOCKET %}
 // WebSocket client will be loaded from separate file
 // Set up event handlers when WebSocket is available
