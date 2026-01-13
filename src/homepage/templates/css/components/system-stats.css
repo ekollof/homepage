@@ -122,11 +122,43 @@
     margin-bottom: 16px;
 }
 
+.stat-label-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.stat-collapse-toggle {
+    background: none;
+    border: none;
+    color: var(--color-14);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 2px 4px;
+    line-height: 1;
+    transition: transform 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+
+.stat-collapse-toggle:hover {
+    color: var(--color-12);
+    transform: scale(1.1);
+}
+
+.stat-section.collapsed .stat-collapse-toggle {
+    transform: rotate(0deg);
+}
+
+.stat-content {
+    display: block;
+}
+
 .stat-label {
     font-size: 0.9rem;
     font-weight: bold;
     color: var(--color-14);
-    margin-bottom: 6px;
+    flex: 1;
 }
 
 .stat-bar-container {

@@ -90,74 +90,94 @@
             <!-- Detailed Stats (expandable) -->
             <div class="stats-details" id="statsDetails">
                 <!-- CPU Section -->
-                <div class="stat-section">
-                    <div class="stat-label">CPU Usage</div>
-                    <div class="stat-bar-container">
-                        <div class="stat-bar" id="cpuBar"></div>
-                        <span class="stat-value" id="cpuValue">--</span>
+                <div class="stat-section" data-stat-section="cpu">
+                    <div class="stat-label-header">
+                        <button class="stat-collapse-toggle" aria-label="Toggle CPU stats">▼</button>
+                        <div class="stat-label">CPU Usage</div>
                     </div>
-                    <div class="stat-info">
-                        <span id="cpuCores">-- cores</span> •
-                        <span id="cpuFreq">-- MHz</span>
-                    </div>
-                    <div class="sparkline-container">
-                        <svg class="sparkline" id="cpuSparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
-                            <polyline id="cpuSparklinePath" fill="none" stroke="{{ colors.color2 }}" stroke-width="1.5"></polyline>
-                        </svg>
+                    <div class="stat-content">
+                        <div class="stat-bar-container">
+                            <div class="stat-bar" id="cpuBar"></div>
+                            <span class="stat-value" id="cpuValue">--</span>
+                        </div>
+                        <div class="stat-info">
+                            <span id="cpuCores">-- cores</span> •
+                            <span id="cpuFreq">-- MHz</span>
+                        </div>
+                        <div class="sparkline-container">
+                            <svg class="sparkline" id="cpuSparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
+                                <polyline id="cpuSparklinePath" fill="none" stroke="{{ colors.color2 }}" stroke-width="1.5"></polyline>
+                            </svg>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Memory Section -->
-                <div class="stat-section">
-                    <div class="stat-label">Memory Usage</div>
-                    <div class="stat-bar-container">
-                        <div class="stat-bar" id="memoryBar"></div>
-                        <span class="stat-value" id="memoryValue">--</span>
+                <div class="stat-section" data-stat-section="memory">
+                    <div class="stat-label-header">
+                        <button class="stat-collapse-toggle" aria-label="Toggle memory stats">▼</button>
+                        <div class="stat-label">Memory Usage</div>
                     </div>
-                    <div class="stat-info">
-                        <span id="memoryUsed">-- MB</span> /
-                        <span id="memoryTotal">-- MB</span>
-                    </div>
-                    <div class="sparkline-container">
-                        <svg class="sparkline" id="memorySparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
-                            <polyline id="memorySparklinePath" fill="none" stroke="{{ colors.color4 }}" stroke-width="1.5"></polyline>
-                        </svg>
+                    <div class="stat-content">
+                        <div class="stat-bar-container">
+                            <div class="stat-bar" id="memoryBar"></div>
+                            <span class="stat-value" id="memoryValue">--</span>
+                        </div>
+                        <div class="stat-info">
+                            <span id="memoryUsed">-- MB</span> /
+                            <span id="memoryTotal">-- MB</span>
+                        </div>
+                        <div class="sparkline-container">
+                            <svg class="sparkline" id="memorySparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
+                                <polyline id="memorySparklinePath" fill="none" stroke="{{ colors.color4 }}" stroke-width="1.5"></polyline>
+                            </svg>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Disk Section -->
-                <div class="stat-section">
-                    <div class="stat-label">Disk Usage</div>
-                    <div class="stat-bar-container">
-                        <div class="stat-bar" id="diskBar"></div>
-                        <span class="stat-value" id="diskValue">--</span>
+                <div class="stat-section" data-stat-section="disk">
+                    <div class="stat-label-header">
+                        <button class="stat-collapse-toggle" aria-label="Toggle disk stats">▼</button>
+                        <div class="stat-label">Disk Usage</div>
                     </div>
-                    <div class="stat-info">
-                        <span id="diskUsed">-- GB</span> /
-                        <span id="diskTotal">-- GB</span>
+                    <div class="stat-content">
+                        <div class="stat-bar-container">
+                            <div class="stat-bar" id="diskBar"></div>
+                            <span class="stat-value" id="diskValue">--</span>
+                        </div>
+                        <div class="stat-info">
+                            <span id="diskUsed">-- GB</span> /
+                            <span id="diskTotal">-- GB</span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Network Section -->
-                <div class="stat-section">
-                    <div class="stat-label">Network I/O</div>
-                    <div class="stat-info">
-                        ↓ <span id="networkRecv">-- MB</span> •
-                        ↑ <span id="networkSent">-- MB</span>
+                <div class="stat-section" data-stat-section="network">
+                    <div class="stat-label-header">
+                        <button class="stat-collapse-toggle" aria-label="Toggle network stats">▼</button>
+                        <div class="stat-label">Network I/O</div>
                     </div>
-                    <div class="stat-info" style="font-size: 0.75rem; margin-top: 2px; margin-bottom: 4px;">
-                        ↓ <span id="networkRecvRate">0.0</span> MB/s •
-                        ↑ <span id="networkSentRate">0.0</span> MB/s
-                    </div>
-                    <div class="sparkline-container">
-                        <svg class="sparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
-                            <polyline id="networkRecvSparklinePath" fill="none" stroke="{{ colors.color5 }}" stroke-width="1.5" points=""></polyline>
-                        </svg>
-                    </div>
-                    <div class="sparkline-container">
-                        <svg class="sparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
-                            <polyline id="networkSentSparklinePath" fill="none" stroke="{{ colors.color3 }}" stroke-width="1.5" points=""></polyline>
-                        </svg>
+                    <div class="stat-content">
+                        <div class="stat-info">
+                            ↓ <span id="networkRecv">-- MB</span> •
+                            ↑ <span id="networkSent">-- MB</span>
+                        </div>
+                        <div class="stat-info" style="font-size: 0.75rem; margin-top: 2px; margin-bottom: 4px;">
+                            ↓ <span id="networkRecvRate">0.0</span> MB/s •
+                            ↑ <span id="networkSentRate">0.0</span> MB/s
+                        </div>
+                        <div class="sparkline-container">
+                            <svg class="sparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
+                                <polyline id="networkRecvSparklinePath" fill="none" stroke="{{ colors.color5 }}" stroke-width="1.5" points=""></polyline>
+                            </svg>
+                        </div>
+                        <div class="sparkline-container">
+                            <svg class="sparkline" viewBox="0 0 120 30" preserveAspectRatio="none">
+                                <polyline id="networkSentSparklinePath" fill="none" stroke="{{ colors.color3 }}" stroke-width="1.5" points=""></polyline>
+                            </svg>
+                        </div>
                     </div>
                 </div>
 

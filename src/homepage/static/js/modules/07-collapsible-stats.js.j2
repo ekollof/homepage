@@ -1,0 +1,115 @@
+/**
+ * Module: Collapsible System Stats
+ * Handle system stats section collapse/expand with persistent state in localStorage
+ */
+
+{% if config.ENABLE_SYSTEM_STATS %}
+// Storage key for collapsed stats sections
+const COLLAPSED_STATS_KEY = 'homepage_collapsed_stats';
+
+/**
+ * Get collapsed stats sections from localStorage
+ * @returns {Set<string>} Set of collapsed section names
+ */
+function getCollapsedStats() {
+    try {
+        const stored = localStorage.getItem(COLLAPSED_STATS_KEY);
+        return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch (e) {
+        console.error('Error loading collapsed stats:', e);
+        return new Set();
+    }
+}
+
+/**
+ * Save collapsed stats sections to localStorage
+ * @param {Set<string>} collapsedSet - Set of collapsed section names
+ */
+function saveCollapsedStats(collapsedSet) {
+    try {
+        localStorage.setItem(COLLAPSED_STATS_KEY, JSON.stringify([...collapsedSet]));
+    } catch (e) {
+        console.error('Error saving collapsed stats:', e);
+    }
+}
+
+/**
+ * Toggle stat section collapse state
+ * @param {HTMLElement} sectionElement - The stat section element
+ */
+function toggleStatCollapse(sectionElement) {
+    const sectionName = sectionElement.dataset.statSection;
+    if (!sectionName) return;
+
+    const collapsedStats = getCollapsedStats();
+    const content = sectionElement.querySelector('.stat-content');
+    const toggleBtn = sectionElement.querySelector('.stat-collapse-toggle');
+
+    if (!content || !toggleBtn) return;
+
+    const isCollapsed = collapsedStats.has(sectionName);
+
+    if (isCollapsed) {
+        // Expand
+        collapsedStats.delete(sectionName);
+        content.style.display = 'block';
+        toggleBtn.textContent = '▼';
+        sectionElement.classList.remove('collapsed');
+    } else {
+        // Collapse
+        collapsedStats.add(sectionName);
+        content.style.display = 'none';
+        toggleBtn.textContent = '▶';
+        sectionElement.classList.add('collapsed');
+    }
+
+    saveCollapsedStats(collapsedStats);
+}
+
+/**
+ * Initialize collapsible stats sections on page load
+ */
+function initCollapsibleStats() {
+    const collapsedStats = getCollapsedStats();
+    const sections = document.querySelectorAll('.stat-section[data-stat-section]');
+
+    sections.forEach((section) => {
+        const sectionName = section.dataset.statSection;
+        if (!sectionName) return;
+
+        const content = section.querySelector('.stat-content');
+        const toggleBtn = section.querySelector('.stat-collapse-toggle');
+
+        if (!content || !toggleBtn) return;
+
+        // Remove existing event listener if any
+        const newToggleBtn = toggleBtn.cloneNode(true);
+        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+
+        // Apply saved state
+        if (collapsedStats.has(sectionName)) {
+            content.style.display = 'none';
+            newToggleBtn.textContent = '▶';
+            section.classList.add('collapsed');
+        } else {
+            content.style.display = 'block';
+            newToggleBtn.textContent = '▼';
+            section.classList.remove('collapsed');
+        }
+
+        // Add click event listener
+        newToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleStatCollapse(section);
+        });
+    });
+}
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCollapsibleStats);
+} else {
+    initCollapsibleStats();
+}
+{% endif %}
