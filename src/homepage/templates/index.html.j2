@@ -182,65 +182,84 @@
                 </div>
 
                 <!-- Battery Section (conditional) -->
-                <div class="stat-section" id="batterySection" style="display: none;">
-                    <div class="stat-label">Battery</div>
-                    <div class="stat-bar-container">
-                        <div class="stat-bar" id="batteryBar"></div>
-                        <span class="stat-value" id="batteryValue">--</span>
+                <div class="stat-section" id="batterySection" data-stat-section="battery" style="display: none;">
+                    <div class="stat-label-header">
+                        <button class="stat-collapse-toggle" aria-label="Toggle battery stats">▼</button>
+                        <div class="stat-label">Battery</div>
                     </div>
-                    <div class="stat-info" id="batteryInfo">
-                        <span id="batteryStatus">--</span>
+                    <div class="stat-content">
+                        <div class="stat-bar-container">
+                            <div class="stat-bar" id="batteryBar"></div>
+                            <span class="stat-value" id="batteryValue">--</span>
+                        </div>
+                        <div class="stat-info" id="batteryInfo">
+                            <span id="batteryStatus">--</span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- System Info -->
-                <div class="stat-section">
-                    <div class="stat-label">System</div>
-                    <div class="stat-info">
-                        Processes: <span id="processCount">--</span><br>
-                        Uptime: <span id="uptime">--</span>
-                        <span id="temperatureInfo" style="display: none;"><br>Temp: <span id="temperature">--</span>°C</span>
+                <div class="stat-section" data-stat-section="system">
+                    <div class="stat-label-header">
+                        <button class="stat-collapse-toggle" aria-label="Toggle system stats">▼</button>
+                        <div class="stat-label">System</div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-info">
+                            Processes: <span id="processCount">--</span><br>
+                            Uptime: <span id="uptime">--</span>
+                            <span id="temperatureInfo" style="display: none;"><br>Temp: <span id="temperature">--</span>°C</span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Power Management (Linux/FreeBSD) -->
-                <div class="stat-section" id="powerManagementSection" style="display: none;">
-                    <div class="stat-label">Power Management</div>
-                    <div class="stat-info">
-                        Power Saving: <span id="powerSavingStatus">--</span><br>
-                        CPU Governor: <span id="governorInfo">--</span>
+                <div class="stat-section" id="powerManagementSection" data-stat-section="power" style="display: none;">
+                    <div class="stat-label-header">
+                        <button class="stat-collapse-toggle" aria-label="Toggle power management">▼</button>
+                        <div class="stat-label">Power Management</div>
                     </div>
-                    <select id="governorSelect" class="governor-select" title="Change CPU Governor">
-                        <option value="">Loading...</option>
-                    </select>
-                    <div class="stat-label" style="margin-top: 10px;">I/O Schedulers</div>
-                    <div id="schedulerContainer"></div>
+                    <div class="stat-content">
+                        <div class="stat-info">
+                            Power Saving: <span id="powerSavingStatus">--</span><br>
+                            CPU Governor: <span id="governorInfo">--</span>
+                        </div>
+                        <select id="governorSelect" class="governor-select" title="Change CPU Governor">
+                            <option value="">Loading...</option>
+                        </select>
+                        <div class="stat-label" style="margin-top: 10px;">I/O Schedulers</div>
+                        <div id="schedulerContainer"></div>
+                    </div>
                 </div>
 
                 <!-- ZFS Statistics -->
-                <div class="stat-section" id="zfsSection" style="display: none;">
-                    <div class="stat-label">💾 ZFS</div>
-                    
-                    <!-- ARC Stats -->
-                    <div class="stat-info" style="margin-bottom: 8px;">
-                        <strong>ARC Cache</strong>
+                <div class="stat-section" id="zfsSection" data-stat-section="zfs" style="display: none;">
+                    <div class="stat-label-header">
+                        <button class="stat-collapse-toggle" aria-label="Toggle ZFS stats">▼</button>
+                        <div class="stat-label">💾 ZFS</div>
                     </div>
-                    <div class="stat-info" style="font-size: 0.9em; margin-left: 1em;">
-                        Size: <span id="arcSize">--</span> / <span id="arcMax">--</span>
-                        (<span id="arcPercent">--</span>)
-                    </div>
-                    <div class="stat-bar-container" style="margin: 4px 0 8px 1em;">
-                        <div class="stat-bar" id="arcBar"></div>
-                    </div>
-                    <div class="stat-info" style="font-size: 0.9em; margin-left: 1em;">
-                        Hit Ratio: <span id="arcHitRatio" style="font-weight: bold;">--</span>
-                    </div>
+                    <div class="stat-content">
+                        <!-- ARC Stats -->
+                        <div class="stat-info" style="margin-bottom: 8px;">
+                            <strong>ARC Cache</strong>
+                        </div>
+                        <div class="stat-info" style="font-size: 0.9em; margin-left: 1em;">
+                            Size: <span id="arcSize">--</span> / <span id="arcMax">--</span>
+                            (<span id="arcPercent">--</span>)
+                        </div>
+                        <div class="stat-bar-container" style="margin: 4px 0 8px 1em;">
+                            <div class="stat-bar" id="arcBar"></div>
+                        </div>
+                        <div class="stat-info" style="font-size: 0.9em; margin-left: 1em;">
+                            Hit Ratio: <span id="arcHitRatio" style="font-weight: bold;">--</span>
+                        </div>
 
-                    <!-- Pools -->
-                    <div class="stat-info" style="margin-top: 10px; margin-bottom: 4px;">
-                        <strong>Pools</strong>
+                        <!-- Pools -->
+                        <div class="stat-info" style="margin-top: 10px; margin-bottom: 4px;">
+                            <strong>Pools</strong>
+                        </div>
+                        <div id="zfsPools"></div>
                     </div>
-                    <div id="zfsPools"></div>
                 </div>
             </div>
         </div>

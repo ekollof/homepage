@@ -585,6 +585,7 @@
                     // Update Battery section (conditional)
                     if (data.battery) {
                         const batterySection = document.getElementById('batterySection');
+                        const wasHidden = batterySection.style.display === 'none';
                         batterySection.style.display = 'block';
                         updateStatBar('batteryBar', data.battery.percent);
                         document.getElementById('batteryValue').textContent = `${Math.round(data.battery.percent)}%`;
@@ -596,6 +597,11 @@
                             statusText += ` (${hours}h ${minutes}m)`;
                         }
                         document.getElementById('batteryStatus').textContent = statusText;
+
+                        // Reinitialize collapsible if section was just shown
+                        if (wasHidden && typeof initCollapsibleStats === 'function') {
+                            initCollapsibleStats();
+                        }
                     }
 
                     // Update System info
@@ -654,7 +660,13 @@
             const section = document.getElementById('powerManagementSection');
             if (!section) return;
 
+            const wasHidden = section.style.display === 'none';
             section.style.display = 'block';
+
+            // Reinitialize collapsible if section was just shown
+            if (wasHidden && typeof initCollapsibleStats === 'function') {
+                initCollapsibleStats();
+            }
 
             // Handle FreeBSD power management
             if (powerMgmt.freebsd) {
@@ -885,7 +897,13 @@
             const section = document.getElementById('zfsSection');
             if (!section) return;
 
+            const wasHidden = section.style.display === 'none';
             section.style.display = 'block';
+
+            // Reinitialize collapsible if section was just shown
+            if (wasHidden && typeof initCollapsibleStats === 'function') {
+                initCollapsibleStats();
+            }
 
             // Update ARC stats
             if (zfsData.arc) {
