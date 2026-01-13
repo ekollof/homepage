@@ -28,6 +28,11 @@ function updateCategoryDisplay() {
         enableSubcategoryDragging();
     }
 
+    // Reinitialize collapsible categories after DOM update
+    if (typeof initCollapsibleCategories === 'function') {
+        initCollapsibleCategories();
+    }
+
     console.log('DOM updated from currentConfig');
 }
 

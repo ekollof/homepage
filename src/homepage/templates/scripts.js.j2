@@ -1279,10 +1279,14 @@
             return `
                 <div class="category" data-category-index="${catIndex}" draggable="false">
                     <span class="category-drag-handle">⋮⋮</span>
-                    <div class="category-title">
-                        <span class="category-icon">${category.icon || '📁'}</span>
-                        <span>${category.name}</span>
+                    <div class="category-header">
+                        <button class="category-collapse-toggle" aria-label="Toggle category">▼</button>
+                        <div class="category-title">
+                            <span class="category-icon">${category.icon || '📁'}</span>
+                            <span>${category.name}</span>
+                        </div>
                     </div>
+                    <div class="category-content">
                     ${createLinksListHTML(category.links, false)}
                     ${subcategoriesHtml}
                     <div class="edit-controls">
@@ -1290,6 +1294,7 @@
                         <button class="edit-btn add" onclick="addLink(this, false)">+ Link</button>
                         <button class="edit-btn add" onclick="addSubcategory(this)">+ Subcategory</button>
                         <button class="edit-btn danger" onclick="deleteCategory(this)">Delete</button>
+                    </div>
                     </div>
                 </div>
             `;
@@ -1330,6 +1335,11 @@
                 enableCategoryDragging();
                 enableLinkDragging();
                 enableSubcategoryDragging();
+            }
+
+            // Reinitialize collapsible categories after DOM update
+            if (typeof initCollapsibleCategories === 'function') {
+                initCollapsibleCategories();
             }
 
             console.log('DOM updated from currentConfig');
@@ -2244,7 +2254,118 @@
 
         {% endif %}
 
-        /* Module: 11-initialization.js */
+        /* Module: 12-collapsible-categories.js */
+        /**
+         * Module: Collapsible Categories
+         * Handle category collapse/expand with persistent state in localStorage
+         */
+
+        // Storage key for collapsed categories
+        const COLLAPSED_CATEGORIES_KEY = 'homepage_collapsed_categories';
+
+        /**
+         * Get collapsed categories from localStorage
+         * @returns {Set<number>} Set of collapsed category indices
+         */
+        function getCollapsedCategories() {
+            try {
+                const stored = localStorage.getItem(COLLAPSED_CATEGORIES_KEY);
+                return stored ? new Set(JSON.parse(stored)) : new Set();
+            } catch (e) {
+                console.error('Error loading collapsed categories:', e);
+                return new Set();
+            }
+        }
+
+        /**
+         * Save collapsed categories to localStorage
+         * @param {Set<number>} collapsedSet - Set of collapsed category indices
+         */
+        function saveCollapsedCategories(collapsedSet) {
+            try {
+                localStorage.setItem(COLLAPSED_CATEGORIES_KEY, JSON.stringify([...collapsedSet]));
+            } catch (e) {
+                console.error('Error saving collapsed categories:', e);
+            }
+        }
+
+        /**
+         * Toggle category collapse state
+         * @param {HTMLElement} categoryElement - The category element
+         */
+        function toggleCategoryCollapse(categoryElement) {
+            const categoryIndex = parseInt(categoryElement.dataset.categoryIndex);
+            const collapsedCategories = getCollapsedCategories();
+            const content = categoryElement.querySelector('.category-content');
+            const toggleBtn = categoryElement.querySelector('.category-collapse-toggle');
+
+            if (!content || !toggleBtn) return;
+
+            const isCollapsed = collapsedCategories.has(categoryIndex);
+
+            if (isCollapsed) {
+                // Expand
+                collapsedCategories.delete(categoryIndex);
+                content.style.display = 'block';
+                toggleBtn.textContent = '▼';
+                categoryElement.classList.remove('collapsed');
+            } else {
+                // Collapse
+                collapsedCategories.add(categoryIndex);
+                content.style.display = 'none';
+                toggleBtn.textContent = '▶';
+                categoryElement.classList.add('collapsed');
+            }
+
+            saveCollapsedCategories(collapsedCategories);
+        }
+
+        /**
+         * Initialize collapsible categories on page load
+         */
+        function initCollapsibleCategories() {
+            const collapsedCategories = getCollapsedCategories();
+            const categories = document.querySelectorAll('.category');
+
+            categories.forEach((category) => {
+                const categoryIndex = parseInt(category.dataset.categoryIndex);
+                const content = category.querySelector('.category-content');
+                const toggleBtn = category.querySelector('.category-collapse-toggle');
+
+                if (!content || !toggleBtn) return;
+
+                // Remove existing event listener if any
+                const newToggleBtn = toggleBtn.cloneNode(true);
+                toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+
+                // Apply saved state
+                if (collapsedCategories.has(categoryIndex)) {
+                    content.style.display = 'none';
+                    newToggleBtn.textContent = '▶';
+                    category.classList.add('collapsed');
+                } else {
+                    content.style.display = 'block';
+                    newToggleBtn.textContent = '▼';
+                    category.classList.remove('collapsed');
+                }
+
+                // Add click event listener
+                newToggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleCategoryCollapse(category);
+                });
+            });
+        }
+
+        // Initialize on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCollapsibleCategories);
+        } else {
+            initCollapsibleCategories();
+        }
+
+        /* Module: 13-initialization.js */
         /**
          * Module: Initialization and WebSocket
          * Page initialization, event listeners, and WebSocket event handlers
