@@ -72,7 +72,7 @@ Welcome to the **Homepage** application documentation! A customizable homepage w
 
 - **Documentation Issue?** Check the relevant guide above
 - **Feature Question?** See [Features](FEATURES.md)
-- **Not Working?** Check [Usage Guide Troubleshooting](USAGE.md#troubleshooting)
+- **Not Working?** Check [Usage Guide Troubleshooting](USAGE.html#troubleshooting)
 - **Want to Contribute?** See [Contributing](CONTRIBUTING.md)
 
 ---

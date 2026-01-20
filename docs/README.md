@@ -75,17 +75,17 @@ Welcome to the Homepage application documentation!
 ## Quick Links
 
 ### Common Tasks
-- **Setting up**: [Quick Start Guide](QUICKSTART.md#installation)
-- **Configuring links**: [Usage Guide](USAGE.md#navigating-links)
-- **Changing theme**: [Usage Guide](USAGE.md#theme-customization)
-- **Using search**: [Usage Guide](USAGE.md#using-the-web-search)
-- **Troubleshooting**: [Usage Guide](USAGE.md#troubleshooting)
+- **Setting up**: [Quick Start Guide](QUICKSTART.html#installation)
+- **Configuring links**: [Usage Guide](USAGE.html#navigating-links)
+- **Changing theme**: [Usage Guide](USAGE.html#theme-customization)
+- **Using search**: [Usage Guide](USAGE.html#using-the-web-search)
+- **Troubleshooting**: [Usage Guide](USAGE.html#troubleshooting)
 
 ### Development
-- **Code quality**: [Technical Notes](TECHNICAL.md#code-quality-standards)
-- **Architecture**: [Technical Notes](TECHNICAL.md#architecture-overview)
-- **Performance**: [Technical Notes](TECHNICAL.md#performance-considerations)
-- **Security**: [Technical Notes](TECHNICAL.md#security-considerations)
+- **Code quality**: [Technical Notes](TECHNICAL.html#code-quality-standards)
+- **Architecture**: [Technical Notes](TECHNICAL.html#architecture-overview)
+- **Performance**: [Technical Notes](TECHNICAL.html#performance-considerations)
+- **Security**: [Technical Notes](TECHNICAL.html#security-considerations)
 
 ## Main README
 

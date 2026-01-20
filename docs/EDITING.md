@@ -259,6 +259,6 @@ The application watches for changes to both `links.toml` and `links.override.tom
 
 ## See Also
 
-- [Configuration Guide](USAGE.md#configuration)
-- [CLI Tools](USAGE.md#cli-tool)
+- [Configuration Guide](USAGE.html#configuration)
+- [CLI Tools](USAGE.html#cli-tool)
 - [API Documentation](API.md)
